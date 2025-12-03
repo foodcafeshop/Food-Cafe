@@ -582,7 +582,8 @@ create policy "Admin can update own shop" on public.shops for update using (publ
 
 -- MENUS
 -- Public can read
-create policy "Public can read menus" on public.menus for select using (true);
+create policy "Public can read active menus" on public.menus for select using (is_active = true);
+create policy "Admins can read own menus" on public.menus for select using (public.is_admin_of(shop_id));
 -- Admin can manage
 create policy "Admin can insert menus" on public.menus for insert with check (public.is_admin_of(shop_id));
 create policy "Admin can update menus" on public.menus for update using (public.is_admin_of(shop_id));

@@ -12,5 +12,5 @@ export default async function CartPage({ params }: { params: { slug: string } })
 
     const settings = await getSettings(shop.id);
 
-    return <CartContent initialSettings={settings} shopId={shop.id} />;
+    return <CartContent initialSettings={settings} shopId={shop.id} shop={shop} />;
 }

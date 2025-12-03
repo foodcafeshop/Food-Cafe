@@ -13,7 +13,10 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+import { useShopId } from "@/lib/hooks/use-shop-id";
+
 export default function CategoryManagementPage() {
+    const { shopId } = useShopId();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -21,14 +24,18 @@ export default function CategoryManagementPage() {
     const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
 
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        if (shopId) {
+            fetchCategories();
+        }
+    }, [shopId]);
 
     const fetchCategories = async () => {
+        if (!shopId) return;
         setLoading(true);
         const { data, error } = await supabase
             .from('categories')
             .select('*')
+            .eq('shop_id', shopId)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -41,11 +48,11 @@ export default function CategoryManagementPage() {
     };
 
     const handleSave = async () => {
-        if (!currentCategory.name) return;
+        if (!currentCategory.name || !shopId) return;
 
         const { data, error } = await supabase
             .from('categories')
-            .upsert(currentCategory)
+            .upsert({ ...currentCategory, shop_id: shopId })
             .select()
             .single();
 

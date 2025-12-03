@@ -10,9 +10,10 @@ import Link from "next/link";
 
 interface CartFooterProps {
     currencySymbol?: string;
+    slug: string;
 }
 
-export function CartFooter({ currencySymbol = "$" }: CartFooterProps) {
+export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
     const { totalItems, totalPrice } = useCartStore();
     const [mounted, setMounted] = useState(false);
 
@@ -30,7 +31,7 @@ export function CartFooter({ currencySymbol = "$" }: CartFooterProps) {
     return (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-50 pb-8">
             <div className="container max-w-md mx-auto">
-                <Link href="/cart">
+                <Link href={`/${slug}/cart`}>
                     <Button
                         size="lg"
                         className="w-full flex items-center justify-between shadow-xl animate-in slide-in-from-bottom-10 bg-orange-500 hover:bg-orange-600 text-white h-14 rounded-2xl"

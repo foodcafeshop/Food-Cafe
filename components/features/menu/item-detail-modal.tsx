@@ -19,14 +19,16 @@ interface ItemDetailModalProps {
 
 export function ItemDetailModal({ item, isOpen, onClose, currencySymbol }: ItemDetailModalProps) {
     const [quantity, setQuantity] = useState(1);
+    const [instructions, setInstructions] = useState("");
     const { addItem } = useCartStore();
 
     if (!item) return null;
 
     const handleAddToCart = () => {
-        addItem({ ...item, quantity });
+        addItem({ ...item, quantity, notes: instructions });
         onClose();
         setQuantity(1);
+        setInstructions("");
     };
 
     return (
@@ -62,19 +64,18 @@ export function ItemDetailModal({ item, isOpen, onClose, currencySymbol }: ItemD
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* Customizations Placeholder */}
+                    {/* Customizations */}
                     <div className="space-y-4">
-                        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Preferences</h4>
-                        <div className="grid gap-2">
-                            <div className="flex items-center space-x-2">
-                                <input type="checkbox" id="spicy" className="rounded border-gray-300 text-primary focus:ring-primary" />
-                                <label htmlFor="spicy" className="text-sm font-medium">Make it Spicy</label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <input type="checkbox" id="cutlery" className="rounded border-gray-300 text-primary focus:ring-primary" defaultChecked />
-                                <label htmlFor="cutlery" className="text-sm font-medium">Include Cutlery</label>
-                            </div>
-                        </div>
+                        <label htmlFor="instructions" className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
+                            Special Instructions
+                        </label>
+                        <textarea
+                            id="instructions"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="E.g. No onions, extra spicy, allergy info..."
+                            value={instructions}
+                            onChange={(e) => setInstructions(e.target.value)}
+                        />
                     </div>
 
                     <DialogFooter className="flex-col sm:flex-col gap-4">

@@ -8,6 +8,7 @@ import { MenuItemCard } from "@/components/features/menu/menu-item-card";
 import { getCurrencySymbol, cn } from "@/lib/utils";
 import { HeaderSearch } from "@/components/features/landing/header-search";
 import { CartBadge } from "@/components/features/cart/cart-badge";
+import { ShopHeader } from "@/components/features/landing/shop-header";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -60,45 +61,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 font-bold text-2xl text-orange-500">
-              {shop?.logo_url ? (
-                <img src={shop.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <ChefHat className="h-8 w-8" />
-              )}
-              <span className="tracking-tight">{shop?.name || 'Food Cafe'}</span>
-              {shop?.average_rating > 0 && (
-                <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 ml-2">
-                  <Star className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
-                  <span className="text-xs font-bold text-orange-700">{shop.average_rating}</span>
-                  <span className="text-[10px] text-orange-400">({shop.rating_count})</span>
-                </div>
-              )}
-            </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500 ml-8 hover:text-orange-500 cursor-pointer transition-colors">
-              <span className="font-bold text-gray-700 border-b-2 border-gray-700 pb-0.5">Location</span>
-              <span className="truncate max-w-[200px]">{shop?.address || 'Select Location'}</span>
-              <ChevronDown className="h-4 w-4 text-orange-500" />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <HeaderSearch />
-            <Link href="/admin" className="hidden md:flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">
-              <LayoutDashboard className="h-5 w-5" />
-              <span>Admin</span>
-            </Link>
-            <Link href={`/${slug}/cart`} className="flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium relative">
-              <ShoppingBag className="h-5 w-5" />
-              <span className="hidden md:inline">Cart</span>
-              <CartBadge />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <ShopHeader shop={shop} slug={slug} />
 
       {/* Hero Section */}
       <div className="relative h-[300px] w-full bg-gradient-to-r from-orange-500 to-red-600">
@@ -124,6 +87,8 @@ export default async function Home({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </div>
+
+
 
       <main className="container max-w-7xl mx-auto px-4 py-8 space-y-12">
 

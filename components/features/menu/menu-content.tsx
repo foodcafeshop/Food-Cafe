@@ -12,6 +12,7 @@ import Link from "next/link";
 import { getCurrencySymbol } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
 import { getTableById } from "@/lib/api";
+import { ShopHeader } from "@/components/features/landing/shop-header";
 
 interface MenuContentProps {
     categories: any[];
@@ -48,13 +49,29 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         fetchTableLabel();
     }, [tableId]);
 
-    // Filter categories based on search query
+    const [dietaryFilter, setDietaryFilter] = useState<string>("all");
+    const [sortBy, setSortBy] = useState<string>("recommended");
+
+    // Filter categories based on search query and filters
     const filteredCategories = initialCategories.map(cat => ({
         ...cat,
-        items: cat.items.filter((item: any) =>
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        items: cat.items.filter((item: any) => {
+            // Search Filter
+            const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            // Dietary Filter
+            const matchesDietary = dietaryFilter === "all" || item.dietary_type === dietaryFilter;
+
+            return matchesSearch && matchesDietary;
+        }).sort((a: any, b: any) => {
+            // Sorting
+            if (sortBy === "price_asc") return a.price - b.price;
+            if (sortBy === "price_desc") return b.price - a.price;
+            if (sortBy === "rating") return (b.average_rating || 0) - (a.average_rating || 0);
+            if (sortBy === "popular") return (b.is_popular === a.is_popular) ? 0 : b.is_popular ? 1 : -1;
+            return 0; // recommended (default order)
+        })
     })).filter(cat => cat.items.length > 0);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,121 +96,59 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-            <header className="sticky top-0 z-50 bg-white shadow-sm transition-all duration-200">
-                {/* Restaurant Info Header */}
-                <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
-                    <div className="flex items-center gap-4 flex-1">
-                        <Link href="/">
-                            <Button variant="ghost" size="icon" className="-ml-2">
-                                <ChevronLeft className="h-6 w-6" />
-                            </Button>
-                        </Link>
+            <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} />
 
-                        {isSearchOpen ? (
-                            <div className="flex-1 max-w-md relative animate-in fade-in slide-in-from-right-4 duration-200">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Input
-                                    autoFocus
-                                    placeholder="Search for dishes..."
-                                    className="pl-9 pr-8 h-10 bg-gray-50 border-gray-200 focus-visible:ring-orange-500"
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                />
-                                {searchQuery && (
-                                    <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            <div>
-                                <h1 className="font-bold text-lg text-gray-800">Food Cafe Premium</h1>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    {shop?.average_rating > 0 ? (
-                                        <span className="flex items-center gap-0.5 font-bold text-gray-700">
-                                            <Star className="w-3 h-3 fill-green-600 text-green-600" />
-                                            {shop.average_rating} <span className="text-gray-400 font-normal">({shop.rating_count})</span>
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-gray-300 text-gray-300" /> New</span>
-                                    )}
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="hidden sm:flex items-center gap-0.5"><Clock className="w-3 h-3" /> 35 mins</span>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="hidden sm:inline">{currencySymbol}400 for two</span>
-                                </div>
-                                {tableId && (
-                                    <div className="mt-1">
-                                        <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                                            Table {tableLabel || tableId}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2 ml-2">
-                        {!isSearchOpen ? (
-                            <>
-                                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
-                                    <Search className="h-5 w-5 text-gray-600" />
-                                </Button>
-                                <Link href="/cart">
-                                    <Button variant="ghost" size="icon" className="relative">
-                                        <ShoppingBag className="h-5 w-5 text-gray-600" />
-                                        <CartBadge />
-                                    </Button>
-                                </Link>
-                            </>
-                        ) : (
-                            <Button variant="ghost" size="sm" onClick={clearSearch} className="text-gray-500">
-                                Cancel
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Mobile Category Nav - Hide when searching to give more space */}
-                {!isSearchOpen && (
+            {/* Mobile Category Nav - Hide when searching to give more space */}
+            {!isSearchOpen && (
+                <div className="bg-white sticky top-20 z-40 shadow-sm">
                     <div className="md:hidden border-t border-gray-100">
                         <CategoryNav categories={initialCategories} />
                     </div>
-                )}
-            </header>
+
+                    {/* Filters Bar */}
+                    <div className="container max-w-7xl mx-auto px-4 py-3 flex gap-3 overflow-x-auto no-scrollbar items-center border-t border-gray-100">
+                        {/* Dietary Filters */}
+                        <div className="flex gap-2 shrink-0">
+                            <button
+                                onClick={() => setDietaryFilter("all")}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${dietaryFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}
+                            >
+                                All
+                            </button>
+                            <button
+                                onClick={() => setDietaryFilter("veg")}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "veg" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}
+                            >
+                                <div className="w-2 h-2 rounded-full bg-green-500 border border-white"></div> Veg
+                            </button>
+                            <button
+                                onClick={() => setDietaryFilter("non_veg")}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "non_veg" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-600 border-gray-200 hover:border-red-400"}`}
+                            >
+                                <div className="w-2 h-2 rounded-full bg-red-500 border border-white"></div> Non-Veg
+                            </button>
+                        </div>
+
+                        <div className="w-[1px] h-6 bg-gray-200 shrink-0"></div>
+
+                        {/* Sort Options */}
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="bg-transparent text-xs font-bold text-gray-600 focus:outline-none cursor-pointer"
+                        >
+                            <option value="recommended">Sort: Recommended</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="rating">Top Rated</option>
+                            <option value="popular">Bestsellers</option>
+                        </select>
+                    </div>
+                </div>
+            )}
 
             <main className="container max-w-7xl mx-auto px-4 py-6">
-                {/* Restaurant Info Card (Desktop) - Hide when searching */}
-                {!isSearchOpen && !searchQuery && (
-                    <div className="hidden md:block mb-8">
-                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex justify-between items-start">
-                            <div>
-                                <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Food Cafe Premium</h1>
-                                <p className="text-gray-500 mb-4">North Indian, Chinese, Fast Food • Koramangala</p>
-                                <div className="flex items-center gap-6 text-gray-700 font-bold">
-                                    <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg border border-green-100">
-                                        <Star className="w-5 h-5 fill-green-700 text-green-700" />
-                                        <span className="text-green-700">{shop?.average_rating || 'New'}</span>
-                                        {shop?.rating_count > 0 && <span className="text-xs text-green-600">({shop.rating_count})</span>}
-                                    </div>
-                                    <div className="w-[1px] h-6 bg-gray-300"></div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-5 h-5" />
-                                        <span>35 mins</span>
-                                    </div>
-                                    <div className="w-[1px] h-6 bg-gray-300"></div>
-                                    <div>{currencySymbol}400 for two</div>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 text-orange-500 border border-orange-100 bg-orange-50 px-4 py-2 rounded-xl">
-                                    <MapPin className="w-4 h-4" />
-                                    <span className="text-sm font-bold">Live Tracking</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
 
                 <div className="flex gap-8 items-start">
                     {/* Desktop Sidebar Navigation */}
@@ -254,7 +209,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                     </div>
                 </div>
             </main>
-            <CartFooter currencySymbol={currencySymbol} />
+            <CartFooter currencySymbol={currencySymbol} slug={shop.slug} />
         </div>
     );
 }

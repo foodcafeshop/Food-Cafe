@@ -12,16 +12,24 @@ import { createOrder, createOrderItems } from "@/lib/api";
 import { toast } from "sonner";
 import { getCurrencySymbol } from "@/lib/utils";
 import { PlacedOrders } from "@/components/features/cart/placed-orders";
+import { OrderDetailsDialog } from "@/components/features/order/order-details-dialog";
+import { useState } from "react";
+
+import { ShopHeader } from "@/components/features/landing/shop-header";
 
 interface CartContentProps {
     initialSettings: any;
     shopId: string;
+    shop: any;
 }
 
-export function CartContent({ initialSettings, shopId }: CartContentProps) {
+export function CartContent({ initialSettings, shopId, shop }: CartContentProps) {
     const { items, updateQuantity, totalPrice, clearCart, tableId } = useCartStore();
     const { updateSettings } = useSettingsStore();
     const router = useRouter();
+
+    const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
     // Sync settings on mount
     useEffect(() => {
@@ -88,10 +96,13 @@ export function CartContent({ initialSettings, shopId }: CartContentProps) {
 
             await createOrderItems(orderItems);
 
-            // 3. Clear Cart & Redirect
+            // 3. Clear Cart & Open Dialog
             clearCart();
             toast.success("Order placed successfully!");
-            router.push(`/order/${newOrder.id}`);
+
+            // Open Dialog instead of redirecting
+            setSelectedOrderId(newOrder.id);
+            setIsOrderDialogOpen(true);
 
         } catch (error) {
             console.error("Order placement failed:", error);
@@ -99,21 +110,15 @@ export function CartContent({ initialSettings, shopId }: CartContentProps) {
         }
     };
 
+    const handleOrderClick = (orderId: string) => {
+        setSelectedOrderId(orderId);
+        setIsOrderDialogOpen(true);
+    };
+
     if (items.length === 0) {
         return (
             <div className="min-h-screen bg-gray-50 pb-20">
-                <header className="sticky top-0 z-50 bg-white shadow-sm">
-                    <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
-                        <div className="flex items-center gap-4">
-                            <Link href="/menu">
-                                <Button variant="ghost" size="icon" className="-ml-2 text-gray-600">
-                                    <ChevronLeft className="h-6 w-6" />
-                                </Button>
-                            </Link>
-                            <h1 className="font-bold text-lg text-gray-800">Your Orders</h1>
-                        </div>
-                    </div>
-                </header>
+                <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} />
 
                 <main className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
                     {/* Empty Cart Message */}
@@ -123,48 +128,28 @@ export function CartContent({ initialSettings, shopId }: CartContentProps) {
                         </div>
                         <h2 className="text-xl font-bold text-gray-800">Your Cart is Empty</h2>
                         <p className="text-gray-500 max-w-xs mt-2">Ready to order? Browse our menu for delicious options.</p>
-                        <Link href="/menu">
+                        <Link href={`/${shop.slug}/menu`}>
                             <Button className="bg-orange-500 hover:bg-orange-600 text-white mt-4">Browse Menu</Button>
                         </Link>
                     </div>
 
                     {/* Placed Orders */}
-                    <PlacedOrders currencySymbol={currencySymbol} />
+                    <PlacedOrders currencySymbol={currencySymbol} onOrderClick={handleOrderClick} />
                 </main>
+
+                <OrderDetailsDialog
+                    isOpen={isOrderDialogOpen}
+                    onClose={() => setIsOrderDialogOpen(false)}
+                    orderId={selectedOrderId}
+                    currencySymbol={currencySymbol}
+                />
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32 md:pb-12">
-            <header className="sticky top-0 z-50 bg-white shadow-sm">
-                <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
-                    <div className="flex items-center gap-4">
-                        <Link href="/menu">
-                            <Button variant="ghost" size="icon" className="-ml-2 text-gray-600">
-                                <ChevronLeft className="h-6 w-6" />
-                            </Button>
-                        </Link>
-                        <div className="flex flex-col">
-                            <h1 className="font-bold text-lg text-gray-800 leading-none">Cart</h1>
-                            <p className="text-xs text-gray-500 mt-1">{items.length} Items</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Link href="/">
-                            <Button variant="ghost" className="text-gray-600 font-medium hidden md:flex">
-                                Home
-                            </Button>
-                        </Link>
-                        <Link href="/menu">
-                            <Button variant="ghost" className="text-orange-500 font-medium hidden md:flex">
-                                Menu
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+            <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} />
 
             <main className="container max-w-7xl mx-auto px-4 py-6">
                 <div className="grid md:grid-cols-3 gap-8 items-start">
@@ -206,9 +191,16 @@ export function CartContent({ initialSettings, shopId }: CartContentProps) {
 
                         {/* Placed Orders Section */}
                         <div className="pt-4">
-                            <PlacedOrders currencySymbol={currencySymbol} />
+                            <PlacedOrders currencySymbol={currencySymbol} onOrderClick={handleOrderClick} />
                         </div>
                     </div>
+
+                    <OrderDetailsDialog
+                        isOpen={isOrderDialogOpen}
+                        onClose={() => setIsOrderDialogOpen(false)}
+                        orderId={selectedOrderId}
+                        currencySymbol={currencySymbol}
+                    />
 
                     {/* Right Column: Bill & Payment (Sticky on Desktop) */}
                     <div className="space-y-6 md:sticky md:top-24">

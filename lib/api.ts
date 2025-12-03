@@ -2,10 +2,11 @@ import { supabase } from './supabase';
 import { Menu, Category, MenuItem, Shop } from './types';
 import { roundToThree } from './utils';
 
-export async function getActiveMenu(): Promise<Menu | null> {
+export async function getActiveMenu(shopId: string): Promise<Menu | null> {
     const { data, error } = await supabase
         .from('menus')
         .select('*')
+        .eq('shop_id', shopId)
         .eq('is_active', true)
         .single();
 
@@ -67,14 +68,7 @@ export async function getFullMenuData(slug: string) {
 
     if (!shop) return null;
 
-    const menu = await getActiveMenu(); // This might need shop_id filtering if menus are shop-specific?
-    // Currently getActiveMenu() fetches from 'menus' table where is_active=true.
-    // If 'menus' table doesn't have shop_id, we have a problem for multi-tenancy.
-    // Let's assume for now we just need to fix the API signature.
-    // But wait, if menus are not shop specific, then every shop shows the same menu?
-    // I should check the 'menus' table schema.
-
-    // For now, let's just update the function signature as requested.
+    const menu = await getActiveMenu(shop.id);
 
     if (!menu) return null;
 

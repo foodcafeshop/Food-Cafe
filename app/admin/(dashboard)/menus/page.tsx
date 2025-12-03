@@ -17,7 +17,10 @@ import { DietaryType } from "@/lib/types";
 
 import { toast } from "sonner";
 
+import { useShopId } from "@/lib/hooks/use-shop-id";
+
 export default function MenusPage() {
+    const { shopId } = useShopId();
     const [menus, setMenus] = useState<Menu[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -25,14 +28,18 @@ export default function MenusPage() {
     const [currentMenu, setCurrentMenu] = useState<Partial<Menu>>({});
 
     useEffect(() => {
-        fetchMenus();
-    }, []);
+        if (shopId) {
+            fetchMenus();
+        }
+    }, [shopId]);
 
     const fetchMenus = async () => {
+        if (!shopId) return;
         setLoading(true);
         const { data, error } = await supabase
             .from('menus')
             .select('*')
+            .eq('shop_id', shopId)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -45,11 +52,11 @@ export default function MenusPage() {
     };
 
     const handleSave = async () => {
-        if (!currentMenu.name) return;
+        if (!currentMenu.name || !shopId) return;
 
         const { data, error } = await supabase
             .from('menus')
-            .upsert(currentMenu)
+            .upsert({ ...currentMenu, shop_id: shopId })
             .select()
             .single();
 

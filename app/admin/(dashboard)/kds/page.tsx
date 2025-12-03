@@ -12,27 +12,33 @@ import { toast } from "sonner";
 
 type OrderStatus = 'queued' | 'preparing' | 'ready' | 'served' | 'cancelled';
 
+import { useShopId } from "@/lib/hooks/use-shop-id";
+
 export default function KDSPage() {
+    const { shopId } = useShopId();
     const [orders, setOrders] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchOrders();
+        if (shopId) {
+            fetchOrders();
 
-        // Realtime subscription
-        const channel = supabase
-            .channel('public:orders')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-                fetchOrders(); // Refresh on any change
-            })
-            .subscribe();
+            // Realtime subscription
+            const channel = supabase
+                .channel(`public:orders:${shopId}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `shop_id=eq.${shopId}` }, () => {
+                    fetchOrders(); // Refresh on any change
+                })
+                .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        }
+    }, [shopId]);
 
     const fetchOrders = async () => {
-        const data = await getActiveOrders();
+        if (!shopId) return;
+        const data = await getActiveOrders(shopId);
         setOrders(data || []);
     };
 

@@ -9,9 +9,10 @@ import { getCurrencySymbol } from "@/lib/utils";
 
 interface PlacedOrdersProps {
     currencySymbol?: string;
+    onOrderClick?: (orderId: string) => void;
 }
 
-export function PlacedOrders({ currencySymbol = "$" }: PlacedOrdersProps) {
+export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrdersProps) {
     const { tableId } = useCartStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,7 +71,11 @@ export function PlacedOrders({ currencySymbol = "$" }: PlacedOrdersProps) {
 
             <div className="space-y-4">
                 {orders.map((order) => (
-                    <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                    <div
+                        key={order.id}
+                        className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm cursor-pointer hover:border-orange-300 transition-colors text-left w-full"
+                        onClick={() => onOrderClick?.(order.id)}
+                    >
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center gap-2">
                                 <Badge className={`flex items-center gap-1 border-0 ${getStatusColor(order.status)}`}>
@@ -78,7 +83,7 @@ export function PlacedOrders({ currencySymbol = "$" }: PlacedOrdersProps) {
                                     <span className="capitalize">{order.status}</span>
                                 </Badge>
                                 <span className="text-xs text-gray-400">
-                                    {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    #{order.order_number || order.id.slice(0, 8)} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                             <span className="font-bold text-gray-800">{currencySymbol}{order.total_amount.toFixed(2)}</span>
