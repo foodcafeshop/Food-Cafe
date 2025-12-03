@@ -85,6 +85,12 @@ export default function AdminLayout({
                         Table Management
                     </Button>
                 </Link>
+                <Link href="/admin/reviews" onClick={() => setOpen(false)}>
+                    <Button variant={pathname === "/admin/reviews" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                        <Users className="h-4 w-4" />
+                        Reviews
+                    </Button>
+                </Link>
                 <Link href="/admin/settings" onClick={() => setOpen(false)}>
                     <Button variant={pathname === "/admin/settings" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                         <Settings className="h-4 w-4" />

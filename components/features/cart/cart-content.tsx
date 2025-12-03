@@ -56,12 +56,16 @@ export function CartContent({ initialSettings }: CartContentProps) {
 
         try {
             // 1. Create Order
+            const { customerName, customerPhone } = useCartStore.getState();
+
             const orderData = {
                 table_id: currentTableId,
                 status: 'queued',
                 total_amount: currentTotal,
                 payment_status: 'pending',
-                payment_method: 'cash' // Default
+                payment_method: 'cash', // Default
+                customer_name: customerName,
+                customer_phone: customerPhone
             };
 
             const newOrder = await createOrder(orderData);

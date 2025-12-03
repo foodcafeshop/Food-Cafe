@@ -16,9 +16,10 @@ import { getTableById } from "@/lib/api";
 interface MenuContentProps {
     categories: any[];
     settings: any;
+    shop?: any;
 }
 
-export function MenuContent({ categories: initialCategories, settings }: MenuContentProps) {
+export function MenuContent({ categories: initialCategories, settings, shop }: MenuContentProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialQuery = searchParams.get("search") || "";
@@ -108,7 +109,14 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
                             <div>
                                 <h1 className="font-bold text-lg text-gray-800">Food Cafe Premium</h1>
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-green-600 text-green-600" /> 4.2</span>
+                                    {shop?.average_rating > 0 ? (
+                                        <span className="flex items-center gap-0.5 font-bold text-gray-700">
+                                            <Star className="w-3 h-3 fill-green-600 text-green-600" />
+                                            {shop.average_rating} <span className="text-gray-400 font-normal">({shop.rating_count})</span>
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-gray-300 text-gray-300" /> New</span>
+                                    )}
                                     <span className="hidden sm:inline">•</span>
                                     <span className="hidden sm:flex items-center gap-0.5"><Clock className="w-3 h-3" /> 35 mins</span>
                                     <span className="hidden sm:inline">•</span>
@@ -165,7 +173,8 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
                                 <div className="flex items-center gap-6 text-gray-700 font-bold">
                                     <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg border border-green-100">
                                         <Star className="w-5 h-5 fill-green-700 text-green-700" />
-                                        <span className="text-green-700">4.2</span>
+                                        <span className="text-green-700">{shop?.average_rating || 'New'}</span>
+                                        {shop?.rating_count > 0 && <span className="text-xs text-green-600">({shop.rating_count})</span>}
                                     </div>
                                     <div className="w-[1px] h-6 bg-gray-300"></div>
                                     <div className="flex items-center gap-2">

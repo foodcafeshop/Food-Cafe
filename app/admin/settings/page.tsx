@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { getSettings } from "@/lib/api";
+import { getSettings, getShopDetails, updateShopDetails } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Shop } from "@/lib/types";
 
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
@@ -23,6 +24,7 @@ export default function SettingsPage() {
         sound_notifications: true,
         auto_print: false
     });
+    const [shop, setShop] = useState<Partial<Shop>>({});
 
     useEffect(() => {
         loadSettings();
@@ -30,29 +32,44 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         setLoading(true);
-        const data = await getSettings();
-        if (data) {
-            setSettings(data);
+        const [settingsData, shopData] = await Promise.all([
+            getSettings(),
+            getShopDetails()
+        ]);
+
+        if (settingsData) {
+            setSettings(settingsData);
+        }
+        if (shopData) {
+            setShop(shopData);
         }
         setLoading(false);
     };
 
     const handleSave = async () => {
-        const { error } = await supabase
-            .from('settings')
-            .upsert({
-                id: 1,
-                ...settings,
-                updated_at: new Date().toISOString()
-            });
+        try {
+            // Save Settings
+            const { error: settingsError } = await supabase
+                .from('settings')
+                .upsert({
+                    id: 1,
+                    ...settings,
+                    updated_at: new Date().toISOString()
+                });
 
-        if (error) {
-            console.error('Error saving settings:', error);
-            toast.error('Failed to save settings');
-        } else {
+            if (settingsError) throw settingsError;
+
+            // Save Shop Details
+            if (shop) {
+                await updateShopDetails(shop);
+            }
+
             toast.success('Settings saved successfully');
             // Force reload to ensure other components pick up the change if they don't have real-time listeners
             window.location.reload();
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            toast.error('Failed to save settings');
         }
     };
 
@@ -69,6 +86,101 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Shop Details</CardTitle>
+                        <CardDescription>Manage your shop's public profile and contact info.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="shopName">Shop Name</Label>
+                                <Input
+                                    id="shopName"
+                                    value={shop.name || ''}
+                                    onChange={(e) => setShop({ ...shop, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="shopType">Shop Type</Label>
+                                <Input
+                                    id="shopType"
+                                    value={shop.shop_type || ''}
+                                    placeholder="e.g. Restaurant, Cafe, Bakery"
+                                    onChange={(e) => setShop({ ...shop, shop_type: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Input
+                                id="description"
+                                value={shop.description || ''}
+                                onChange={(e) => setShop({ ...shop, description: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Input
+                                id="address"
+                                value={shop.address || ''}
+                                onChange={(e) => setShop({ ...shop, address: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="phone">Contact Phone</Label>
+                                <Input
+                                    id="phone"
+                                    value={shop.contact_phone || ''}
+                                    onChange={(e) => setShop({ ...shop, contact_phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Contact Email</Label>
+                                <Input
+                                    id="email"
+                                    value={shop.contact_email || ''}
+                                    onChange={(e) => setShop({ ...shop, contact_email: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="gstin">GSTIN</Label>
+                                <Input
+                                    id="gstin"
+                                    value={shop.gstin || ''}
+                                    onChange={(e) => setShop({ ...shop, gstin: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fssai">FSSAI License</Label>
+                                <Input
+                                    id="fssai"
+                                    value={shop.fssai_license || ''}
+                                    onChange={(e) => setShop({ ...shop, fssai_license: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="logo">Logo URL</Label>
+                            <Input
+                                id="logo"
+                                value={shop.logo_url || ''}
+                                onChange={(e) => setShop({ ...shop, logo_url: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="cover">Cover Image URL</Label>
+                            <Input
+                                id="cover"
+                                value={shop.cover_image || ''}
+                                onChange={(e) => setShop({ ...shop, cover_image: e.target.value })}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>General Information</CardTitle>

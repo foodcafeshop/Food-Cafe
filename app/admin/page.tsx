@@ -3,9 +3,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, ShoppingBag, Users, Clock, Calendar as CalendarIcon } from "lucide-react";
-import { getSettings, getDashboardStats } from "@/lib/api";
+import { getSettings, getDashboardStats, getPeakHoursStats } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -30,16 +30,17 @@ export default function AdminDashboard() {
                 customRangeArg = { from: customDate.from, to: customDate.to || customDate.from };
             }
 
-            const [settings, dashboardStats] = await Promise.all([
+            const [settings, dashboardStats, peakHours] = await Promise.all([
                 getSettings(),
-                getDashboardStats(dateRange, customRangeArg)
+                getDashboardStats(dateRange, customRangeArg),
+                getPeakHoursStats()
             ]);
 
             if (settings?.currency) {
                 setCurrencySymbol(getCurrencySymbol(settings.currency));
             }
             if (dashboardStats) {
-                setStats(dashboardStats);
+                setStats({ ...dashboardStats, peakHours });
             }
             setLoading(false);
         };
@@ -281,6 +282,29 @@ export default function AdminDashboard() {
                                         <Tooltip formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, "Sales"]} />
                                         <Legend />
                                     </PieChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Peak Hours Chart */}
+            <div className="grid gap-4 md:grid-cols-1">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Peak Hours (Last 30 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px] w-full">
+                            {stats?.peakHours && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={stats.peakHours}>
+                                        <XAxis dataKey="hour" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip cursor={{ fill: 'transparent' }} />
+                                        <Bar dataKey="count" fill="#adfa1d" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
                                 </ResponsiveContainer>
                             )}
                         </div>

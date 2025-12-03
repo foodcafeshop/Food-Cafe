@@ -17,6 +17,10 @@ type CartStore = {
     totalPrice: () => number;
     tableId: string | null;
     setTableId: (id: string | null) => void;
+    customerName: string | null;
+    setCustomerName: (name: string | null) => void;
+    customerPhone: string | null;
+    setCustomerPhone: (phone: string | null) => void;
 };
 
 export const useCartStore = create<CartStore>()(
@@ -57,10 +61,19 @@ export const useCartStore = create<CartStore>()(
             totalPrice: () => get().items.reduce((acc, item) => acc + item.price * item.quantity, 0),
             tableId: null,
             setTableId: (id) => set({ tableId: id }),
+            customerName: null,
+            setCustomerName: (name) => set({ customerName: name }),
+            customerPhone: null,
+            setCustomerPhone: (phone) => set({ customerPhone: phone }),
         }),
         {
             name: 'food-cafe-cart',
-            partialize: (state) => ({ items: state.items, tableId: state.tableId }), // Only persist items and tableId
+            partialize: (state) => ({
+                items: state.items,
+                tableId: state.tableId,
+                customerName: state.customerName,
+                customerPhone: state.customerPhone
+            }),
         }
     )
 );

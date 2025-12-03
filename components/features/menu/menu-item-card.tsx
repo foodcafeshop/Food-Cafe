@@ -39,6 +39,13 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                             <span>Bestseller</span>
                         </div>
                     )}
+                    {item.average_rating > 0 && (
+                        <div className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 w-fit px-1.5 py-0.5 rounded mt-1 border border-green-100">
+                            <Star className="w-3 h-3 fill-green-700" />
+                            <span>{item.average_rating}</span>
+                            <span className="text-gray-400 font-normal">({item.rating_count})</span>
+                        </div>
+                    )}
                     <p className="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">{item.description}</p>
                 </div>
 

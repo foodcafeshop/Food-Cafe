@@ -258,6 +258,42 @@ export async function seedData() {
         language: 'en'
     });
     if (settingsError) console.error("Settings error", settingsError);
+    // 9. Create Reviews
+    console.log("Creating reviews...");
+    await supabase.from('reviews').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Clear old reviews
+
+    if (shopId) {
+        const reviews = [
+            { shop_id: shopId, customer_name: 'Alice Johnson', rating: 5, comment: 'Amazing food and great service! The Spring Rolls were crispy and delicious.', created_at: new Date(Date.now() - 86400000).toISOString() },
+            { shop_id: shopId, customer_name: 'Bob Smith', rating: 4, comment: 'Good ambiance, but the service was a bit slow. Food made up for it though!', created_at: new Date(Date.now() - 172800000).toISOString() },
+            { shop_id: shopId, customer_name: 'Charlie Brown', rating: 5, comment: 'Best Paneer Tikka in town! Highly recommended.', created_at: new Date(Date.now() - 259200000).toISOString() },
+            { shop_id: shopId, customer_name: 'Diana Prince', rating: 5, comment: 'Loved the Chocolate Cake. A perfect end to a perfect meal.', created_at: new Date(Date.now() - 345600000).toISOString() },
+            { shop_id: shopId, customer_name: 'Evan Wright', rating: 4, comment: 'Great place for family dinner. Will visit again.', created_at: new Date(Date.now() - 432000000).toISOString() }
+        ];
+
+        // We need order_id for reviews, but for seed we can insert without strict FK if we made it nullable or if we link to existing orders.
+        // However, schema says order_id is NOT NULL (implied by references without nullable check, let's check schema).
+        // Schema: order_id uuid references public.orders(id) on delete cascade
+        // It doesn't explicitly say NOT NULL, but usually it is. Let's check schema again.
+        // Actually, for seed simplicity, let's just link to the orders we created if possible, or create a dummy order for reviews.
+        // Or better, let's just make sure we have enough orders.
+
+        // Let's create a dummy completed order for these reviews to link to
+        const { data: reviewOrder } = await supabase.from('orders').insert({
+            shop_id: shopId,
+            status: 'billed',
+            total_amount: 100,
+            payment_status: 'paid',
+            customer_name: 'Reviewer',
+            order_number: 'REV1'
+        }).select().single();
+
+        if (reviewOrder) {
+            const reviewsWithOrder = reviews.map(r => ({ ...r, order_id: reviewOrder.id }));
+            const { error: reviewError } = await supabase.from('reviews').insert(reviewsWithOrder);
+            if (reviewError) console.error("Review seed error:", reviewError);
+        }
+    }
 
     console.log("Seed complete!");
     return "Success";

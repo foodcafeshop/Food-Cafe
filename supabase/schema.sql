@@ -19,6 +19,8 @@ create table public.shops (
   cover_image text,
   opening_hours jsonb,
   social_links jsonb,
+  average_rating numeric(3, 1) default 0,
+  rating_count integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -100,6 +102,9 @@ create table public.orders (
   total_amount decimal(10, 2) not null default 0,
   payment_status text check (payment_status in ('pending', 'paid')) default 'pending',
   payment_method text,
+  customer_name text,
+  customer_phone text,
+  customer_id uuid references public.customers(id) on delete set null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   ready_at timestamp with time zone,
@@ -122,7 +127,7 @@ create table public.order_items (
 create table public.settings (
   id integer primary key check (id = 1),
   shop_id uuid references public.shops(id),
-  restaurant_name text default 'FoodCafe Premium',
+  restaurant_name text default 'Food Cafe Premium',
   currency text default 'USD',
   language text default 'en',
   tax_rate decimal(5, 2) default 10.00,
@@ -254,3 +259,106 @@ create trigger trg_bills_uppercase_number
 before insert or update on public.bills
 for each row
 execute function public.ensure_bill_number_uppercase();
+
+-- 11. Customers (Added 2025-12-03)
+create table if not exists public.customers (
+  id uuid primary key default uuid_generate_v4(),
+  shop_id uuid references public.shops(id),
+  name text,
+  phone text,
+  email text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(shop_id, phone)
+);
+
+-- Customer Indexes
+create index if not exists idx_customers_shop_id on public.customers(shop_id);
+create index if not exists idx_customers_phone on public.customers(phone);
+
+-- Customer RLS
+alter table public.customers enable row level security;
+create policy "Allow public read" on public.customers for select using (true);
+create policy "Allow public insert" on public.customers for insert with check (true);
+create policy "Allow public update" on public.customers for update using (true);
+
+-- 12. Reviews (Added 2025-12-03)
+create table if not exists public.reviews (
+  id uuid primary key default uuid_generate_v4(),
+  shop_id uuid references public.shops(id),
+  order_id uuid references public.orders(id) on delete cascade,
+  customer_id uuid references public.customers(id) on delete set null,
+  menu_item_id uuid references public.menu_items(id) on delete cascade, -- Nullable: If null, it's a general order review
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text,
+  customer_name text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Add rating columns to menu_items
+alter table public.menu_items add column if not exists average_rating numeric(3, 1) default 0;
+alter table public.menu_items add column if not exists rating_count integer default 0;
+
+-- Indexes for Reviews
+create index if not exists idx_reviews_shop_id on public.reviews(shop_id);
+create index if not exists idx_reviews_menu_item_id on public.reviews(menu_item_id);
+create index if not exists idx_reviews_order_id on public.reviews(order_id);
+
+-- RLS for Reviews
+alter table public.reviews enable row level security;
+create policy "Allow public read" on public.reviews for select using (true);
+create policy "Allow public insert" on public.reviews for insert with check (true);
+
+-- Trigger to update menu_item ratings
+create or replace function public.update_menu_item_rating()
+returns trigger as $$
+begin
+  if (TG_OP = 'INSERT' or TG_OP = 'UPDATE') and new.menu_item_id is not null then
+    update public.menu_items
+    set 
+      average_rating = (select avg(rating) from public.reviews where menu_item_id = new.menu_item_id),
+      rating_count = (select count(*) from public.reviews where menu_item_id = new.menu_item_id)
+    where id = new.menu_item_id;
+  elsif (TG_OP = 'DELETE') and old.menu_item_id is not null then
+    update public.menu_items
+    set 
+      average_rating = coalesce((select avg(rating) from public.reviews where menu_item_id = old.menu_item_id), 0),
+      rating_count = (select count(*) from public.reviews where menu_item_id = old.menu_item_id)
+    where id = old.menu_item_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_menu_item_rating ON public.reviews;
+CREATE TRIGGER trg_update_menu_item_rating
+AFTER INSERT OR UPDATE OR DELETE ON public.reviews
+FOR EACH ROW
+EXECUTE FUNCTION public.update_menu_item_rating();
+
+-- Trigger to update shop ratings (Added 2025-12-03)
+CREATE OR REPLACE FUNCTION public.update_shop_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') AND NEW.shop_id IS NOT NULL THEN
+    UPDATE public.shops
+    SET 
+      average_rating = (SELECT AVG(rating) FROM public.reviews WHERE shop_id = NEW.shop_id),
+      rating_count = (SELECT COUNT(*) FROM public.reviews WHERE shop_id = NEW.shop_id)
+    WHERE id = NEW.shop_id;
+  ELSIF (TG_OP = 'DELETE') AND OLD.shop_id IS NOT NULL THEN
+    UPDATE public.shops
+    SET 
+      average_rating = COALESCE((SELECT AVG(rating) FROM public.reviews WHERE shop_id = OLD.shop_id), 0),
+      rating_count = (SELECT COUNT(*) FROM public.reviews WHERE shop_id = OLD.shop_id)
+    WHERE id = OLD.shop_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_shop_rating ON public.reviews;
+CREATE TRIGGER trg_update_shop_rating
+AFTER INSERT OR UPDATE OR DELETE ON public.reviews
+FOR EACH ROW
+EXECUTE FUNCTION public.update_shop_rating();

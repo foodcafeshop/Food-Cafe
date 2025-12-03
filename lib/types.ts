@@ -1,5 +1,27 @@
 export type DietaryType = 'veg' | 'non_veg' | 'vegan';
 
+export interface Shop {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    address: string | null;
+    location_url: string | null;
+    shop_type: string | null;
+    gstin: string | null;
+    fssai_license: string | null;
+    contact_phone: string | null;
+    contact_email: string | null;
+    owner_name: string | null;
+    logo_url: string | null;
+    cover_image: string | null;
+    opening_hours: any;
+    social_links: any;
+    average_rating: number;
+    rating_count: number;
+    created_at: string;
+}
+
 export interface Menu {
     id: string;
     name: string;
@@ -39,6 +61,8 @@ export interface MenuItem {
     is_available: boolean;
     is_popular: boolean;
     created_at: string;
+    average_rating: number;
+    rating_count: number;
     // Joined fields
     category_id?: string; // From join
 }

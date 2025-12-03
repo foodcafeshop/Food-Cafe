@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Menu, Category, MenuItem } from './types';
+import { Menu, Category, MenuItem, Shop } from './types';
 import { roundToThree } from './utils';
 
 export async function getActiveMenu(): Promise<Menu | null> {
@@ -77,14 +77,60 @@ export async function getFullMenuData() {
         })
     );
 
+    // Get Shop Details for Rating
+    const { data: shop } = await supabase
+        .from('shops')
+        .select('average_rating, rating_count')
+        .eq('slug', 'food-cafe')
+        .single();
+
     return {
         menu,
         categories: categoriesWithItems,
-        settings
+        settings,
+        shop
     };
 }
 
 import { generateOrderNumber } from './utils';
+
+export async function upsertCustomer(shopId: string, name: string, phone: string) {
+    if (!phone) return null;
+
+    // 1. Check if customer exists
+    const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('shop_id', shopId)
+        .eq('phone', phone)
+        .single();
+
+    if (existingCustomer) {
+        // Update name if provided (and different?) - For now, just return ID
+        // Optionally update name if it was null or we want to overwrite
+        if (name) {
+            await supabase.from('customers').update({ name }).eq('id', existingCustomer.id);
+        }
+        return existingCustomer.id;
+    }
+
+    // 2. Create new customer
+    const { data: newCustomer, error } = await supabase
+        .from('customers')
+        .insert({
+            shop_id: shopId,
+            name: name,
+            phone: phone
+        })
+        .select('id')
+        .single();
+
+    if (error) {
+        console.error("Error creating customer:", error);
+        return null;
+    }
+    return newCustomer.id;
+}
 
 export async function createOrder(order: any) {
     const maxRetries = 5;
@@ -93,14 +139,17 @@ export async function createOrder(order: any) {
     while (attempt < maxRetries) {
         try {
             const orderNumber = generateOrderNumber();
-            // TODO: Fetch shop_id from context or args. For now, we might need to fetch the default shop if not provided.
-            // Assuming order object might eventually have shop_id, or we fetch it here.
-            // For this step, let's assume we fetch the default shop if not present.
 
             let shopId = order.shop_id;
             if (!shopId) {
                 const { data: shop } = await supabase.from('shops').select('id').eq('slug', 'food-cafe').single();
                 shopId = shop?.id;
+            }
+
+            // Handle Customer
+            let customerId = null;
+            if (order.customer_phone) {
+                customerId = await upsertCustomer(shopId, order.customer_name, order.customer_phone);
             }
 
             const { data, error } = await supabase
@@ -109,7 +158,10 @@ export async function createOrder(order: any) {
                     ...order,
                     shop_id: shopId,
                     order_number: orderNumber,
-                    total_amount: roundToThree(order.total_amount)
+                    total_amount: roundToThree(order.total_amount),
+                    customer_name: order.customer_name,
+                    customer_phone: order.customer_phone,
+                    customer_id: customerId
                 })
                 .select()
                 .single();
@@ -248,6 +300,32 @@ export async function getSettings() {
         console.error('Error fetching settings:', error);
         return null;
     }
+    return data;
+}
+
+export async function getShopDetails() {
+    const { data, error } = await supabase
+        .from('shops')
+        .select('*')
+        .eq('slug', 'food-cafe')
+        .single();
+
+    if (error) {
+        console.error('Error fetching shop details:', error);
+        return null;
+    }
+    return data as Shop;
+}
+
+export async function updateShopDetails(updates: Partial<Shop>) {
+    const { data, error } = await supabase
+        .from('shops')
+        .update(updates)
+        .eq('slug', 'food-cafe')
+        .select()
+        .single();
+
+    if (error) throw error;
     return data;
 }
 export async function getTableOrders(tableId: string) {
@@ -721,8 +799,8 @@ export async function getLandingPageData() {
         featuredItems = featuredItems.filter(item => !menu.hidden_items.includes(item.id));
     }
 
-    // Take top 3
-    featuredItems = featuredItems?.slice(0, 3) || [];
+    // Take top 10
+    featuredItems = featuredItems?.slice(0, 10) || [];
 
     // 3. Get Shop Details
     const { data: shop } = await supabase
@@ -731,10 +809,81 @@ export async function getLandingPageData() {
         .eq('slug', 'food-cafe')
         .single();
 
+    // 4. Get Top Reviews
+    const { data: reviews } = await supabase
+        .from('reviews')
+        .select('customer_name, rating, comment, created_at')
+        .gte('rating', 4)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
     return {
         categories: categories || [],
         featuredItems: featuredItems || [],
         settings,
-        shop
+        shop,
+        reviews: reviews || []
     };
+}
+
+// Reviews
+export async function submitReview(review: any) {
+    const { data, error } = await supabase
+        .from('reviews')
+        .insert(review)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function getReviews(limit = 50) {
+    const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+            *,
+            menu_items (name, image),
+            orders (order_number)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching reviews:', error);
+        return [];
+    }
+    return data;
+}
+
+export async function getPeakHoursStats() {
+    // Get orders from the last 30 days to calculate peak hours
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    const { data: orders, error } = await supabase
+        .from('orders')
+        .select('created_at')
+        .gte('created_at', startDate.toISOString());
+
+    if (error) {
+        console.error('Error fetching orders for peak hours:', error);
+        return [];
+    }
+
+    const hoursMap: Record<number, number> = {};
+    // Initialize all hours
+    for (let i = 0; i < 24; i++) hoursMap[i] = 0;
+
+    if (orders) {
+        orders.forEach(order => {
+            const hour = new Date(order.created_at).getHours();
+            hoursMap[hour]++;
+        });
+    }
+
+    return Object.entries(hoursMap).map(([hour, count]) => ({
+        hour: `${hour}:00`,
+        count
+    }));
 }

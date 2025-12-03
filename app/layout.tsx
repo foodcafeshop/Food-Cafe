@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "@/components/ui/sonner";
+import { WelcomeDialog } from "@/components/features/auth/welcome-dialog";
 
 // ...
 
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased bg-background text-foreground`}>
         {children}
+        <WelcomeDialog />
         <Toaster />
       </body>
     </html>

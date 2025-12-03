@@ -4,7 +4,7 @@ import { OrderStatus } from "@/lib/order-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ChefHat, Clock, Utensils, ChevronLeft } from "lucide-react";
+import { CheckCircle2, ChefHat, Clock, Utensils, ChevronLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useSettingsStore } from "@/lib/settings-store";
 
 import { getOrderById } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { RatingDialog } from "@/components/features/feedback/rating-dialog";
 
 export default function OrderStatusPage() {
     const { id } = useParams();
@@ -20,6 +21,7 @@ export default function OrderStatusPage() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState(12); // Mock estimated time
+    const [isRatingOpen, setIsRatingOpen] = useState(false);
     const currencySymbol = getCurrencySymbol();
 
     useEffect(() => {
@@ -160,7 +162,25 @@ export default function OrderStatusPage() {
                 <Button variant="outline" className="w-full" asChild>
                     <Link href="/menu">Order More Items</Link>
                 </Button>
+
+                {(order.status === 'served' || order.status === 'billed') && (
+                    <Button
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                        onClick={() => setIsRatingOpen(true)}
+                    >
+                        <Star className="w-4 h-4 mr-2" />
+                        Rate your Experience
+                    </Button>
+                )}
             </main>
+
+            <RatingDialog
+                isOpen={isRatingOpen}
+                onClose={() => setIsRatingOpen(false)}
+                orderId={order.id}
+                shopId={order.shop_id}
+                items={order.order_items || []}
+            />
         </div>
     );
 }
