@@ -1,38 +1,73 @@
 import { supabase } from './supabase';
+import { generateOrderNumber, generateBillNumber } from './utils';
 
 export async function seedData() {
     console.log("Starting seed...");
 
     // 1. Clear existing data
     console.log("Clearing existing data...");
-    await supabase.from('bills').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // Delete in order of dependencies (Child -> Parent)
     await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('category_items').delete().neq('category_id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('menu_categories').delete().neq('menu_id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('bills').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('menu_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('menus').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('tables').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('settings').delete().neq('id', 0); // Delete settings (id is usually 1)
+    await supabase.from('shops').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // 2. Create Tables
+    // 2. Create Shop
+    console.log("Creating default shop...");
+    const { data: shop, error: shopError } = await supabase.from('shops').upsert({
+        slug: 'food-cafe',
+        name: 'Food Cafe Premium',
+        description: 'Premium dining experience',
+        address: '123 Food Street, Bangalore',
+        shop_type: 'restaurant',
+        gstin: '29ABCDE1234F1Z5',
+        fssai_license: '12345678901234',
+        contact_phone: '+91 9876543210',
+        contact_email: 'contact@foodcafe.com',
+        owner_name: 'John Doe',
+        logo_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+        cover_image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80',
+        opening_hours: {
+            mon: '09:00-22:00',
+            tue: '09:00-22:00',
+            wed: '09:00-22:00',
+            thu: '09:00-22:00',
+            fri: '09:00-23:00',
+            sat: '09:00-23:00',
+            sun: '09:00-23:00'
+        },
+        social_links: {
+            instagram: 'https://instagram.com/foodcafe',
+            facebook: 'https://facebook.com/foodcafe'
+        }
+    }, { onConflict: 'slug' }).select().single();
+
+    if (shopError) {
+        console.error("Shop creation error:", shopError);
+        throw new Error(`Shop creation failed: ${shopError.message}`);
+    }
+    const shopId = shop.id;
+    console.log("Shop created:", shopId);
+
+    // 3. Create Tables
     console.log("Attempting to create tables...");
     const tables = [];
     for (let i = 1; i <= 10; i++) {
         tables.push({
+            shop_id: shopId,
             label: `${i}`,
             seats: i % 2 === 0 ? 4 : 2,
             x: (i - 1) * 100,
             y: 100,
             status: 'empty'
         });
-    }
-
-    // Check if table exists
-    const { error: checkError } = await supabase.from('tables').select('count').limit(1);
-    if (checkError) {
-        console.error("Error checking tables table:", checkError);
-        throw new Error(`Table check failed: ${checkError.message} (${checkError.code})`);
     }
 
     const { data: tablesData, error: tablesError } = await supabase.from('tables').upsert(tables, { onConflict: 'label' }).select();
@@ -43,23 +78,23 @@ export async function seedData() {
     }
     console.log("Tables created:", tablesData?.length);
 
-    // 3. Create Menus
+    // 4. Create Menus
     const { data: menus, error: menuError } = await supabase.from('menus').insert([
-        { name: 'Dinner Menu', description: 'Evening selection', is_active: true, tags: ['evening', 'main'], dietary_type: 'all' },
-        { name: 'Lunch Menu', description: 'Afternoon specials', is_active: false, tags: ['lunch', 'specials'], dietary_type: 'all' },
-        { name: 'Veg Delight', description: 'Pure vegetarian', is_active: false, tags: ['veg', 'healthy'], dietary_type: 'veg' }
+        { shop_id: shopId, name: 'Dinner Menu', description: 'Evening selection', is_active: true, tags: ['evening', 'main'], dietary_type: 'all' },
+        { shop_id: shopId, name: 'Lunch Menu', description: 'Afternoon specials', is_active: false, tags: ['lunch', 'specials'], dietary_type: 'all' },
+        { shop_id: shopId, name: 'Veg Delight', description: 'Pure vegetarian', is_active: false, tags: ['veg', 'healthy'], dietary_type: 'veg' }
     ]).select();
     if (menuError) {
         console.error("Menu error", menuError);
         throw new Error(`Menu insert failed: ${menuError.message}`);
     }
 
-    // 4. Create Categories
+    // 5. Create Categories
     const { data: categories, error: catError } = await supabase.from('categories').insert([
-        { name: 'Starters', image: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80', tags: ['appetizers', 'small-plates'], dietary_type: 'all' },
-        { name: 'Mains', image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=800&q=80', tags: ['entrees', 'big-plates'], dietary_type: 'all' },
-        { name: 'Desserts', image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80', tags: ['sweets', 'treats'], dietary_type: 'veg' },
-        { name: 'Beverages', image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80', tags: ['drinks', 'cold'], dietary_type: 'veg' }
+        { shop_id: shopId, name: 'Starters', image: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80', tags: ['appetizers', 'small-plates'], dietary_type: 'all' },
+        { shop_id: shopId, name: 'Mains', image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=800&q=80', tags: ['entrees', 'big-plates'], dietary_type: 'all' },
+        { shop_id: shopId, name: 'Desserts', image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80', tags: ['sweets', 'treats'], dietary_type: 'veg' },
+        { shop_id: shopId, name: 'Beverages', image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80', tags: ['drinks', 'cold'], dietary_type: 'veg' }
     ]).select();
     if (catError) {
         console.error("Category error", catError);
@@ -87,14 +122,14 @@ export async function seedData() {
         }
     }
 
-    // 5. Create Menu Items
+    // 6. Create Menu Items
     const { data: items, error: itemError } = await supabase.from('menu_items').insert([
-        { name: 'Spring Rolls', description: 'Crispy veg rolls', price: 199, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1544510808-91bcbee1df55?auto=format&fit=crop&w=800&q=80'] },
-        { name: 'Chicken Wings', description: 'Spicy buffalo wings', price: 299, dietary_type: 'non_veg', images: ['https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=800&q=80'] },
-        { name: 'Grilled Salmon', description: 'With asparagus', price: 599, dietary_type: 'non_veg', images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=80'] },
-        { name: 'Paneer Tikka', description: 'Tandoori cottage cheese', price: 349, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=800&q=80'] },
-        { name: 'Chocolate Cake', description: 'Rich dark chocolate', price: 249, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80'] },
-        { name: 'Iced Tea', description: 'Lemon flavored', price: 129, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=800&q=80'] }
+        { shop_id: shopId, name: 'Spring Rolls', description: 'Crispy veg rolls', price: 199, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1544510808-91bcbee1df55?auto=format&fit=crop&w=800&q=80'] },
+        { shop_id: shopId, name: 'Chicken Wings', description: 'Spicy buffalo wings', price: 299, dietary_type: 'non_veg', images: ['https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=800&q=80'] },
+        { shop_id: shopId, name: 'Grilled Salmon', description: 'With asparagus', price: 599, dietary_type: 'non_veg', images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=80'] },
+        { shop_id: shopId, name: 'Paneer Tikka', description: 'Tandoori cottage cheese', price: 349, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=800&q=80'] },
+        { shop_id: shopId, name: 'Chocolate Cake', description: 'Rich dark chocolate', price: 249, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80'] },
+        { shop_id: shopId, name: 'Iced Tea', description: 'Lemon flavored', price: 129, dietary_type: 'veg', images: ['https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=800&q=80'] }
     ]).select();
     if (itemError) console.error("Items error", itemError);
 
@@ -111,7 +146,7 @@ export async function seedData() {
         await supabase.from('category_items').insert(catItems);
     }
 
-    // 6. Create Orders
+    // 7. Create Orders
     if (tablesData && tablesData.length > 0) {
         // Fetch a few items to add to orders
         const { data: menuItems } = await supabase.from('menu_items').select('*').limit(5);
@@ -126,7 +161,9 @@ export async function seedData() {
             const total = (item1.price * 2) + item2.price;
 
             const { data: ord1 } = await supabase.from('orders').insert({
+                shop_id: shopId,
                 table_id: t1.id,
+                order_number: generateOrderNumber(),
                 status: 'preparing',
                 total_amount: total,
                 payment_status: 'pending'
@@ -149,7 +186,9 @@ export async function seedData() {
             const total = item3.price;
 
             const { data: ord2 } = await supabase.from('orders').insert({
+                shop_id: shopId,
                 table_id: t2.id,
+                order_number: generateOrderNumber(),
                 status: 'served',
                 total_amount: total,
                 payment_status: 'pending'
@@ -171,7 +210,9 @@ export async function seedData() {
             const total = item4.price * 2;
 
             const { data: ord3 } = await supabase.from('orders').insert({
+                shop_id: shopId,
                 table_id: t3.id,
+                order_number: generateOrderNumber(),
                 status: 'billed',
                 total_amount: total,
                 payment_status: 'paid'
@@ -184,21 +225,35 @@ export async function seedData() {
                 await supabase.from('order_items').insert(orderItems);
 
                 // Create Bill
+                // Calculate breakdown manually for seed
+                const subtotal = total / 1.1;
+                const tax = total - subtotal;
+                const serviceCharge = 0; // No service charge in seed
+
                 await supabase.from('bills').insert({
+                    shop_id: shopId,
                     table_id: t3.id,
                     total_amount: total,
                     payment_method: 'card',
                     order_ids: [ord3.id],
-                    items_snapshot: orderItems
+                    items_snapshot: orderItems,
+                    breakdown: {
+                        subtotal: parseFloat(subtotal.toFixed(3)),
+                        tax: parseFloat(tax.toFixed(3)),
+                        serviceCharge: serviceCharge,
+                        total: total
+                    },
+                    bill_number: generateBillNumber()
                 });
             }
         }
     }
 
-    // 7. Update Settings
+    // 8. Update Settings
     const { error: settingsError } = await supabase.from('settings').upsert({
         id: 1,
-        restaurant_name: 'FoodCafe Premium',
+        shop_id: shopId,
+        restaurant_name: 'Food Cafe Premium',
         currency: '₹',
         language: 'en'
     });

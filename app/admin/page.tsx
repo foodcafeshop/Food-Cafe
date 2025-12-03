@@ -20,6 +20,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('week');
     const [customDate, setCustomDate] = useState<DateRange | undefined>();
+    const [chartMetric, setChartMetric] = useState<'revenue' | 'net' | 'tax' | 'service'>('revenue');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -119,9 +120,20 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{currencySymbol}{stats?.totalRevenue?.toFixed(2) || '0.00'}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {dateRange === 'custom' ? 'Custom Range' : dateRange === 'today' ? 'Today' : dateRange === 'week' ? 'Last 7 days' : dateRange === 'month' ? 'Last 30 days' : 'Last year'}
-                        </p>
+                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-foreground">{currencySymbol}{stats?.netSales?.toFixed(2) || '0.00'}</span>
+                                <span>Net</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-foreground">{currencySymbol}{stats?.totalTax?.toFixed(2) || '0.00'}</span>
+                                <span>Tax</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-foreground">{currencySymbol}{stats?.totalServiceCharge?.toFixed(2) || '0.00'}</span>
+                                <span>Service</span>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -158,6 +170,8 @@ export default function AdminDashboard() {
                 </Card>
             </div>
 
+
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
                     <CardHeader>
@@ -174,7 +188,7 @@ export default function AdminDashboard() {
                                             <p className="text-sm font-medium leading-none">{sale.tables?.label || 'Unknown Table'}</p>
                                             <p className="text-sm text-muted-foreground">Bill #{sale.id.slice(0, 8)}</p>
                                         </div>
-                                        <div className="ml-auto font-medium">+{currencySymbol}{sale.total_amount}</div>
+                                        <div className="ml-auto font-medium">+{currencySymbol}{sale.total_amount.toFixed(2)}</div>
                                     </div>
                                 ))
                             )}
@@ -206,8 +220,19 @@ export default function AdminDashboard() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Revenue Overview ({dateRange === 'custom' ? 'Custom Range' : dateRange === 'today' ? 'Today' : dateRange === 'week' ? 'Last 7 Days' : dateRange === 'month' ? 'Last 30 Days' : 'Last Year'})</CardTitle>
+                        <Select value={chartMetric} onValueChange={(val: any) => setChartMetric(val)}>
+                            <SelectTrigger className="w-[140px]">
+                                <SelectValue placeholder="Metric" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="revenue">Total Revenue</SelectItem>
+                                <SelectItem value="net">Net Sales</SelectItem>
+                                <SelectItem value="tax">Tax Collected</SelectItem>
+                                <SelectItem value="service">Service Charge</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[200px] w-full">
@@ -221,9 +246,9 @@ export default function AdminDashboard() {
                                             </linearGradient>
                                         </defs>
                                         <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${currencySymbol}${value} `} />
-                                        <Tooltip />
-                                        <Area type="monotone" dataKey="revenue" stroke="#8884d8" fillOpacity={1} fill="url(#colorRevenue)" />
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${currencySymbol}${value.toFixed(2)} `} />
+                                        <Tooltip formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, chartMetric === 'revenue' ? 'Revenue' : chartMetric === 'net' ? 'Net Sales' : chartMetric === 'tax' ? 'Tax' : 'Service Charge']} />
+                                        <Area type="monotone" dataKey={chartMetric} stroke="#8884d8" fillOpacity={1} fill="url(#colorRevenue)" />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             )}
@@ -253,7 +278,7 @@ export default function AdminDashboard() {
                                                 <Cell key={`cell - ${index} `} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'][index % 5]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip />
+                                        <Tooltip formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, "Sales"]} />
                                         <Legend />
                                     </PieChart>
                                 </ResponsiveContainer>

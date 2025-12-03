@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FoodCafe - Premium Dine-in Experience",
+  title: "Food Cafe - Premium Dine-in Experience",
   description: "Seamless QR ordering for modern restaurants.",
 };
 

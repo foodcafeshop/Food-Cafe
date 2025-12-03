@@ -49,7 +49,11 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                     </div>
 
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24">
-                        {quantity === 0 ? (
+                        {!item.is_available ? (
+                            <Button disabled className="w-full bg-gray-100 text-gray-400 border-gray-200 font-bold shadow-none h-9 uppercase text-xs z-10 relative cursor-not-allowed">
+                                Sold Out
+                            </Button>
+                        ) : quantity === 0 ? (
                             <Button variant="outline" className="w-full bg-white text-green-600 border-gray-300 hover:bg-green-50 font-bold shadow-md h-9 uppercase text-sm z-10 relative" onClick={() => setIsModalOpen(true)}>ADD</Button>
                         ) : (
                             <div className="flex items-center justify-between bg-white border border-gray-300 rounded-md shadow-sm h-9 px-2">
@@ -59,7 +63,7 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                             </div>
                         )}
                     </div>
-                    {quantity === 0 && (
+                    {quantity === 0 && item.is_available && (
                         <div className="text-[10px] text-gray-500 text-center mt-3">Customisable</div>
                     )}
                 </div>

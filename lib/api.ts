@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Menu, Category, MenuItem } from './types';
+import { roundToThree } from './utils';
 
 export async function getActiveMenu(): Promise<Menu | null> {
     const { data, error } = await supabase
@@ -67,9 +68,11 @@ export async function getFullMenuData() {
     const categoriesWithItems = await Promise.all(
         categories.map(async (category) => {
             const items = await getMenuItemsForCategory(category.id);
+            // Filter hidden items
+            const visibleItems = items.filter(item => !menu.hidden_items?.includes(item.id));
             return {
                 ...category,
-                items
+                items: visibleItems
             };
         })
     );
@@ -81,21 +84,57 @@ export async function getFullMenuData() {
     };
 }
 
-export async function createOrder(order: any) {
-    const { data, error } = await supabase
-        .from('orders')
-        .insert(order)
-        .select()
-        .single();
+import { generateOrderNumber } from './utils';
 
-    if (error) throw error;
-    return data;
+export async function createOrder(order: any) {
+    const maxRetries = 5;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+        try {
+            const orderNumber = generateOrderNumber();
+            // TODO: Fetch shop_id from context or args. For now, we might need to fetch the default shop if not provided.
+            // Assuming order object might eventually have shop_id, or we fetch it here.
+            // For this step, let's assume we fetch the default shop if not present.
+
+            let shopId = order.shop_id;
+            if (!shopId) {
+                const { data: shop } = await supabase.from('shops').select('id').eq('slug', 'food-cafe').single();
+                shopId = shop?.id;
+            }
+
+            const { data, error } = await supabase
+                .from('orders')
+                .insert({
+                    ...order,
+                    shop_id: shopId,
+                    order_number: orderNumber,
+                    total_amount: roundToThree(order.total_amount)
+                })
+                .select()
+                .single();
+
+            if (error) {
+                // Check for uniqueness violation (Postgres code 23505)
+                if (error.code === '23505') {
+                    console.warn(`Collision for order number ${orderNumber}, retrying...`);
+                    attempt++;
+                    continue;
+                }
+                throw error;
+            }
+            return data;
+        } catch (err) {
+            throw err;
+        }
+    }
+    throw new Error("Failed to generate unique order number after multiple attempts");
 }
 
 export async function createOrderItems(items: any[]) {
     const { data, error } = await supabase
         .from('order_items')
-        .insert(items)
+        .insert(items.map(item => ({ ...item, price: roundToThree(item.price) })))
         .select();
 
     if (error) throw error;
@@ -174,7 +213,7 @@ export const updateOrderItems = async (orderId: string, items: any[]) => {
             order_id: orderId,
             menu_item_id: item.menu_item_id,
             name: item.name,
-            price: item.price,
+            price: roundToThree(item.price),
             quantity: item.quantity,
             notes: item.notes
         }));
@@ -187,7 +226,7 @@ export const updateOrderItems = async (orderId: string, items: any[]) => {
     // 4. Update Order Total
     const { data, error } = await supabase
         .from('orders')
-        .update({ total_amount: total, updated_at: new Date().toISOString() })
+        .update({ total_amount: roundToThree(total), updated_at: new Date().toISOString() })
         .eq('id', orderId)
         .select()
         .single();
@@ -229,54 +268,79 @@ export async function getTableOrders(tableId: string) {
     return data;
 }
 
-export async function settleTableBill(tableId: string, orderIds: string[], paymentMethod: string, serviceCharge: number = 0) {
-    // 1. Fetch order details for snapshot
-    const { data: orders, error: fetchError } = await supabase
+import { generateBillNumber } from './utils';
+
+export async function settleTableBill(tableId: string, paymentMethod: string, breakdown?: any) {
+    // 1. Get active orders for the table
+    const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select(`
-            *,
-            order_items (*)
-        `)
-        .in('id', orderIds);
+        .select('id, total_amount, shop_id')
+        .eq('table_id', tableId)
+        .in('status', ['served', 'billed']) // Include billed in case re-settling or partial
+        .eq('payment_status', 'pending');
 
-    if (fetchError) throw fetchError;
+    if (ordersError) throw ordersError;
+    if (!orders || orders.length === 0) throw new Error("No pending orders to settle");
 
-    // Calculate total and prepare snapshot
-    const ordersTotal = orders.reduce((sum, order) => sum + order.total_amount, 0);
-    const totalAmount = ordersTotal + serviceCharge;
-    const itemsSnapshot = orders.flatMap(order => order.order_items);
+    const totalAmount = orders.reduce((sum, order) => sum + order.total_amount, 0);
+    const orderIds = orders.map(o => o.id);
+    const shopId = orders[0].shop_id; // Assume all orders for a table belong to the same shop
 
-    // 2. Create Bill Record
-    const { error: billError } = await supabase
-        .from('bills')
-        .insert({
-            table_id: tableId,
-            total_amount: totalAmount,
-            payment_method: paymentMethod,
-            order_ids: orderIds,
-            items_snapshot: itemsSnapshot
-        });
+    // 2. Create Bill with Retry Logic for Unique Bill Number
+    const maxRetries = 5;
+    let attempt = 0;
+    let billData;
 
-    if (billError) throw billError;
+    while (attempt < maxRetries) {
+        try {
+            const billNumber = generateBillNumber();
+            const { data: bill, error: billError } = await supabase
+                .from('bills')
+                .insert({
+                    shop_id: shopId,
+                    table_id: tableId,
+                    total_amount: roundToThree(totalAmount),
+                    payment_method: paymentMethod,
+                    order_ids: orderIds,
+                    items_snapshot: {}, // TODO: Fetch items if needed, or rely on orders
+                    breakdown: breakdown,
+                    bill_number: billNumber
+                })
+                .select()
+                .single();
 
-    // 3. Mark orders as billed and paid
-    const { error: orderError } = await supabase
+            if (billError) {
+                if (billError.code === '23505') { // Unique violation
+                    console.warn(`Collision for bill number ${billNumber}, retrying...`);
+                    attempt++;
+                    continue;
+                }
+                throw billError;
+            }
+            billData = bill;
+            break;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    if (!billData) throw new Error("Failed to generate unique bill number");
+
+    // 3. Update Orders to 'billed' and 'paid'
+    const { error: updateError } = await supabase
         .from('orders')
         .update({ status: 'billed', payment_status: 'paid' })
         .in('id', orderIds);
 
-    if (orderError) throw orderError;
+    if (updateError) throw updateError;
 
-    // 4. Mark table as billed
-    const { error: tableError } = await supabase
-        .from('tables')
-        .update({ status: 'billed' })
-        .eq('id', tableId);
+    // 4. Update Table status to 'billed' (or 'empty' if they leave immediately, but usually 'billed' first)
+    await supabase.from('tables').update({ status: 'billed' }).eq('id', tableId);
 
-    if (tableError) throw tableError;
-
-    return true;
+    return billData;
 }
+
+
 
 export async function clearTable(tableId: string) {
     const { error } = await supabase
@@ -286,6 +350,20 @@ export async function clearTable(tableId: string) {
 
     if (error) throw error;
     return true;
+}
+
+export async function getTableById(tableId: string) {
+    const { data, error } = await supabase
+        .from('tables')
+        .select('*')
+        .eq('id', tableId)
+        .single();
+
+    if (error) {
+        console.error('Error fetching table:', error);
+        return null;
+    }
+    return data;
 }
 
 export async function getBills() {
@@ -305,9 +383,13 @@ export async function getBills() {
 }
 
 export async function updateMenuItem(id: string, updates: Partial<MenuItem>) {
+    const roundedUpdates = { ...updates };
+    if (roundedUpdates.price) roundedUpdates.price = roundToThree(roundedUpdates.price);
+    if (roundedUpdates.original_price) roundedUpdates.original_price = roundToThree(roundedUpdates.original_price);
+
     const { data, error } = await supabase
         .from('menu_items')
-        .update(updates)
+        .update(roundedUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -359,7 +441,7 @@ export async function getDashboardStats(
     // 1. Total Revenue (from bills within range)
     let billsQuery = supabase
         .from('bills')
-        .select('total_amount, created_at, payment_method')
+        .select('total_amount, created_at, payment_method, breakdown, items_snapshot')
         .gte('created_at', startDate.toISOString());
 
     if (range === 'custom') {
@@ -373,7 +455,31 @@ export async function getDashboardStats(
         return null;
     }
 
-    const totalRevenue = bills.reduce((sum, bill) => sum + bill.total_amount, 0);
+    let totalRevenue = 0;
+    let totalTax = 0;
+    let totalServiceCharge = 0;
+
+    if (bills) {
+        bills.forEach(bill => {
+            totalRevenue += bill.total_amount;
+
+            if (bill.breakdown) {
+                totalTax += Number(bill.breakdown.tax || 0);
+                totalServiceCharge += Number(bill.breakdown.serviceCharge || 0);
+            } else {
+                // Fallback calculation
+                const itemsTotal = bill.items_snapshot?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                const subtotal = itemsTotal / 1.1;
+                const tax = itemsTotal - subtotal;
+                const serviceCharge = bill.total_amount - itemsTotal;
+
+                totalTax += tax;
+                totalServiceCharge += serviceCharge;
+            }
+        });
+    }
+
+    const netSales = totalRevenue - totalTax - totalServiceCharge;
 
     // 2. Active Orders Count (Real-time, not filtered by range)
     const { count: activeOrdersCount, error: ordersError } = await supabase
@@ -447,7 +553,8 @@ export async function getDashboardStats(
         .slice(0, 5);
 
     // 6. Revenue Chart Data (Daily breakdown within range)
-    const revenueChartDataMap: Record<string, number> = {};
+    // Map stores { revenue: 0, net: 0, tax: 0, service: 0 }
+    const revenueChartDataMap: Record<string, { revenue: number, net: number, tax: number, service: number }> = {};
 
     // Initialize chart keys
     if (range === 'today') {
@@ -455,7 +562,7 @@ export async function getDashboardStats(
         // Let's do hourly for today
         for (let i = 0; i <= 23; i++) {
             const hourStr = `${i}:00`;
-            revenueChartDataMap[hourStr] = 0;
+            revenueChartDataMap[hourStr] = { revenue: 0, net: 0, tax: 0, service: 0 };
         }
     } else if (range === 'custom') {
         // For custom range, calculate days between start and end
@@ -466,49 +573,62 @@ export async function getDashboardStats(
             const d = new Date(startDate);
             d.setDate(d.getDate() + i);
             const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            revenueChartDataMap[dateStr] = 0;
+            revenueChartDataMap[dateStr] = { revenue: 0, net: 0, tax: 0, service: 0 };
         }
     } else {
         // Daily breakdown
         const days = range === 'week' ? 7 : range === 'month' ? 30 : 365;
-        // For year, maybe monthly? 365 points is too many.
-        if (range === 'year') {
-            for (let i = 11; i >= 0; i--) {
-                const d = new Date();
-                d.setMonth(d.getMonth() - i);
-                const monthStr = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                revenueChartDataMap[monthStr] = 0;
-            }
-        } else {
-            for (let i = days - 1; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                revenueChartDataMap[dateStr] = 0;
-            }
+        // For year, maybe monthly? 365 days is a lot of bars. Let's stick to daily for now.
+        for (let i = 0; i < days; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - (days - 1 - i));
+            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            revenueChartDataMap[dateStr] = { revenue: 0, net: 0, tax: 0, service: 0 };
         }
     }
 
-    if (bills) { // Re-using bills fetched in step 1 which are already filtered by startDate
+    if (bills) {
         bills.forEach(bill => {
+            const d = new Date(bill.created_at);
             let key = '';
-            const billDate = new Date(bill.created_at);
 
             if (range === 'today') {
-                key = `${billDate.getHours()}:00`;
-            } else if (range === 'year') {
-                key = billDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                key = `${d.getHours()}:00`;
             } else {
-                key = billDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }
 
-            if (revenueChartDataMap[key] !== undefined) {
-                revenueChartDataMap[key] += bill.total_amount;
+            if (revenueChartDataMap[key]) {
+                revenueChartDataMap[key].revenue += bill.total_amount;
+
+                let tax = 0;
+                let service = 0;
+
+                if (bill.breakdown) {
+                    tax = Number(bill.breakdown.tax || 0);
+                    service = Number(bill.breakdown.serviceCharge || 0);
+                } else {
+                    const itemsTotal = bill.items_snapshot?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                    const subtotal = itemsTotal / 1.1;
+                    tax = itemsTotal - subtotal;
+                    service = bill.total_amount - itemsTotal;
+                }
+
+                revenueChartDataMap[key].tax += tax;
+                revenueChartDataMap[key].service += service;
+                revenueChartDataMap[key].net += (bill.total_amount - tax - service);
             }
         });
     }
 
-    const revenueChartData = Object.entries(revenueChartDataMap).map(([date, revenue]) => ({ date, revenue }));
+    const revenueChartData = Object.entries(revenueChartDataMap)
+        .map(([date, data]) => ({
+            date,
+            revenue: roundToThree(data.revenue),
+            net: roundToThree(data.net),
+            tax: roundToThree(data.tax),
+            service: roundToThree(data.service)
+        }));
 
     // 7. Category Chart Data (Pie Chart)
     // Re-using orderItems from step 5 which are already filtered by startDate
@@ -564,6 +684,9 @@ export async function getDashboardStats(
 
     return {
         totalRevenue,
+        netSales,
+        totalTax,
+        totalServiceCharge,
         activeOrdersCount: activeOrdersCount || 0,
         occupiedTablesCount: occupiedTablesCount || 0,
         totalTablesCount: totalTablesCount || 0,
@@ -583,19 +706,35 @@ export async function getLandingPageData() {
     }
     const settings = await getSettings();
 
-    // 2. Get Featured Items (just take 3 random or first 3 for now)
-    const { data: featuredItems, error } = await supabase
+    // 2. Get Featured Items (fetch more to allow for filtering)
+    let { data: featuredItems, error } = await supabase
         .from('menu_items')
         .select('*')
-        .limit(3);
+        .limit(10);
 
     if (error) {
         console.error('Error fetching featured items:', error);
     }
 
+    // Filter hidden items
+    if (featuredItems && menu?.hidden_items) {
+        featuredItems = featuredItems.filter(item => !menu.hidden_items.includes(item.id));
+    }
+
+    // Take top 3
+    featuredItems = featuredItems?.slice(0, 3) || [];
+
+    // 3. Get Shop Details
+    const { data: shop } = await supabase
+        .from('shops')
+        .select('*')
+        .eq('slug', 'food-cafe')
+        .single();
+
     return {
         categories: categories || [],
         featuredItems: featuredItems || [],
-        settings
+        settings,
+        shop
     };
 }

@@ -19,7 +19,7 @@ export default function AdminLayout({
         <div className="flex flex-col h-full">
             <div className="h-16 flex items-center px-6 border-b">
                 <ChefHat className="h-6 w-6 text-primary mr-2" />
-                <span className="font-bold text-lg">FoodCafe Admin</span>
+                <span className="font-bold text-lg">Food Cafe Admin</span>
             </div>
 
             <nav className="flex-1 p-4 space-y-2">
@@ -115,7 +115,7 @@ export default function AdminLayout({
                 <header className="md:hidden h-16 border-b bg-card flex items-center px-4 justify-between">
                     <div className="flex items-center">
                         <ChefHat className="h-6 w-6 text-primary mr-2" />
-                        <span className="font-bold text-lg">FoodCafe Admin</span>
+                        <span className="font-bold text-lg">Food Cafe Admin</span>
                     </div>
                     <Sheet open={open} onOpenChange={setOpen}>
                         <SheetTrigger asChild>

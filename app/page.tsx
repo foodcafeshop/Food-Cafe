@@ -10,7 +10,7 @@ import { HeaderSearch } from "@/components/features/landing/header-search";
 import { CartBadge } from "@/components/features/cart/cart-badge";
 
 export default async function Home() {
-  const { categories, featuredItems, settings } = await getLandingPageData();
+  const { categories, featuredItems, settings, shop } = await getLandingPageData();
 
   // Determine currency symbol from settings or default
   const currencySymbol = getCurrencySymbol(settings?.currency);
@@ -22,12 +22,16 @@ export default async function Home() {
         <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 font-bold text-2xl text-orange-500">
-              <ChefHat className="h-8 w-8" />
-              <span className="tracking-tight">FoodCafe</span>
+              {shop?.logo_url ? (
+                <img src={shop.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <ChefHat className="h-8 w-8" />
+              )}
+              <span className="tracking-tight">{shop?.name || 'Food Cafe'}</span>
             </div>
             <div className="hidden md:flex items-center gap-2 text-sm text-gray-500 ml-8 hover:text-orange-500 cursor-pointer transition-colors">
-              <span className="font-bold text-gray-700 border-b-2 border-gray-700 pb-0.5">Other</span>
-              <span className="truncate max-w-[200px]">Koramangala, Bangalore, Karnataka, India</span>
+              <span className="font-bold text-gray-700 border-b-2 border-gray-700 pb-0.5">Location</span>
+              <span className="truncate max-w-[200px]">{shop?.address || 'Select Location'}</span>
               <ChevronDown className="h-4 w-4 text-orange-500" />
             </div>
           </div>
@@ -46,6 +50,29 @@ export default async function Home() {
           </div>
         </div>
       </header>
+
+      {/* Hero Section */}
+      {shop?.cover_image && (
+        <div className="relative h-[300px] w-full">
+          <img src={shop.cover_image} alt="Cover" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+            <div className="container max-w-7xl mx-auto px-4 pb-8 text-white">
+              <h1 className="text-4xl font-bold mb-2">{shop.name}</h1>
+              <p className="text-lg opacity-90">{shop.description}</p>
+              <div className="flex gap-4 mt-4 text-sm font-medium">
+                {shop.opening_hours && (
+                  <span className="bg-green-500/20 backdrop-blur-md px-3 py-1 rounded-full border border-green-500/30 text-green-100">
+                    Open Now
+                  </span>
+                )}
+                <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30">
+                  {shop.shop_type || 'Restaurant'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="container max-w-7xl mx-auto px-4 py-8 space-y-12">
 

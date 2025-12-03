@@ -39,6 +39,7 @@ export default function OrdersPage() {
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch = order.id.toLowerCase().includes(search.toLowerCase()) ||
+            order.order_number?.toLowerCase().includes(search.toLowerCase()) ||
             order.table_id?.toString().includes(search);
         const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -102,7 +103,7 @@ export default function OrdersPage() {
                         <Card key={order.id} className="flex flex-col md:flex-row items-start md:items-center p-4 gap-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-mono text-sm text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                                    <span className="font-mono text-sm text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
                                     <Badge variant="outline" className="bg-background">Table {order.tables?.label || order.table_id || 'N/A'}</Badge>
                                     <Badge variant="secondary" className={cn("capitalize", getStatusColor(order.status))}>
                                         {order.status}
@@ -117,7 +118,7 @@ export default function OrdersPage() {
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="text-right">
-                                    <div className="font-bold text-lg">{currency}{order.total_amount}</div>
+                                    <div className="font-bold text-lg">{currency}{order.total_amount.toFixed(2)}</div>
                                     <div className="text-xs text-muted-foreground capitalize">{order.payment_status}</div>
                                 </div>
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
@@ -138,7 +139,7 @@ export default function OrdersPage() {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center border-b pb-2">
                                 <div>
-                                    <div className="font-bold">Order #{selectedOrder.id.slice(0, 8)}</div>
+                                    <div className="font-bold">Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</div>
                                     <div className="text-sm text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleString()}</div>
                                 </div>
                                 <div className="flex gap-2">
@@ -183,7 +184,7 @@ export default function OrdersPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="font-medium">{currency}{item.price * item.quantity}</div>
+                                            <div className="font-medium">{currency}{(item.price * item.quantity).toFixed(2)}</div>
                                             {isEditing && (
                                                 <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => {
                                                     const newItems = editItems.filter((_, i) => i !== index);
@@ -203,8 +204,8 @@ export default function OrdersPage() {
                             <div className="border-t pt-2 flex justify-between items-center font-bold text-lg">
                                 <span>Total</span>
                                 <span>{currency}{isEditing
-                                    ? editItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
-                                    : selectedOrder.total_amount}
+                                    ? editItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toFixed(2)
+                                    : selectedOrder.total_amount.toFixed(2)}
                                 </span>
                             </div>
 

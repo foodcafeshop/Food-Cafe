@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Users, Move, Printer, Plus, Trash2, Edit2, List, Grid, LayoutGrid, CheckSquare, Square, Receipt } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { cn, getCurrencySymbol } from "@/lib/utils";
+import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -97,10 +97,22 @@ export default function TableManagementPage() {
             const orderIds = tableOrders.map(o => o.id);
 
             // Calculate Service Charge
-            const subtotal = tableOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-            const serviceChargeAmount = includeServiceCharge ? (subtotal * (serviceChargeRate / 100)) : 0;
+            const rawSubtotal = tableOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
+            const rawTax = tableOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
+            const rawServiceCharge = includeServiceCharge ? (rawSubtotal * (serviceChargeRate / 100)) : 0;
 
-            await settleTableBill(billingTable.id, orderIds, paymentMethod, serviceChargeAmount);
+            const subtotal = roundToThree(rawSubtotal);
+            const tax = roundToThree(rawTax);
+            const serviceChargeAmount = roundToThree(rawServiceCharge);
+
+            const breakdown = {
+                subtotal: subtotal,
+                tax: tax,
+                serviceCharge: serviceChargeAmount,
+                total: roundToThree(subtotal + tax + serviceChargeAmount)
+            };
+
+            await settleTableBill(billingTable.id, paymentMethod, breakdown);
 
             toast.success("Bill settled");
             setBillingTable(null);
@@ -746,7 +758,7 @@ export default function TableManagementPage() {
                                     <div key={order.id} className="border rounded-lg p-3 bg-muted/20">
                                         <div className="flex justify-between items-center mb-2 text-sm border-b pb-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                                                <span className="font-mono text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
                                                 <Badge variant="outline" className={cn(
                                                     "text-[10px] h-5 px-1.5",
                                                     order.status === 'served' ? "text-green-600 border-green-600" :
@@ -784,7 +796,7 @@ export default function TableManagementPage() {
                                             {order.order_items?.map((item: any, idx: number) => (
                                                 <div key={idx} className="flex justify-between text-sm">
                                                     <span>{item.quantity}x {item.name}</span>
-                                                    <span>{currency}{item.price * item.quantity}</span>
+                                                    <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
                                                 </div>
                                             ))}
                                         </div>

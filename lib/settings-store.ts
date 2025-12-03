@@ -21,7 +21,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
     persist(
         (set, get) => ({
-            restaurantName: 'FoodCafe Premium',
+            restaurantName: 'Food Cafe Premium',
             currency: 'USD',
             language: 'en',
             taxRate: 10,

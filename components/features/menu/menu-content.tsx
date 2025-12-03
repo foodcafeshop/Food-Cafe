@@ -11,6 +11,7 @@ import { ChevronLeft, Search, Star, Clock, MapPin, X, ShoppingBag } from "lucide
 import Link from "next/link";
 import { getCurrencySymbol } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
+import { getTableById } from "@/lib/api";
 
 interface MenuContentProps {
     categories: any[];
@@ -25,6 +26,7 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
     const [isSearchOpen, setIsSearchOpen] = useState(!!initialQuery);
     const currencySymbol = getCurrencySymbol(settings?.currency);
     const { setTableId, tableId } = useCartStore();
+    const [tableLabel, setTableLabel] = useState<string>("");
 
     useEffect(() => {
         const tableIdParam = searchParams.get("tableId");
@@ -32,6 +34,18 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
             setTableId(tableIdParam);
         }
     }, [searchParams, setTableId]);
+
+    useEffect(() => {
+        const fetchTableLabel = async () => {
+            if (tableId) {
+                const table = await getTableById(tableId);
+                if (table) {
+                    setTableLabel(table.label);
+                }
+            }
+        };
+        fetchTableLabel();
+    }, [tableId]);
 
     // Filter categories based on search query
     const filteredCategories = initialCategories.map(cat => ({
@@ -92,7 +106,7 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
                             </div>
                         ) : (
                             <div>
-                                <h1 className="font-bold text-lg text-gray-800">FoodCafe Premium</h1>
+                                <h1 className="font-bold text-lg text-gray-800">Food Cafe Premium</h1>
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                     <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-green-600 text-green-600" /> 4.2</span>
                                     <span className="hidden sm:inline">•</span>
@@ -103,7 +117,7 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
                                 {tableId && (
                                     <div className="mt-1">
                                         <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                                            Table {tableId}
+                                            Table {tableLabel || tableId}
                                         </span>
                                     </div>
                                 )}
@@ -146,7 +160,7 @@ export function MenuContent({ categories: initialCategories, settings }: MenuCon
                     <div className="hidden md:block mb-8">
                         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex justify-between items-start">
                             <div>
-                                <h1 className="text-3xl font-extrabold text-gray-800 mb-2">FoodCafe Premium</h1>
+                                <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Food Cafe Premium</h1>
                                 <p className="text-gray-500 mb-4">North Indian, Chinese, Fast Food • Koramangala</p>
                                 <div className="flex items-center gap-6 text-gray-700 font-bold">
                                     <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg border border-green-100">

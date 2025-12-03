@@ -162,9 +162,9 @@ export default function MenuManagementPage() {
                                 </div>
                                 <p className="text-sm text-muted-foreground truncate">{item.description}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-sm font-medium">{currencySymbol}{item.price}</span>
+                                    <span className="text-sm font-medium">{currencySymbol}{item.price.toFixed(2)}</span>
                                     {item.original_price && item.original_price > item.price && (
-                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.original_price}</span>
+                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.original_price.toFixed(2)}</span>
                                     )}
                                 </div>
                             </div>

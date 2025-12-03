@@ -1,4 +1,4 @@
-# FoodCafe Premium
+# Food Cafe
 
 A modern, full-stack restaurant management system built with Next.js, Supabase, and Tailwind CSS. It features a customer-facing digital menu and ordering system, along with a comprehensive admin dashboard for staff to manage orders, tables, menus, and finances.
 

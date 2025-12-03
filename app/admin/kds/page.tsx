@@ -150,7 +150,7 @@ function OrderCard({ order, onNext, onPrev, onCancel }: { order: any; onNext: ()
             <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-2">
                     <Badge variant="outline">Table {order.tables?.label || order.table_id}</Badge>
-                    <span className="text-xs text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                    <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
                 </div>
                 <span className={cn("text-xs font-medium mr-6", timeElapsed > 15 ? "text-destructive" : "text-muted-foreground")}>
                     {timeElapsed}m ago

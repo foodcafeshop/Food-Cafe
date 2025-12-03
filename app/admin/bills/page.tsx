@@ -39,7 +39,7 @@ export default function BillsPage() {
     };
 
     const filteredBills = bills.filter(bill => {
-        const matchesSearch = bill.id.toLowerCase().includes(search.toLowerCase()) ||
+        const matchesSearch = (bill.bill_number || bill.id).toLowerCase().includes(search.toLowerCase()) ||
             bill.tables?.label.toLowerCase().includes(search.toLowerCase());
         const matchesPayment = paymentFilter === 'all' || bill.payment_method === paymentFilter;
 
@@ -182,7 +182,7 @@ export default function BillsPage() {
                         ) : (
                             filteredBills.map((bill) => (
                                 <tr key={bill.id} className="hover:bg-muted/50">
-                                    <td className="p-4 font-mono text-xs">{bill.id}</td>
+                                    <td className="p-4 font-mono text-xs">{bill.bill_number || bill.id}</td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
                                             <span>{new Date(bill.created_at).toLocaleDateString()}</span>
@@ -196,7 +196,7 @@ export default function BillsPage() {
                                         </Badge>
                                     </td>
                                     <td className="p-4 text-right font-bold">
-                                        {currency}{bill.total_amount}
+                                        {currency}{bill.total_amount.toFixed(2)}
                                     </td>
                                     <td className="p-4 text-right">
                                         <Button variant="ghost" size="sm" onClick={() => setSelectedBill(bill)}>
@@ -221,7 +221,7 @@ export default function BillsPage() {
                             <div className="flex justify-between items-start border-b pb-4">
                                 <div>
                                     <h3 className="font-bold text-lg">Food Cafe</h3>
-                                    <p className="text-sm text-muted-foreground">Bill #{selectedBill.id}</p>
+                                    <p className="text-sm text-muted-foreground">Bill #{selectedBill.bill_number || selectedBill.id}</p>
                                     <p className="text-sm text-muted-foreground">{new Date(selectedBill.created_at).toLocaleString()}</p>
                                 </div>
                                 <div className="text-right">
@@ -237,14 +237,69 @@ export default function BillsPage() {
                                             <span className="font-bold">{item.quantity}x</span>
                                             <span>{item.name}</span>
                                         </div>
-                                        <span>{currency}{item.price * item.quantity}</span>
+                                        <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="border-t pt-4 flex justify-between items-center text-xl font-bold">
-                                <span>Total Paid</span>
-                                <span>{currency}{selectedBill.total_amount}</span>
+                            <div className="border-t pt-4 space-y-2">
+                                {(() => {
+                                    // Use stored breakdown if available
+                                    if (selectedBill.breakdown) {
+                                        const { subtotal, tax, serviceCharge } = selectedBill.breakdown;
+                                        return (
+                                            <>
+                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                    <span>Subtotal</span>
+                                                    <span>{currency}{Number(subtotal).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                    <span>Tax (10%)</span>
+                                                    <span>{currency}{Number(tax).toFixed(2)}</span>
+                                                </div>
+                                                {Number(serviceCharge) > 0.01 && (
+                                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                        <span>Service Charge</span>
+                                                        <span>{currency}{Number(serviceCharge).toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
+                                                    <span>Total Paid</span>
+                                                    <span>{currency}{selectedBill.total_amount.toFixed(2)}</span>
+                                                </div>
+                                            </>
+                                        );
+                                    }
+
+                                    // Fallback for old bills
+                                    const itemsTotal = selectedBill.items_snapshot?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                                    const subtotal = itemsTotal / 1.1;
+                                    const tax = itemsTotal - subtotal;
+                                    const serviceCharge = selectedBill.total_amount - itemsTotal;
+
+                                    return (
+                                        <>
+                                            <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                <span>Subtotal</span>
+                                                <span>{currency}{subtotal.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                <span>Tax (10%)</span>
+                                                <span>{currency}{tax.toFixed(2)}</span>
+                                            </div>
+                                            {serviceCharge > 0.01 && (
+                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                    <span>Service Charge</span>
+                                                    <span>{currency}{serviceCharge.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
+                                                <span>Total Paid</span>
+                                                <span>{currency}{selectedBill.total_amount.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
 
                             <DialogFooter>
