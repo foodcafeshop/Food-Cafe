@@ -235,6 +235,15 @@ export async function createOrder(order: any) {
                 }
                 throw error;
             }
+
+            // Update table status to 'occupied' if table_id is present AND status is 'empty'
+            if (order.table_id) {
+                const table = await getTableById(order.table_id);
+                if (table && table.status === 'empty') {
+                    await updateTableStatus(order.table_id, 'occupied');
+                }
+            }
+
             return data;
         } catch (err) {
             throw err;
@@ -490,6 +499,16 @@ export async function clearTable(tableId: string) {
     const { error } = await supabase
         .from('tables')
         .update({ status: 'empty' })
+        .eq('id', tableId);
+
+    if (error) throw error;
+    return true;
+}
+
+export async function updateTableStatus(tableId: string, status: string) {
+    const { error } = await supabase
+        .from('tables')
+        .update({ status })
         .eq('id', tableId);
 
     if (error) throw error;
