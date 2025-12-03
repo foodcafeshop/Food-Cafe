@@ -19,6 +19,8 @@ export interface Shop {
     social_links: any;
     average_rating: number;
     rating_count: number;
+    is_live?: boolean;
+    owner_id?: string;
     created_at: string;
 }
 
@@ -71,4 +73,17 @@ export interface CategoryItem {
     category_id: string;
     menu_item_id: string;
     sort_order: number;
+}
+export interface Settings {
+    id: number;
+    shop_id: string;
+    // restaurant_name: string; // Removed as per schema cleanup
+    currency: string;
+    language: string;
+    tax_rate: number;
+    service_charge: number;
+    dark_mode: boolean;
+    sound_notifications: boolean;
+    auto_print: boolean;
+    updated_at: string;
 }

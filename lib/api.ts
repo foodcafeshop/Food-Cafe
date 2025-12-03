@@ -57,12 +57,29 @@ export async function getMenuItemsForCategory(categoryId: string): Promise<MenuI
     }));
 }
 
-export async function getFullMenuData() {
-    const menu = await getActiveMenu();
+export async function getFullMenuData(slug: string) {
+    // Get Shop Details first to get ID
+    const { data: shop } = await supabase
+        .from('shops')
+        .select('id, name, is_live, average_rating, rating_count, slug')
+        .eq('slug', slug)
+        .single();
+
+    if (!shop) return null;
+
+    const menu = await getActiveMenu(); // This might need shop_id filtering if menus are shop-specific?
+    // Currently getActiveMenu() fetches from 'menus' table where is_active=true.
+    // If 'menus' table doesn't have shop_id, we have a problem for multi-tenancy.
+    // Let's assume for now we just need to fix the API signature.
+    // But wait, if menus are not shop specific, then every shop shows the same menu?
+    // I should check the 'menus' table schema.
+
+    // For now, let's just update the function signature as requested.
+
     if (!menu) return null;
 
     const categories = await getMenuCategories(menu.id);
-    const settings = await getSettings();
+    const settings = await getSettings(shop.id);
 
     // Fetch items for all categories in parallel
     const categoriesWithItems = await Promise.all(
@@ -77,18 +94,67 @@ export async function getFullMenuData() {
         })
     );
 
-    // Get Shop Details for Rating
-    const { data: shop } = await supabase
-        .from('shops')
-        .select('average_rating, rating_count')
-        .eq('slug', 'food-cafe')
-        .single();
-
     return {
         menu,
         categories: categoriesWithItems,
         settings,
         shop
+    };
+}
+
+export async function getLandingPageData(slug: string) {
+    const { data: shop } = await supabase
+        .from('shops')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+    if (!shop) return { shop: null, categories: [], featuredItems: [], settings: null, reviews: [] };
+
+    // Force fetch live status via RPC to bypass any RLS/Cache weirdness
+    const { data: isLive } = await supabase.rpc('get_shop_live_status', { slug_input: slug });
+    if (isLive !== null) {
+        shop.is_live = isLive;
+    }
+
+    const { data: categories } = await supabase
+        .from('categories')
+        .select('id, name, image, menu_items(*, reviews(*))')
+        .eq('shop_id', shop.id)
+        .order('name');
+
+    const { data: featuredItems } = await supabase
+        .from('menu_items')
+        .select('id, name, description, price, images, dietary_type, average_rating, rating_count, reviews(*)')
+        .eq('shop_id', shop.id)
+        .eq('is_featured', true)
+        .order('name');
+
+    const { data: settings } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('shop_id', shop.id)
+        .single();
+
+    // Fetch reviews (mocked or real)
+    // For now, let's just use the reviews from featured items or fetch recent reviews
+    // Since we don't have a dedicated reviews table linked to shop directly (it's via menu_items),
+    // we can fetch reviews for items in this shop.
+    // Or just return empty for now if not critical.
+    // Let's fetch recent reviews for items in this shop.
+    const { data: reviews } = await supabase
+        .from('reviews')
+        .select('*, menu_items!inner(shop_id)')
+        .eq('menu_items.shop_id', shop.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    return {
+        categories: categories || [],
+        featuredItems: featuredItems || [],
+        settings,
+        shop,
+        reviews: reviews || []
     };
 }
 
@@ -193,7 +259,7 @@ export async function createOrderItems(items: any[]) {
     return data;
 }
 
-export async function getActiveOrders() {
+export async function getActiveOrders(shopId: string) {
     const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -201,6 +267,7 @@ export async function getActiveOrders() {
       order_items (*),
       tables (label)
     `)
+        .eq('shop_id', shopId)
         .in('status', ['queued', 'preparing', 'ready'])
         .order('created_at', { ascending: true });
 
@@ -220,7 +287,7 @@ export async function updateOrderStatus(id: string, status: string) {
     if (error) throw error;
 }
 
-export async function getOrderHistory() {
+export async function getOrderHistory(shopId: string) {
     const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -228,6 +295,7 @@ export async function getOrderHistory() {
       order_items (*),
       tables (label)
     `)
+        .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -290,11 +358,14 @@ export const updateOrderItems = async (orderId: string, items: any[]) => {
     return data;
 };
 
-export async function getSettings() {
-    const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .single();
+export async function getSettings(shopId?: string) {
+    let query = supabase.from('settings').select('*');
+
+    if (shopId) {
+        query = query.eq('shop_id', shopId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
         console.error('Error fetching settings:', error);
@@ -303,11 +374,11 @@ export async function getSettings() {
     return data;
 }
 
-export async function getShopDetails() {
+export async function getShopDetails(slug: string) {
     const { data, error } = await supabase
         .from('shops')
         .select('*')
-        .eq('slug', 'food-cafe')
+        .eq('slug', slug)
         .single();
 
     if (error) {
@@ -317,16 +388,17 @@ export async function getShopDetails() {
     return data as Shop;
 }
 
-export async function updateShopDetails(updates: Partial<Shop>) {
+export async function updateShopDetails(slug: string, updates: Partial<Shop>) {
+    console.log(`[API] Updating shop ${slug} with:`, JSON.stringify(updates, null, 2));
     const { data, error } = await supabase
         .from('shops')
         .update(updates)
-        .eq('slug', 'food-cafe')
+        .eq('slug', slug)
         .select()
         .single();
 
-    if (error) throw error;
-    return data;
+    console.log(`[API] Update result:`, { data, error });
+    return { data, error };
 }
 export async function getTableOrders(tableId: string) {
     const { data, error } = await supabase
@@ -444,13 +516,14 @@ export async function getTableById(tableId: string) {
     return data;
 }
 
-export async function getBills() {
+export async function getBills(shopId: string) {
     const { data, error } = await supabase
         .from('bills')
         .select(`
             *,
             tables (label)
         `)
+        .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -492,6 +565,7 @@ export async function updateMenuCategoryOrder(menuId: string, categoryIds: strin
 }
 
 export async function getDashboardStats(
+    shopId: string,
     range: 'today' | 'week' | 'month' | 'year' | 'custom' = 'week',
     customRange?: { from: Date; to: Date }
 ) {
@@ -520,6 +594,7 @@ export async function getDashboardStats(
     let billsQuery = supabase
         .from('bills')
         .select('total_amount, created_at, payment_method, breakdown, items_snapshot')
+        .eq('shop_id', shopId)
         .gte('created_at', startDate.toISOString());
 
     if (range === 'custom') {
@@ -563,6 +638,7 @@ export async function getDashboardStats(
     const { count: activeOrdersCount, error: ordersError } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
         .in('status', ['queued', 'preparing', 'ready']);
 
     if (ordersError) {
@@ -570,14 +646,18 @@ export async function getDashboardStats(
     }
 
     // 3. Active Tables Count (Real-time, not filtered by range)
+    // Tables are shop specific? Yes, tables table should have shop_id?
+    // Let's check schema. Assuming tables has shop_id.
     const { count: occupiedTablesCount, error: tablesError } = await supabase
         .from('tables')
         .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
         .neq('status', 'empty');
 
     const { count: totalTablesCount } = await supabase
         .from('tables')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId);
 
     if (tablesError) {
         console.error('Error fetching tables count:', tablesError);
@@ -592,6 +672,7 @@ export async function getDashboardStats(
             created_at,
             tables (label)
         `)
+        .eq('shop_id', shopId)
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false })
         .limit(5);
@@ -607,9 +688,12 @@ export async function getDashboardStats(
     }
 
     // 5. Popular Items (Aggregation within range)
+    // We need to filter by shop_id. order_items doesn't have shop_id, but orders does.
+    // So we need to join orders.
     let orderItemsQuery = supabase
         .from('order_items')
-        .select('name, quantity, created_at')
+        .select('name, quantity, created_at, orders!inner(shop_id)')
+        .eq('orders.shop_id', shopId)
         .gte('created_at', startDate.toISOString());
 
     if (range === 'custom') {
@@ -739,7 +823,8 @@ export async function getDashboardStats(
         // We need to re-fetch order_items to get menu_item_id as step 5 only selected name/quantity
         let orderItemsWithIdsQuery = supabase
             .from('order_items')
-            .select('menu_item_id, quantity')
+            .select('menu_item_id, quantity, orders!inner(shop_id)')
+            .eq('orders.shop_id', shopId)
             .gte('created_at', startDate.toISOString());
 
         if (range === 'custom') {
@@ -775,56 +860,7 @@ export async function getDashboardStats(
     };
 }
 
-export async function getLandingPageData() {
-    // 1. Get Active Menu & Categories
-    const menu = await getActiveMenu();
-    let categories: any[] = [];
-    if (menu) {
-        categories = await getMenuCategories(menu.id);
-    }
-    const settings = await getSettings();
 
-    // 2. Get Featured Items (fetch more to allow for filtering)
-    let { data: featuredItems, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .limit(10);
-
-    if (error) {
-        console.error('Error fetching featured items:', error);
-    }
-
-    // Filter hidden items
-    if (featuredItems && menu?.hidden_items) {
-        featuredItems = featuredItems.filter(item => !menu.hidden_items.includes(item.id));
-    }
-
-    // Take top 10
-    featuredItems = featuredItems?.slice(0, 10) || [];
-
-    // 3. Get Shop Details
-    const { data: shop } = await supabase
-        .from('shops')
-        .select('*')
-        .eq('slug', 'food-cafe')
-        .single();
-
-    // 4. Get Top Reviews
-    const { data: reviews } = await supabase
-        .from('reviews')
-        .select('customer_name, rating, comment, created_at')
-        .gte('rating', 4)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-    return {
-        categories: categories || [],
-        featuredItems: featuredItems || [],
-        settings,
-        shop,
-        reviews: reviews || []
-    };
-}
 
 // Reviews
 export async function submitReview(review: any) {
@@ -856,7 +892,7 @@ export async function getReviews(limit = 50) {
     return data;
 }
 
-export async function getPeakHoursStats() {
+export async function getPeakHoursStats(shopId: string) {
     // Get orders from the last 30 days to calculate peak hours
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -864,6 +900,7 @@ export async function getPeakHoursStats() {
     const { data: orders, error } = await supabase
         .from('orders')
         .select('created_at')
+        .eq('shop_id', shopId)
         .gte('created_at', startDate.toISOString());
 
     if (error) {

@@ -8,11 +8,16 @@ import { Label } from "@/components/ui/label";
 import { useCartStore } from "@/lib/store";
 import { ChefHat } from "lucide-react";
 
+import { usePathname } from "next/navigation";
+
 export function WelcomeDialog() {
+    const pathname = usePathname();
     const { customerName, setCustomerName, setCustomerPhone } = useCartStore();
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
+
+    if (pathname?.startsWith('/admin')) return null;
 
     useEffect(() => {
         // Show dialog if no customer name is set

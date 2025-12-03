@@ -15,9 +15,10 @@ import { PlacedOrders } from "@/components/features/cart/placed-orders";
 
 interface CartContentProps {
     initialSettings: any;
+    shopId: string;
 }
 
-export function CartContent({ initialSettings }: CartContentProps) {
+export function CartContent({ initialSettings, shopId }: CartContentProps) {
     const { items, updateQuantity, totalPrice, clearCart, tableId } = useCartStore();
     const { updateSettings } = useSettingsStore();
     const router = useRouter();
@@ -59,6 +60,7 @@ export function CartContent({ initialSettings }: CartContentProps) {
             const { customerName, customerPhone } = useCartStore.getState();
 
             const orderData = {
+                shop_id: shopId,
                 table_id: currentTableId,
                 status: 'queued',
                 total_amount: currentTotal,
