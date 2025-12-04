@@ -109,16 +109,16 @@ export default function AdminLayout({
                     <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Operations
                     </h4>
-                    <Link href="/admin/orders" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/orders" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                            <List className="h-4 w-4" />
-                            Orders
-                        </Button>
-                    </Link>
                     <Link href="/admin/kds" onClick={() => setOpen(false)}>
                         <Button variant={pathname === "/admin/kds" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <UtensilsCrossed className="h-4 w-4" />
                             Kitchen Display
+                        </Button>
+                    </Link>
+                    <Link href="/admin/orders" onClick={() => setOpen(false)}>
+                        <Button variant={pathname === "/admin/orders" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <List className="h-4 w-4" />
+                            Orders
                         </Button>
                     </Link>
                     <Link href="/admin/bills" onClick={() => setOpen(false)}>
