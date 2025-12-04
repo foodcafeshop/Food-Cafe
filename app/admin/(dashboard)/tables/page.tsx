@@ -64,11 +64,13 @@ export default function TableManagementPage() {
     const [serviceChargeRate, setServiceChargeRate] = useState(0);
     const [includeServiceCharge, setIncludeServiceCharge] = useState(true);
     const [restaurantName, setRestaurantName] = useState('Food Cafe');
+    const [shopSlug, setShopSlug] = useState<string>("");
 
     useEffect(() => {
         if (shopId) {
             fetchTables();
             fetchSettings();
+            fetchShopSlug();
 
             // Realtime subscription
             const channel = supabase
@@ -94,6 +96,12 @@ export default function TableManagementPage() {
         if (settings?.currency) setCurrency(settings.currency);
         if (settings?.service_charge) setServiceChargeRate(settings.service_charge);
         if (settings?.restaurant_name) setRestaurantName(settings.restaurant_name);
+    };
+
+    const fetchShopSlug = async () => {
+        if (!shopId) return;
+        const { data } = await supabase.from('shops').select('slug').eq('id', shopId).single();
+        if (data) setShopSlug(data.slug);
     };
 
     const fetchTables = async () => {
@@ -300,8 +308,7 @@ export default function TableManagementPage() {
                 </head>
                 <body>
                     ${tablesToPrint.map(t => {
-            const origin = window.location.origin;
-            const url = `${origin}/menu?table=${t.label}`;
+            const url = `https://foodcafeshop.in/${shopSlug}/menu?table=${t.label}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
 
             return `
@@ -779,7 +786,7 @@ export default function TableManagementPage() {
                         <div className="bg-white p-4 rounded-xl border shadow-sm">
                             {qrTable && (
                                 <QRCodeSVG
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/menu?table=${qrTable.label}`}
+                                    value={`https://foodcafeshop.in/${shopSlug}/menu?table=${qrTable.label}`}
                                     size={200}
                                     level="H"
                                     includeMargin={true}

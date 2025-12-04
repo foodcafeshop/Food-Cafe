@@ -69,7 +69,12 @@ export default function CreateShopPage() {
         const val = e.target.value;
         setName(val);
         // Auto-generate slug
-        setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+        let newSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        // Ensure at least one hyphen if the name is a single word
+        if (newSlug && !newSlug.includes('-')) {
+            newSlug = `${newSlug}-shop`;
+        }
+        setSlug(newSlug);
     };
 
     if (checking) {
@@ -79,6 +84,14 @@ export default function CreateShopPage() {
     const handleCreateShop = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        // Validate Slug: must contain at least 2 alphanumeric words separated by a hyphen
+        const slugRegex = /^[a-z0-9]+-[a-z0-9]+.*$/;
+        if (!slugRegex.test(slug)) {
+            toast.error("Shop URL must contain at least two words separated by a hyphen (e.g., 'burger-cafe').");
+            setLoading(false);
+            return;
+        }
 
         try {
             const { data: { user } } = await supabase.auth.getUser();

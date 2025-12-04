@@ -47,7 +47,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
               We are currently setting up our digital menu. Please check back later.
             </p>
           </div>
-          <Link href="/admin">
+          <Link href="/admin/login">
             <Button variant="outline" className="w-full">Admin Login</Button>
           </Link>
         </div>
