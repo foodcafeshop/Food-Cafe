@@ -25,6 +25,7 @@ interface Table {
     seats: number;
     x: number;
     y: number;
+    otp?: string;
 }
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
@@ -34,6 +35,7 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 export default function TableManagementPage() {
     const { shopId } = useShopId();
     const [tables, setTables] = useState<Table[]>([]);
+    // ... (keep existing state)
     const [viewMode, setViewMode] = useState<'list' | 'canvas'>('list');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentTable, setCurrentTable] = useState<Partial<Table>>({});
@@ -67,6 +69,22 @@ export default function TableManagementPage() {
         if (shopId) {
             fetchTables();
             fetchSettings();
+
+            // Realtime subscription
+            const channel = supabase
+                .channel('tables-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'tables', filter: `shop_id=eq.${shopId}` },
+                    () => {
+                        fetchTables();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [shopId]);
 
@@ -83,13 +101,22 @@ export default function TableManagementPage() {
         setLoading(true);
         const { data, error } = await supabase
             .from('tables')
-            .select('*')
+            .select(`
+                *,
+                table_secrets (otp)
+            `)
             .eq('shop_id', shopId)
             .order('label');
+
         if (error) {
             toast.error('Failed to fetch tables');
         } else {
-            setTables(data || []);
+            // Flatten the OTP
+            const tablesWithOtp = data?.map((t: any) => ({
+                ...t,
+                otp: t.table_secrets?.otp || t.table_secrets?.[0]?.otp || '----'
+            })) || [];
+            setTables(tablesWithOtp);
         }
         setLoading(false);
     };
@@ -206,9 +233,13 @@ export default function TableManagementPage() {
     const handleSave = async () => {
         if (!currentTable.label || !shopId) return;
 
+        // Sanitize data: remove OTP and table_secrets which are UI-only or joined fields
+        const { otp, table_secrets, ...cleanTableData } = currentTable as any;
+
         const tableData = {
-            ...currentTable,
-            shop_id: shopId
+            ...cleanTableData,
+            shop_id: shopId,
+            updated_at: new Date().toISOString() // Ensure updated_at is set
         };
 
         const { data, error } = await supabase
@@ -270,7 +301,7 @@ export default function TableManagementPage() {
                 <body>
                     ${tablesToPrint.map(t => {
             const origin = window.location.origin;
-            const url = `${origin}/menu?tableId=${t.id}`;
+            const url = `${origin}/menu?table=${t.label}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
 
             return `
@@ -555,6 +586,11 @@ export default function TableManagementPage() {
                                     <Users className="h-3 w-3" />
                                     <span>{table.seats}</span>
                                 </div>
+                                {table.otp && (
+                                    <div className="mt-1 px-1.5 py-0.5 bg-black/10 rounded text-[10px] font-mono font-bold">
+                                        OTP: {table.otp}
+                                    </div>
+                                )}
 
                                 {/* Hover Actions */}
                                 <div className="absolute -top-3 -right-3 hidden group-hover:flex gap-1">
@@ -614,6 +650,7 @@ export default function TableManagementPage() {
                                 </th>
                                 <th className="p-4">Label</th>
                                 <th className="p-4">Seats</th>
+                                <th className="p-4">OTP</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
@@ -629,6 +666,7 @@ export default function TableManagementPage() {
                                     </td>
                                     <td className="p-4 font-medium">{table.label}</td>
                                     <td className="p-4">{table.seats}</td>
+                                    <td className="p-4 font-mono font-bold text-muted-foreground">{table.otp}</td>
                                     <td className="p-4">
                                         <Badge variant="outline" className={cn(
                                             table.status === 'empty' ? "text-green-600 border-green-600" :
@@ -665,7 +703,7 @@ export default function TableManagementPage() {
                             ))}
                             {filteredTables.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
                                         No tables found.
                                     </td>
                                 </tr>
@@ -741,7 +779,7 @@ export default function TableManagementPage() {
                         <div className="bg-white p-4 rounded-xl border shadow-sm">
                             {qrTable && (
                                 <QRCodeSVG
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/menu?tableId=${qrTable.id}`}
+                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/menu?table=${qrTable.label}`}
                                     size={200}
                                     level="H"
                                     includeMargin={true}

@@ -1,10 +1,11 @@
 "use client";
 
-import { ShoppingBag, ChefHat, ChevronDown, Star, Home, Utensils } from "lucide-react";
+import { ShoppingBag, ChefHat, ChevronDown, Star, Home, Utensils, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { HeaderSearch } from "@/components/features/landing/header-search";
 import { CartBadge } from "@/components/features/cart/cart-badge";
 import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/lib/store";
 
 interface ShopHeaderProps {
     shop: any;
@@ -65,8 +66,46 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                             <CartBadge />
                         </Link>
                     )}
+
+                    <UserMenu />
                 </div>
             </div>
         </header>
+    );
+}
+
+function UserMenu() {
+    const { customerName, logout, setWelcomeOpen } = useCartStore();
+
+    if (customerName) {
+        return (
+            <div className="flex items-center gap-3 pl-2 border-l border-gray-200">
+                <div className="hidden md:flex flex-col items-end leading-none">
+                    <span className="text-[10px] text-gray-400 font-medium uppercase">Welcome</span>
+                    <span className="text-sm font-bold text-gray-700 max-w-[100px] truncate">{customerName}</span>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => logout()}
+                    className="h-9 w-9 text-gray-500 hover:text-red-500 hover:bg-red-50"
+                    title="Logout"
+                >
+                    <LogOut className="h-5 w-5" />
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setWelcomeOpen(true, 'welcome')}
+            className="flex items-center gap-2 text-gray-700 hover:text-orange-500 font-medium"
+        >
+            <User className="h-5 w-5" />
+            <span className="hidden md:inline">Login</span>
+        </Button>
     );
 }

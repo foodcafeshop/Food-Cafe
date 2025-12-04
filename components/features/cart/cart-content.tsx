@@ -65,7 +65,12 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
         try {
             // 1. Create Order
-            const { customerName, customerPhone } = useCartStore.getState();
+            const { customerName, customerPhone, setWelcomeOpen } = useCartStore.getState();
+
+            if (!customerName) {
+                setWelcomeOpen(true, 'checkout');
+                return;
+            }
 
             const orderData = {
                 shop_id: shopId,

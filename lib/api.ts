@@ -937,3 +937,47 @@ export async function getPeakHoursStats(shopId: string) {
         count
     }));
 }
+
+export async function getTableByLabel(shopId: string, label: string) {
+    const { data, error } = await supabase
+        .from('tables')
+        .select('id, label, status')
+        .eq('shop_id', shopId)
+        .eq('label', label)
+        .single();
+
+    if (error) return null;
+    return data;
+}
+
+export async function occupyTable(tableId: string) {
+    const { data, error } = await supabase.rpc('occupy_table', {
+        input_table_id: tableId
+    });
+
+    if (error) {
+        console.error('Error occupying table:', error);
+        return false;
+    }
+
+    if (data === true) {
+        console.log('Table occupied successfully');
+        return true;
+    } else {
+        console.warn('Table could not be occupied (maybe it was not empty?)');
+        return false;
+    }
+}
+
+export async function verifyTableOtp(tableId: string, otp: string) {
+    const { data, error } = await supabase.rpc('verify_table_otp', {
+        input_table_id: tableId,
+        input_otp: otp
+    });
+
+    if (error) {
+        console.error('Error verifying OTP:', error);
+        return false;
+    }
+    return data;
+}

@@ -85,5 +85,6 @@ export interface Settings {
     dark_mode: boolean;
     sound_notifications: boolean;
     auto_print: boolean;
+    enable_otp: boolean;
     updated_at: string;
 }

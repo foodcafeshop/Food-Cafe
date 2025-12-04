@@ -153,6 +153,16 @@ export default function GeneralSettingsPage() {
                             onCheckedChange={(checked) => setSettings({ ...settings, auto_print: checked })}
                         />
                     </div>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Table OTP</Label>
+                            <p className="text-sm text-muted-foreground">Require a unique OTP for customers to place orders.</p>
+                        </div>
+                        <Switch
+                            checked={settings.enable_otp}
+                            onCheckedChange={(checked) => setSettings({ ...settings, enable_otp: checked })}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 
