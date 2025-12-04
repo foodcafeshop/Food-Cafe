@@ -199,7 +199,8 @@ create table if not exists public.bills (
   payment_method text not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   order_ids uuid[] not null,
-  items_snapshot jsonb not null
+  items_snapshot jsonb not null,
+  breakdown jsonb,
 );
 
 -- 12. Reviews
