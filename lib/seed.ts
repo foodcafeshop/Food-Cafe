@@ -51,47 +51,84 @@ const ORDER_ITEMS = [
 ];
 
 export async function seedData(userId?: string, shopSlug: string = 'food-cafe') {
-    console.log("Starting seed...");
+    console.log(`Starting seed for slug: ${shopSlug}...`);
 
-    // 1. Clear existing data
-    console.log("Clearing existing data...");
-    await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('category_items').delete().neq('category_id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('menu_categories').delete().neq('menu_id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('menu_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('menus').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('tables').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('settings').delete().neq('id', 0);
-    await supabase.from('shops').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('reviews').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('bills').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('user_roles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    let currentShopId = SHOP_ID;
+    let shopExists = false;
 
-    // 2. Create Shop
-    console.log("Creating shop...");
-    const { error: shopError } = await supabase.from('shops').insert({
-        id: SHOP_ID,
-        slug: shopSlug,
-        name: 'Food Cafe Premium',
-        description: 'Premium dining experience',
-        address: '123 Food Street, Bangalore',
-        shop_type: 'restaurant',
-        gstin: '29ABCDE1234F1Z5',
-        fssai_license: '12345678901234',
-        contact_phone: '+91 9876543210',
-        contact_email: 'contact@foodcafe.com',
-        owner_name: 'John Doe',
-        logo_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
-        cover_image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80',
-        opening_hours: { mon: '09:00-22:00', tue: '09:00-22:00', wed: '09:00-22:00', thu: '09:00-22:00', fri: '09:00-23:00', sat: '09:00-23:00', sun: '09:00-23:00' },
-        social_links: { instagram: 'https://instagram.com/foodcafe', facebook: 'https://facebook.com/foodcafe' },
-        is_live: true,
-        owner_id: userId || null
-    });
-    if (shopError) throw new Error(`Shop creation failed: ${shopError.message}`);
+    // 1. Check if shop exists
+    const { data: existingShop } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('slug', shopSlug)
+        .single();
+
+    if (existingShop) {
+        console.log(`Found existing shop with slug '${shopSlug}' (ID: ${existingShop.id}). Using it.`);
+        currentShopId = existingShop.id;
+        shopExists = true;
+    } else {
+        console.log(`Shop '${shopSlug}' not found. Will create new one.`);
+    }
+
+    // 2. Clear existing data for this shop ONLY
+    console.log("Clearing existing data for shop...");
+    // Delete in order of dependencies (child -> parent)
+    await supabase.from('order_items').delete().in('order_id', (
+        await supabase.from('orders').select('id').eq('shop_id', currentShopId)
+    ).data?.map(o => o.id) || []);
+
+    await supabase.from('orders').delete().eq('shop_id', currentShopId);
+    await supabase.from('customers').delete().eq('shop_id', currentShopId);
+    await supabase.from('bills').delete().eq('shop_id', currentShopId);
+    await supabase.from('reviews').delete().in('menu_item_id', (
+        await supabase.from('menu_items').select('id').eq('shop_id', currentShopId)
+    ).data?.map(i => i.id) || []);
+
+    // Menu/Category cleanup
+    await supabase.from('category_items').delete().in('category_id', (
+        await supabase.from('categories').select('id').eq('shop_id', currentShopId)
+    ).data?.map(c => c.id) || []);
+
+    await supabase.from('menu_categories').delete().in('menu_id', (
+        await supabase.from('menus').select('id').eq('shop_id', currentShopId)
+    ).data?.map(m => m.id) || []);
+
+    await supabase.from('menu_items').delete().eq('shop_id', currentShopId);
+    await supabase.from('categories').delete().eq('shop_id', currentShopId);
+    await supabase.from('menus').delete().eq('shop_id', currentShopId);
+    await supabase.from('tables').delete().eq('shop_id', currentShopId);
+    await supabase.from('settings').delete().eq('shop_id', currentShopId);
+
+    // We do NOT delete the shop itself if it exists
+
+    // 3. Create or Update Shop
+    if (!shopExists) {
+        console.log("Creating shop...");
+        const { error: shopError } = await supabase.from('shops').insert({
+            id: currentShopId,
+            slug: shopSlug,
+            name: 'Food Cafe Premium',
+            description: 'Premium dining experience',
+            address: '123 Food Street, Bangalore',
+            shop_type: 'restaurant',
+            gstin: '29ABCDE1234F1Z5',
+            fssai_license: '12345678901234',
+            contact_phone: '+91 9876543210',
+            contact_email: 'contact@foodcafe.com',
+            owner_name: 'John Doe',
+            logo_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+            cover_image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80',
+            opening_hours: { mon: '09:00-22:00', tue: '09:00-22:00', wed: '09:00-22:00', thu: '09:00-22:00', fri: '09:00-23:00', sat: '09:00-23:00', sun: '09:00-23:00' },
+            social_links: { instagram: 'https://instagram.com/foodcafe', facebook: 'https://facebook.com/foodcafe' },
+            is_live: true,
+            owner_id: userId || null
+        });
+        if (shopError) throw new Error(`Shop creation failed: ${shopError.message}`);
+    } else if (userId) {
+        // Optional: Update owner if provided
+        await supabase.from('shops').update({ owner_id: userId }).eq('id', currentShopId);
+    }
 
     // Assign Admin Role if userId is provided
     if (userId) {
@@ -99,14 +136,17 @@ export async function seedData(userId?: string, shopSlug: string = 'food-cafe') 
         await supabase.from('user_roles').upsert({
             id: userId,
             role: 'admin',
-            shop_id: SHOP_ID
+            shop_id: currentShopId
         });
     }
 
-    // 3. Settings
+    // Helper to inject shop_id
+    const withShop = (items: any[]) => items.map(item => ({ ...item, shop_id: currentShopId }));
+
+    // 4. Settings
     console.log("Creating settings...");
     await supabase.from('settings').insert({
-        shop_id: SHOP_ID,
+        shop_id: currentShopId,
         currency: '₹',
         language: 'en',
         tax_rate: 5.00,
@@ -117,15 +157,15 @@ export async function seedData(userId?: string, shopSlug: string = 'food-cafe') 
         enable_otp: false
     });
 
-    // 4. Menus
+    // 5. Menus
     console.log("Creating menus...");
-    await supabase.from('menus').insert(MENUS);
+    await supabase.from('menus').insert(withShop(MENUS));
 
-    // 5. Categories
+    // 6. Categories
     console.log("Creating categories...");
-    await supabase.from('categories').insert(CATEGORIES);
+    await supabase.from('categories').insert(withShop(CATEGORIES));
 
-    // 6. Menu Categories
+    // 7. Menu Categories
     console.log("Linking menus and categories...");
     await supabase.from('menu_categories').insert([
         { menu_id: MENUS[0].id, category_id: CATEGORIES[0].id, sort_order: 0 },
@@ -134,11 +174,11 @@ export async function seedData(userId?: string, shopSlug: string = 'food-cafe') 
         { menu_id: MENUS[0].id, category_id: CATEGORIES[3].id, sort_order: 3 }
     ]);
 
-    // 7. Menu Items
+    // 8. Menu Items
     console.log("Creating menu items...");
-    await supabase.from('menu_items').insert(MENU_ITEMS);
+    await supabase.from('menu_items').insert(withShop(MENU_ITEMS));
 
-    // 8. Category Items
+    // 9. Category Items
     console.log("Linking categories and items...");
     await supabase.from('category_items').insert([
         { category_id: CATEGORIES[0].id, menu_item_id: MENU_ITEMS[0].id },
@@ -149,22 +189,24 @@ export async function seedData(userId?: string, shopSlug: string = 'food-cafe') 
         { category_id: CATEGORIES[3].id, menu_item_id: MENU_ITEMS[5].id }
     ]);
 
-    // 9. Tables
+    // 10. Tables
     console.log("Creating tables...");
-    await supabase.from('tables').insert(TABLES);
+    await supabase.from('tables').insert(withShop(TABLES));
 
-    // 10. Customers
+    // 11. Customers
     console.log("Creating customers...");
-    await supabase.from('customers').insert(CUSTOMERS);
+    await supabase.from('customers').insert(withShop(CUSTOMERS));
 
-    // 11. Orders
+    // 12. Orders
     console.log("Creating orders...");
-    await supabase.from('orders').insert(ORDERS);
+    // Orders need specific shop_id update
+    const ordersWithShop = ORDERS.map(o => ({ ...o, shop_id: currentShopId }));
+    await supabase.from('orders').insert(ordersWithShop);
 
     // Update table status
     await supabase.from('tables').update({ status: 'occupied' }).eq('id', TABLES[0].id);
 
-    // 12. Order Items
+    // 13. Order Items
     console.log("Creating order items...");
     await supabase.from('order_items').insert(ORDER_ITEMS);
 

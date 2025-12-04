@@ -59,34 +59,71 @@ export async function getMenuItemsForCategory(categoryId: string): Promise<MenuI
 }
 
 export async function getFullMenuData(slug: string) {
-    // Get Shop Details first to get ID
+    // 1. Get Shop Details (Blocking)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, is_live, average_rating, rating_count, slug')
+        .select('id, name, is_live, average_rating, rating_count, slug, currency:settings(currency)') // Try to fetch currency with shop if possible, but settings is separate table.
         .eq('slug', slug)
         .single();
 
     if (!shop) return null;
 
-    const menu = await getActiveMenu(shop.id);
+    // 2. Fetch Menu and Settings in parallel
+    const [menu, settings] = await Promise.all([
+        getActiveMenu(shop.id),
+        getSettings(shop.id)
+    ]);
 
     if (!menu) return null;
 
+    // 3. Fetch Categories
     const categories = await getMenuCategories(menu.id);
-    const settings = await getSettings(shop.id);
 
-    // Fetch items for all categories in parallel
-    const categoriesWithItems = await Promise.all(
-        categories.map(async (category) => {
-            const items = await getMenuItemsForCategory(category.id);
+    if (categories.length === 0) {
+        return { menu, categories: [], settings, shop };
+    }
+
+    // 4. Fetch all items for these categories in one go
+    const categoryIds = categories.map(c => c.id);
+    const { data: allCategoryItems, error } = await supabase
+        .from('category_items')
+        .select(`
+            category_id,
+            sort_order,
+            menu_items (
+                id, name, description, price, images, dietary_type, is_available, average_rating, rating_count
+            )
+        `)
+        .in('category_id', categoryIds)
+        .order('sort_order');
+
+    if (error) {
+        console.error('Error fetching all menu items:', error);
+        return { menu, categories: [], settings, shop };
+    }
+
+    // 5. Group items by category
+    const itemsByCategoryId: Record<string, MenuItem[]> = {};
+    allCategoryItems?.forEach((item: any) => {
+        if (item.menu_items) {
             // Filter hidden items
-            const visibleItems = items.filter(item => !menu.hidden_items?.includes(item.id));
-            return {
-                ...category,
-                items: visibleItems
-            };
-        })
-    );
+            if (menu.hidden_items?.includes(item.menu_items.id)) return;
+
+            if (!itemsByCategoryId[item.category_id]) {
+                itemsByCategoryId[item.category_id] = [];
+            }
+            itemsByCategoryId[item.category_id].push({
+                ...item.menu_items,
+                category_id: item.category_id
+            });
+        }
+    });
+
+    // 6. Attach items to categories
+    const categoriesWithItems = categories.map(category => ({
+        ...category,
+        items: itemsByCategoryId[category.id] || []
+    }));
 
     return {
         menu,
@@ -97,51 +134,61 @@ export async function getFullMenuData(slug: string) {
 }
 
 export async function getLandingPageData(slug: string) {
+    // 1. Fetch Shop Details (Blocking, needed for ID)
     const { data: shop } = await supabase
         .from('shops')
-        .select('*')
+        .select('id, name, description, address, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, is_live, shop_type, social_links')
         .eq('slug', slug)
         .single();
 
     if (!shop) return { shop: null, categories: [], featuredItems: [], settings: null, reviews: [] };
 
-    // Force fetch live status via RPC to bypass any RLS/Cache weirdness
-    const { data: isLive } = await supabase.rpc('get_shop_live_status', { slug_input: slug });
+    // 2. Fetch all other data in parallel
+    const [
+        { data: isLive },
+        { data: categories },
+        { data: featuredItems },
+        { data: settings },
+        { data: reviews }
+    ] = await Promise.all([
+        // Live Status
+        supabase.rpc('get_shop_live_status', { slug_input: slug }),
+
+        // Categories with items (Optimized selection)
+        supabase
+            .from('categories')
+            .select('id, name, image, menu_items(id, name, description, price, images, dietary_type, is_available, average_rating, rating_count)')
+            .eq('shop_id', shop.id)
+            .order('name'),
+
+        // Featured Items
+        supabase
+            .from('menu_items')
+            .select('id, name, description, price, images, dietary_type, average_rating, rating_count')
+            .eq('shop_id', shop.id)
+            .eq('is_featured', true)
+            .order('name'),
+
+        // Settings
+        supabase
+            .from('settings')
+            .select('currency, language, dark_mode')
+            .eq('shop_id', shop.id)
+            .single(),
+
+        // Reviews (Recent 5)
+        supabase
+            .from('reviews')
+            .select('id, rating, comment, customer_name, created_at, menu_items!inner(shop_id)')
+            .eq('menu_items.shop_id', shop.id)
+            .order('created_at', { ascending: false })
+            .limit(5)
+    ]);
+
+    // Update live status if RPC returned value
     if (isLive !== null) {
         shop.is_live = isLive;
     }
-
-    const { data: categories } = await supabase
-        .from('categories')
-        .select('id, name, image, menu_items(*, reviews(*))')
-        .eq('shop_id', shop.id)
-        .order('name');
-
-    const { data: featuredItems } = await supabase
-        .from('menu_items')
-        .select('id, name, description, price, images, dietary_type, average_rating, rating_count, reviews(*)')
-        .eq('shop_id', shop.id)
-        .eq('is_featured', true)
-        .order('name');
-
-    const { data: settings } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('shop_id', shop.id)
-        .single();
-
-    // Fetch reviews (mocked or real)
-    // For now, let's just use the reviews from featured items or fetch recent reviews
-    // Since we don't have a dedicated reviews table linked to shop directly (it's via menu_items),
-    // we can fetch reviews for items in this shop.
-    // Or just return empty for now if not critical.
-    // Let's fetch recent reviews for items in this shop.
-    const { data: reviews } = await supabase
-        .from('reviews')
-        .select('*, menu_items!inner(shop_id)')
-        .eq('menu_items.shop_id', shop.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
 
     return {
         categories: categories || [],

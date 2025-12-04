@@ -74,6 +74,7 @@ create table public.menu_items (
   tags text[] default array[]::text[],
   is_available boolean default true,
   is_popular boolean default false,
+  is_featured boolean default false,
   average_rating numeric(3, 1) default 0,
   rating_count integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -737,3 +738,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.join_table(UUID, JSONB) TO anon, authenticated, service_role;
+
+-- Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_shops_is_live ON public.shops(is_live);
+CREATE INDEX IF NOT EXISTS idx_menus_is_active ON public.menus(is_active);
+CREATE INDEX IF NOT EXISTS idx_menu_items_is_featured ON public.menu_items(is_featured);
+CREATE INDEX IF NOT EXISTS idx_menu_items_shop_id_featured ON public.menu_items(shop_id, is_featured);
+CREATE INDEX IF NOT EXISTS idx_menu_categories_sort ON public.menu_categories(sort_order);
+CREATE INDEX IF NOT EXISTS idx_category_items_sort ON public.category_items(sort_order);
+CREATE INDEX IF NOT EXISTS idx_reviews_item_created ON public.reviews(menu_item_id, created_at DESC);
