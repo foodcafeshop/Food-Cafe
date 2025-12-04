@@ -102,73 +102,113 @@ export default function BillsPage() {
                     </h1>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 bg-muted/40 p-2 rounded-lg border">
-                    <div className="flex items-center gap-2 flex-1">
-                        <Search className="h-4 w-4 text-muted-foreground ml-2" />
-                        <Input
-                            placeholder="Search by Bill ID or Table..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="h-9 w-[200px] bg-background border-none shadow-none focus-visible:ring-0"
-                        />
-                        <div className="h-6 w-px bg-border mx-2" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-muted/40 p-2 rounded-lg border">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 flex-1 w-full">
+                        <div className="flex items-center w-full sm:w-auto bg-background rounded-md border px-2">
+                            <Search className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="h-9 w-full sm:w-[200px] border-none shadow-none focus-visible:ring-0"
+                            />
+                        </div>
+                        <div className="hidden sm:block h-6 w-px bg-border mx-2" />
 
-                        {/* Payment Filter */}
-                        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                            <SelectTrigger className="h-9 w-[130px] bg-background border-none shadow-none">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <SelectValue placeholder="Payment" />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Methods</SelectItem>
-                                <SelectItem value="cash">Cash</SelectItem>
-                                <SelectItem value="card">Card</SelectItem>
-                                <SelectItem value="upi">UPI</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto">
+                            {/* Payment Filter */}
+                            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                                <SelectTrigger className="h-9 w-full sm:w-[130px] bg-background border-none shadow-none">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                        <SelectValue placeholder="Payment" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Methods</SelectItem>
+                                    <SelectItem value="cash">Cash</SelectItem>
+                                    <SelectItem value="card">Card</SelectItem>
+                                    <SelectItem value="upi">UPI</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        {/* Date Filter */}
-                        <Select value={dateFilter} onValueChange={setDateFilter}>
-                            <SelectTrigger className="h-9 w-[130px] bg-background border-none shadow-none">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <SelectValue placeholder="Date" />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="today">Today</SelectItem>
-                                <SelectItem value="yesterday">Yesterday</SelectItem>
-                                <SelectItem value="week">Last 7 Days</SelectItem>
-                                <SelectItem value="month">Last 30 Days</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            {/* Date Filter */}
+                            <Select value={dateFilter} onValueChange={setDateFilter}>
+                                <SelectTrigger className="h-9 w-full sm:w-[130px] bg-background border-none shadow-none">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                        <SelectValue placeholder="Date" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Time</SelectItem>
+                                    <SelectItem value="today">Today</SelectItem>
+                                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                                    <SelectItem value="week">Last 7 Days</SelectItem>
+                                    <SelectItem value="month">Last 30 Days</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        {/* Sort Order */}
-                        <Select value={sortOrder} onValueChange={setSortOrder}>
-                            <SelectTrigger className="h-9 w-[130px] bg-background border-none shadow-none">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <SelectValue placeholder="Sort" />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="newest">Newest First</SelectItem>
-                                <SelectItem value="oldest">Oldest First</SelectItem>
-                                <SelectItem value="highest">Highest Amount</SelectItem>
-                                <SelectItem value="lowest">Lowest Amount</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            {/* Sort Order */}
+                            <Select value={sortOrder} onValueChange={setSortOrder}>
+                                <SelectTrigger className="h-9 w-full sm:w-[130px] bg-background border-none shadow-none">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                        <SelectValue placeholder="Sort" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="newest">Newest First</SelectItem>
+                                    <SelectItem value="oldest">Oldest First</SelectItem>
+                                    <SelectItem value="highest">Highest Amount</SelectItem>
+                                    <SelectItem value="lowest">Lowest Amount</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                    <div className="text-sm text-muted-foreground pr-4">
+                    <div className="text-sm text-muted-foreground w-full sm:w-auto text-right pr-2">
                         Total Revenue: <span className="font-bold text-foreground">{currency}{filteredBills.reduce((sum, b) => sum + b.total_amount, 0).toFixed(2)}</span>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 border rounded-lg overflow-hidden bg-background">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {loading ? (
+                    <div className="p-8 text-center text-muted-foreground">Loading bills...</div>
+                ) : filteredBills.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">No bills found.</div>
+                ) : (
+                    filteredBills.map((bill) => (
+                        <Card key={bill.id} className="p-4 flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-lg">{currency}{bill.total_amount.toFixed(2)}</span>
+                                        <Badge variant="outline" className={cn("uppercase text-[10px]", getPaymentBadgeColor(bill.payment_method))}>
+                                            {bill.payment_method}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                                        <span className="font-medium text-foreground">{bill.tables?.label || 'Unknown'}</span>
+                                        <span>•</span>
+                                        <span>{new Date(bill.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="text-xs font-mono text-muted-foreground mt-1">
+                                        #{bill.bill_number || bill.id}
+                                    </div>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => setSelectedBill(bill)}>
+                                    Details
+                                </Button>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block flex-1 border rounded-lg overflow-hidden bg-background">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-muted text-muted-foreground font-medium sticky top-0">
                         <tr>

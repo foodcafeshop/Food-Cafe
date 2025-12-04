@@ -503,35 +503,35 @@ export default function TableManagementPage() {
     return (
         <div className="p-6 h-full flex flex-col">
             <div className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h1 className="text-2xl font-bold">Table Management</h1>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         {role === 'admin' && (
-                            <Button className="gap-2" onClick={handleAddTable}>
+                            <Button className="gap-2 flex-1 sm:flex-none" onClick={handleAddTable}>
                                 <Plus className="h-4 w-4" /> Add Table
                             </Button>
                         )}
 
                         {selectedTables.size > 0 ? (
-                            <Button variant="outline" className="gap-2" onClick={() => handlePrint(tables.filter(t => selectedTables.has(t.id)))}>
-                                <Printer className="h-4 w-4" /> Print Selected ({selectedTables.size})
+                            <Button variant="outline" className="gap-2 flex-1 sm:flex-none" onClick={() => handlePrint(tables.filter(t => selectedTables.has(t.id)))}>
+                                <Printer className="h-4 w-4" /> Print ({selectedTables.size})
                             </Button>
                         ) : (
-                            <Button variant="outline" className="gap-2" onClick={() => handlePrint(tables)}>
-                                <Printer className="h-4 w-4" /> Print All QR
+                            <Button variant="outline" className="gap-2 flex-1 sm:flex-none" onClick={() => handlePrint(tables)}>
+                                <Printer className="h-4 w-4" /> Print QR
                             </Button>
                         )}
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 bg-muted/40 p-2 rounded-lg border">
-                    <div className="flex items-center gap-2 flex-1">
-                        <div className="flex bg-background rounded-lg border p-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-muted/40 p-2 rounded-lg border">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 flex-1 w-full">
+                        <div className="flex bg-background rounded-lg border p-1 w-full sm:w-auto justify-center">
                             <Button
                                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setViewMode('list')}
-                                className="gap-2 h-8"
+                                className="gap-2 h-8 flex-1 sm:flex-none"
                             >
                                 <List className="h-4 w-4" /> List
                             </Button>
@@ -539,20 +539,20 @@ export default function TableManagementPage() {
                                 variant={viewMode === 'canvas' ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setViewMode('canvas')}
-                                className="gap-2 h-8"
+                                className="gap-2 h-8 flex-1 sm:flex-none"
                             >
                                 <LayoutGrid className="h-4 w-4" /> Canvas
                             </Button>
                         </div>
-                        <div className="h-6 w-px bg-border mx-2" />
+                        <div className="hidden sm:block h-6 w-px bg-border mx-2" />
                         <Input
                             placeholder="Search tables..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="h-9 w-[200px] bg-background"
+                            className="h-9 w-full sm:w-[200px] bg-background"
                         />
                         <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
-                            <SelectTrigger className="h-9 w-[150px] bg-background">
+                            <SelectTrigger className="h-9 w-full sm:w-[150px] bg-background">
                                 <SelectValue placeholder="Filter Status" />
                             </SelectTrigger>
                             <SelectContent className="z-[200]">
@@ -563,7 +563,7 @@ export default function TableManagementPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground hidden sm:block">
                         Showing {filteredTables.length} tables
                     </div>
                 </div>
@@ -654,81 +654,140 @@ export default function TableManagementPage() {
                     )}
                 </div>
             ) : (
-                <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-muted text-muted-foreground font-medium">
-                            <tr>
-                                <th className="p-4 w-10">
-                                    <Checkbox
-                                        checked={selectedTables.size === filteredTables.length && filteredTables.length > 0}
-                                        onCheckedChange={toggleAll}
-                                    />
-                                </th>
-                                <th className="p-4">Label</th>
-                                <th className="p-4">Seats</th>
-                                <th className="p-4">OTP</th>
-                                <th className="p-4">Status</th>
-                                <th className="p-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {filteredTables.map((table) => (
-                                <tr key={table.id} className="hover:bg-muted/50">
-                                    <td className="p-4">
-                                        <Checkbox
-                                            checked={selectedTables.has(table.id)}
-                                            onCheckedChange={() => toggleSelection(table.id)}
-                                        />
-                                    </td>
-                                    <td className="p-4 font-medium">{table.label}</td>
-                                    <td className="p-4">{table.seats}</td>
-                                    <td className="p-4 font-mono font-bold text-muted-foreground">{table.otp}</td>
-                                    <td className="p-4">
-                                        <Badge variant="outline" className={cn(
-                                            table.status === 'empty' ? "text-green-600 border-green-600" :
-                                                table.status === 'occupied' ? "text-blue-600 border-blue-600" :
-                                                    "text-red-600 border-red-600"
-                                        )}>
-                                            {table.status.toUpperCase()}
-                                        </Badge>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {table.status === 'occupied' && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleOpenBilling(table)} title="Settle Bill">
-                                                    <Receipt className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                            {table.status === 'billed' && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleClearTable(table)} title="Mark as Empty" className="text-green-600">
-                                                    <CheckSquare className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                            <Button variant="ghost" size="icon" onClick={() => setQrTable(table)}>
-                                                <QrCode className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditTable(table)}>
-                                                <Edit2 className="h-4 w-4" />
-                                            </Button>
-                                            {role === 'admin' && (
-                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            )}
+                <>
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {filteredTables.map(table => (
+                            <Card key={table.id} className="p-4 flex flex-col gap-3">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-lg">{table.label}</span>
+                                            <Badge variant="outline" className={cn(
+                                                table.status === 'empty' ? "text-green-600 border-green-600" :
+                                                    table.status === 'occupied' ? "text-blue-600 border-blue-600" :
+                                                        "text-red-600 border-red-600"
+                                            )}>
+                                                {table.status.toUpperCase()}
+                                            </Badge>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredTables.length === 0 && (
+                                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                            <div className="flex items-center gap-1">
+                                                <Users className="h-3 w-3" /> {table.seats} Seats
+                                            </div>
+                                            <div className="font-mono">OTP: {table.otp}</div>
+                                        </div>
+                                    </div>
+                                    <Checkbox
+                                        checked={selectedTables.has(table.id)}
+                                        onCheckedChange={() => toggleSelection(table.id)}
+                                    />
+                                </div>
+
+                                <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                                    {table.status === 'occupied' && (
+                                        <Button size="sm" variant="outline" className="flex-1" onClick={() => handleOpenBilling(table)}>
+                                            <Receipt className="h-4 w-4 mr-2" /> Settle
+                                        </Button>
+                                    )}
+                                    {table.status === 'billed' && (
+                                        <Button size="sm" variant="outline" className="flex-1 text-green-600" onClick={() => handleClearTable(table)}>
+                                            <CheckSquare className="h-4 w-4 mr-2" /> Clear
+                                        </Button>
+                                    )}
+                                    <Button size="sm" variant="ghost" onClick={() => setQrTable(table)}>
+                                        <QrCode className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => handleEditTable(table)}>
+                                        <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    {role === 'admin' && (
+                                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-muted text-muted-foreground font-medium">
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                                        No tables found.
-                                    </td>
+                                    <th className="p-4 w-10">
+                                        <Checkbox
+                                            checked={selectedTables.size === filteredTables.length && filteredTables.length > 0}
+                                            onCheckedChange={toggleAll}
+                                        />
+                                    </th>
+                                    <th className="p-4">Label</th>
+                                    <th className="p-4">Seats</th>
+                                    <th className="p-4">OTP</th>
+                                    <th className="p-4">Status</th>
+                                    <th className="p-4 text-right">Actions</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y">
+                                {filteredTables.map((table) => (
+                                    <tr key={table.id} className="hover:bg-muted/50">
+                                        <td className="p-4">
+                                            <Checkbox
+                                                checked={selectedTables.has(table.id)}
+                                                onCheckedChange={() => toggleSelection(table.id)}
+                                            />
+                                        </td>
+                                        <td className="p-4 font-medium">{table.label}</td>
+                                        <td className="p-4">{table.seats}</td>
+                                        <td className="p-4 font-mono font-bold text-muted-foreground">{table.otp}</td>
+                                        <td className="p-4">
+                                            <Badge variant="outline" className={cn(
+                                                table.status === 'empty' ? "text-green-600 border-green-600" :
+                                                    table.status === 'occupied' ? "text-blue-600 border-blue-600" :
+                                                        "text-red-600 border-red-600"
+                                            )}>
+                                                {table.status.toUpperCase()}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                {table.status === 'occupied' && (
+                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenBilling(table)} title="Settle Bill">
+                                                        <Receipt className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                {table.status === 'billed' && (
+                                                    <Button variant="ghost" size="icon" onClick={() => handleClearTable(table)} title="Mark as Empty" className="text-green-600">
+                                                        <CheckSquare className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="icon" onClick={() => setQrTable(table)}>
+                                                    <QrCode className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditTable(table)}>
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                {role === 'admin' && (
+                                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredTables.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                            No tables found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
 
             {/* Edit/Add Dialog */}
