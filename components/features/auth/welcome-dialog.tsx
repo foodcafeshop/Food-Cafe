@@ -202,7 +202,12 @@ export function WelcomeDialog() {
         }
     };
 
-    if (pathname?.startsWith('/admin')) return null;
+    const segments = pathname?.split('/').filter(Boolean) ?? [];
+    const firstSegment = segments[0];
+    const reservedRoutes = ['admin', 'auth', 'api'];
+
+    // Shop slugs must contain a hyphen (e.g. 'food-cafe')
+    if (!firstSegment || reservedRoutes.includes(firstSegment) || !firstSegment.includes('-')) return null;
 
     return (
         <Dialog open={isWelcomeOpen} onOpenChange={(open) => {

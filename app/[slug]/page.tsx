@@ -253,7 +253,18 @@ export default async function Home({ params }: { params: { slug: string } }) {
                   <Clock className="h-5 w-5 text-orange-500" /> Opening Hours
                 </h3>
                 <div className="text-gray-600 pl-7">
-                  <p>{shop.opening_hours || 'Hours not available'}</p>
+                  <div className="space-y-1">
+                    {shop.opening_hours && typeof shop.opening_hours === 'object' ? (
+                      Object.entries(shop.opening_hours).map(([day, hours]) => (
+                        <div key={day} className="flex justify-between text-sm">
+                          <span className="capitalize w-20 font-medium">{day}</span>
+                          <span>{hours as string}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p>{typeof shop.opening_hours === 'string' ? shop.opening_hours : 'Hours not available'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 

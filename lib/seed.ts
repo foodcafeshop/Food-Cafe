@@ -50,7 +50,7 @@ const ORDER_ITEMS = [
     { order_id: ORDERS[0].id, menu_item_id: MENU_ITEMS[1].id, name: 'Chicken Wings', price: 299.00, quantity: 1 }
 ];
 
-export async function seedData() {
+export async function seedData(userId?: string, shopSlug: string = 'food-cafe') {
     console.log("Starting seed...");
 
     // 1. Clear existing data
@@ -68,12 +68,13 @@ export async function seedData() {
     await supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('reviews').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('bills').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('user_roles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     // 2. Create Shop
     console.log("Creating shop...");
     const { error: shopError } = await supabase.from('shops').insert({
         id: SHOP_ID,
-        slug: 'food-cafe',
+        slug: shopSlug,
         name: 'Food Cafe Premium',
         description: 'Premium dining experience',
         address: '123 Food Street, Bangalore',
@@ -87,9 +88,20 @@ export async function seedData() {
         cover_image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80',
         opening_hours: { mon: '09:00-22:00', tue: '09:00-22:00', wed: '09:00-22:00', thu: '09:00-22:00', fri: '09:00-23:00', sat: '09:00-23:00', sun: '09:00-23:00' },
         social_links: { instagram: 'https://instagram.com/foodcafe', facebook: 'https://facebook.com/foodcafe' },
-        is_live: true
+        is_live: true,
+        owner_id: userId || null
     });
     if (shopError) throw new Error(`Shop creation failed: ${shopError.message}`);
+
+    // Assign Admin Role if userId is provided
+    if (userId) {
+        console.log("Assigning admin role...");
+        await supabase.from('user_roles').upsert({
+            id: userId,
+            role: 'admin',
+            shop_id: SHOP_ID
+        });
+    }
 
     // 3. Settings
     console.log("Creating settings...");
