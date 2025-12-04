@@ -237,15 +237,19 @@ export default function BillsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                {selectedBill.items_snapshot?.map((item: any, idx: number) => (
-                                    <div key={idx} className="flex justify-between text-sm">
-                                        <div className="flex gap-2">
-                                            <span className="font-bold">{item.quantity}x</span>
-                                            <span>{item.name}</span>
+                                {Array.isArray(selectedBill.items_snapshot) ? (
+                                    selectedBill.items_snapshot.map((item: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between text-sm">
+                                            <div className="flex gap-2">
+                                                <span className="font-bold">{item.quantity}x</span>
+                                                <span>{item.name}</span>
+                                            </div>
+                                            <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
                                         </div>
-                                        <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground italic">Item details not available for this bill.</p>
+                                )}
                             </div>
 
                             <div className="border-t pt-4 space-y-2">
@@ -278,7 +282,9 @@ export default function BillsPage() {
                                     }
 
                                     // Fallback for old bills
-                                    const itemsTotal = selectedBill.items_snapshot?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                                    const itemsTotal = Array.isArray(selectedBill.items_snapshot)
+                                        ? selectedBill.items_snapshot.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
+                                        : 0;
                                     const subtotal = itemsTotal / 1.1;
                                     const tax = itemsTotal - subtotal;
                                     const serviceCharge = selectedBill.total_amount - itemsTotal;

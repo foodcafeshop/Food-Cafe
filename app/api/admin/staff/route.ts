@@ -152,3 +152,122 @@ export async function GET(request: Request) {
 
     return NextResponse.json(staffWithDetails);
 }
+
+export async function DELETE(request: Request) {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) { return cookieStore.get(name)?.value },
+                set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+                remove(name: string, options: CookieOptions) { cookieStore.delete({ name, ...options }) },
+            },
+        }
+    );
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+    // Check admin
+    const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role, shop_id')
+        .eq('id', session.user.id)
+        .single();
+
+    if (!userRole || userRole.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Verify target is staff of same shop
+    const { data: targetRole } = await supabase
+        .from('user_roles')
+        .select('role, shop_id')
+        .eq('id', id)
+        .single();
+
+    if (!targetRole || targetRole.shop_id !== userRole.shop_id) {
+        return NextResponse.json({ error: 'Target not found or not in your shop' }, { status: 404 });
+    }
+
+    if (targetRole.role === 'admin') {
+        return NextResponse.json({ error: 'Cannot delete other admins' }, { status: 403 });
+    }
+
+    try {
+        // Delete from Auth (cascades to user_roles if set up, but we use admin client)
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function PUT(request: Request) {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) { return cookieStore.get(name)?.value },
+                set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+                remove(name: string, options: CookieOptions) { cookieStore.delete({ name, ...options }) },
+            },
+        }
+    );
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { id, name, password } = await request.json();
+
+    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+    // Check admin
+    const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role, shop_id')
+        .eq('id', session.user.id)
+        .single();
+
+    if (!userRole || userRole.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Verify target is staff of same shop
+    const { data: targetRole } = await supabase
+        .from('user_roles')
+        .select('role, shop_id')
+        .eq('id', id)
+        .single();
+
+    if (!targetRole || targetRole.shop_id !== userRole.shop_id) {
+        return NextResponse.json({ error: 'Target not found or not in your shop' }, { status: 404 });
+    }
+
+    try {
+        const updates: any = {
+            user_metadata: { full_name: name }
+        };
+        if (password) {
+            updates.password = password;
+        }
+
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(id, updates);
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

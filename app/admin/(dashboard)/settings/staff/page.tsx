@@ -16,6 +16,8 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 export default function StaffPage() {
     const [staff, setStaff] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingStaff, setEditingStaff] = useState<any | null>(null);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [newStaff, setNewStaff] = useState({ name: '', username: '', password: '' });
     const [creating, setCreating] = useState(false);
@@ -50,34 +52,73 @@ export default function StaffPage() {
             setStaff(data);
         } catch (error) {
             console.error(error);
-            // toast.error("Could not load staff list");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreateStaff = async (e: React.FormEvent) => {
+    const handleDeleteStaff = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this staff member?")) return;
+
+        try {
+            const res = await fetch(`/api/admin/staff?id=${id}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete staff');
+
+            toast.success("Staff member deleted");
+            fetchStaff();
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleSaveStaff = async (e: React.FormEvent) => {
         e.preventDefault();
         setCreating(true);
         try {
-            const res = await fetch('/api/admin/staff', {
-                method: 'POST',
+            const url = '/api/admin/staff';
+            const method = editingStaff ? 'PUT' : 'POST';
+            const body = editingStaff
+                ? { id: editingStaff.id, ...newStaff }
+                : newStaff;
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStaff)
+                body: JSON.stringify(body)
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to create staff');
+            if (!res.ok) throw new Error(data.error || 'Failed to save staff');
 
-            toast.success("Staff member created successfully");
+            toast.success(`Staff member ${editingStaff ? 'updated' : 'created'} successfully`);
             setIsDialogOpen(false);
             setNewStaff({ name: '', username: '', password: '' });
+            setEditingStaff(null);
             fetchStaff();
         } catch (error: any) {
             toast.error(error.message);
         } finally {
             setCreating(false);
         }
+    };
+
+    const openEditDialog = (member: any) => {
+        setEditingStaff(member);
+        setNewStaff({
+            name: member.name || '',
+            username: member.email?.split('@')[0] || '',
+            password: '' // Don't fill password
+        });
+        setIsDialogOpen(true);
+    };
+
+    const openCreateDialog = () => {
+        setEditingStaff(null);
+        setNewStaff({ name: '', username: '', password: '' });
+        setIsDialogOpen(true);
     };
 
     return (
@@ -87,20 +128,23 @@ export default function StaffPage() {
                     <h1 className="text-2xl font-bold">Staff Management</h1>
                     <p className="text-muted-foreground">Manage access for your team members.</p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) setEditingStaff(null);
+                }}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2">
+                        <Button className="gap-2" onClick={openCreateDialog}>
                             <Plus className="h-4 w-4" /> Add Staff
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add New Staff Member</DialogTitle>
+                            <DialogTitle>{editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
                             <DialogDescription>
-                                Create an account for your staff. They can use these credentials to log in.
+                                {editingStaff ? 'Update staff details. Leave password blank to keep unchanged.' : 'Create an account for your staff. They can use these credentials to log in.'}
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleCreateStaff} className="space-y-4">
+                        <form onSubmit={handleSaveStaff} className="space-y-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">Full Name</Label>
                                 <Input
@@ -118,22 +162,20 @@ export default function StaffPage() {
                                         value={newStaff.username}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            // Only allow alphanumeric, -, _, .
                                             if (/^[a-zA-Z0-9._-]*$/.test(val)) {
                                                 setNewStaff({ ...newStaff, username: val });
                                             }
                                         }}
                                         required
+                                        disabled={!!editingStaff} // Cannot change username/email
                                         placeholder="john"
-                                        className="border-0 focus-visible:ring-0 rounded-r-none"
+                                        className="border-0 focus-visible:ring-0 rounded-r-none disabled:opacity-50"
                                     />
                                     <span className="px-3 text-muted-foreground bg-muted/50 border-l h-10 flex items-center rounded-r-md text-sm whitespace-nowrap">
                                         @{shopSlug || 'shop-slug'}
                                     </span>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Only letters, numbers, dots, dashes, and underscores allowed.
-                                </p>
+                                {editingStaff && <p className="text-xs text-muted-foreground">Username cannot be changed.</p>}
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
@@ -142,13 +184,14 @@ export default function StaffPage() {
                                     type="password"
                                     value={newStaff.password}
                                     onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
-                                    required
+                                    required={!editingStaff}
                                     minLength={6}
+                                    placeholder={editingStaff ? "Leave blank to keep current" : ""}
                                 />
                             </div>
                             <DialogFooter>
                                 <Button type="submit" disabled={creating}>
-                                    {creating ? "Creating..." : "Create Account"}
+                                    {creating ? "Saving..." : (editingStaff ? "Update Staff" : "Create Account")}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -200,9 +243,14 @@ export default function StaffPage() {
                                         </TableCell>
                                         <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => openEditDialog(member)}>
+                                                    <User className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteStaff(member.id)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))

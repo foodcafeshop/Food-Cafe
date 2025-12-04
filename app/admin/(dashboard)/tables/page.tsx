@@ -33,7 +33,7 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 // ...
 
 export default function TableManagementPage() {
-    const { shopId } = useShopId();
+    const { shopId, role } = useShopId();
     const [tables, setTables] = useState<Table[]>([]);
     // ... (keep existing state)
     const [viewMode, setViewMode] = useState<'list' | 'canvas'>('list');
@@ -227,9 +227,16 @@ export default function TableManagementPage() {
 
     const handleDeleteTable = async () => {
         if (currentTable.id && confirm("Delete this table?")) {
-            const { error } = await supabase.from('tables').delete().eq('id', currentTable.id);
+            const { data, error } = await supabase
+                .from('tables')
+                .delete()
+                .eq('id', currentTable.id)
+                .select();
+
             if (error) {
                 toast.error('Failed to delete table');
+            } else if (!data || data.length === 0) {
+                toast.error('Cannot delete table (Permission denied)');
             } else {
                 setTables(tables.filter(t => t.id !== currentTable.id));
                 setIsDialogOpen(false);
@@ -499,9 +506,11 @@ export default function TableManagementPage() {
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Table Management</h1>
                     <div className="flex gap-2">
-                        <Button className="gap-2" onClick={handleAddTable}>
-                            <Plus className="h-4 w-4" /> Add Table
-                        </Button>
+                        {role === 'admin' && (
+                            <Button className="gap-2" onClick={handleAddTable}>
+                                <Plus className="h-4 w-4" /> Add Table
+                            </Button>
+                        )}
 
                         {selectedTables.size > 0 ? (
                             <Button variant="outline" className="gap-2" onClick={() => handlePrint(tables.filter(t => selectedTables.has(t.id)))}>
@@ -701,9 +710,11 @@ export default function TableManagementPage() {
                                             <Button variant="ghost" size="icon" onClick={() => handleEditTable(table)}>
                                                 <Edit2 className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {role === 'admin' && (
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -768,7 +779,7 @@ export default function TableManagementPage() {
                         </div>
                     </div>
                     <DialogFooter className="flex justify-between sm:justify-between">
-                        {currentTable.id && (
+                        {currentTable.id && role === 'admin' && (
                             <Button variant="destructive" onClick={handleDeleteTable}>Delete</Button>
                         )}
                         <Button onClick={handleSave}>Save Changes</Button>

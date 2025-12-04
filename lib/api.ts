@@ -502,7 +502,7 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
                     total_amount: roundToThree(totalAmount),
                     payment_method: paymentMethod,
                     order_ids: orderIds,
-                    items_snapshot: {}, // TODO: Fetch items if needed, or rely on orders
+                    items_snapshot: [], // TODO: Fetch items if needed, or rely on orders
                     breakdown: breakdown,
                     bill_number: billNumber
                 })

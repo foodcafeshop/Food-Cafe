@@ -500,8 +500,8 @@ create policy "Admin can delete category_items" on public.category_items for del
 create policy "Public can read tables" on public.tables for select using (true);
 -- Admin can manage
 create policy "Admin can insert tables" on public.tables for insert with check (public.is_admin_of(shop_id));
-create policy "Admin can update tables" on public.tables for update using (public.is_admin_of(shop_id));
 create policy "Admin can delete tables" on public.tables for delete using (public.is_admin_of(shop_id));
+create policy "Staff can update tables" on public.tables for update using (public.is_staff_of(shop_id));
 
 -- ORDERS
 -- Public can insert (Placing order)
