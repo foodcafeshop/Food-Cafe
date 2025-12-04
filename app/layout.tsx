@@ -18,6 +18,8 @@ import { Suspense } from "react";
 
 // ...
 
+import { Analytics } from "@vercel/analytics/react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +33,7 @@ export default function RootLayout({
           <WelcomeDialog />
         </Suspense>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
