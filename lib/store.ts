@@ -9,7 +9,7 @@ export type CartItem = MenuItem & {
 
 type CartStore = {
     items: CartItem[];
-    addItem: (item: MenuItem & { quantity?: number }) => void;
+    addItem: (item: MenuItem & { quantity?: number; notes?: string }) => void;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, delta: number) => void;
     clearCart: () => void;

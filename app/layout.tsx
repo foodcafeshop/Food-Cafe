@@ -14,6 +14,10 @@ import { WelcomeDialog } from "@/components/features/auth/welcome-dialog";
 
 // ...
 
+import { Suspense } from "react";
+
+// ...
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +27,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased bg-background text-foreground`}>
         {children}
-        <WelcomeDialog />
+        <Suspense fallback={null}>
+          <WelcomeDialog />
+        </Suspense>
         <Toaster />
       </body>
     </html>

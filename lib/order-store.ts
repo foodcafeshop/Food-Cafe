@@ -43,6 +43,8 @@ const initialOrders: Order[] = [
                 is_available: true,
                 is_popular: true,
                 created_at: new Date().toISOString(),
+                average_rating: 0,
+                rating_count: 0,
                 quantity: 1
             },
             {
@@ -57,6 +59,8 @@ const initialOrders: Order[] = [
                 is_available: true,
                 is_popular: true,
                 created_at: new Date().toISOString(),
+                average_rating: 0,
+                rating_count: 0,
                 quantity: 2
             },
         ]

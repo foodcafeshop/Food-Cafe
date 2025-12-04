@@ -8,12 +8,14 @@ A modern, full-stack restaurant management system built with Next.js, Supabase, 
 - **Digital Menu**: Browse categories and items with rich images and descriptions.
 - **Cart & Ordering**: Add items to cart, customize orders (e.g., "Extra spicy"), and place orders directly from the table.
 - **Real-time Status**: Track order status (Queued -> Preparing -> Ready -> Served).
+- **Secure Access**: **OTP Authentication** for tables (optional admin setting).
+- **Smart URLs**: Access menus via `?table=Label` (e.g., `?table=T1`) for automatic table assignment.
 - **Responsive Design**: Optimized for mobile devices for a seamless dining experience.
 
 ### 👨‍🍳 Admin / Staff Dashboard
 - **Dashboard Overview**: Real-time metrics for Total Revenue, Active Orders, Table Occupancy, and Popular Items.
 - **Order Management (KDS)**: Kanban-style board to manage order lifecycle.
-- **Table Management**: Visual floor plan to track table status (Empty, Occupied, Billed) and assign orders.
+- **Table Management**: Visual floor plan to track table status (Empty, Occupied, Billed) with **Real-time Updates**. Manage **Table OTPs** for secure access.
 - **Menu Management**: CRUD operations for Menus, Categories, and Items. Support for dietary restrictions (Veg/Non-Veg/Vegan) and item visibility toggles.
 - **Billing & History**: Generate bills, split payments, and view historical sales data with date filtering and sorting.
 - **Analytics**: Visual charts for Revenue Trends and Sales by Category.
