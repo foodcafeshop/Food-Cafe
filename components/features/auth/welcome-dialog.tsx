@@ -9,7 +9,9 @@ import { useCartStore } from "@/lib/store";
 import { ChefHat } from "lucide-react";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { verifyTableOtp, getShopDetails, getSettings, getTableByLabel, occupyTable } from "@/lib/api";
+import { verifyTableOtp, getShopDetails, getSettings, getTableByLabel, joinTable } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export function WelcomeDialog() {
     const pathname = usePathname();
@@ -22,7 +24,10 @@ export function WelcomeDialog() {
         setWelcomeOpen,
         welcomeMode,
         tableId,
-        setTableId
+        setTableId,
+        logout,
+        sessionId,
+        setSessionId
     } = useCartStore();
 
     const [name, setName] = useState("");
@@ -77,6 +82,64 @@ export function WelcomeDialog() {
         return () => clearTimeout(timer);
     }, [customerName, setWelcomeOpen]);
 
+    // Realtime Logout Listener & Offline Recovery
+    useEffect(() => {
+        if (!tableId || !sessionId) return;
+
+        // 1. Initial Check (for offline recovery)
+        const checkStatus = async () => {
+            if (!customerName) return; // Only check if logged in
+
+            const { data: table } = await supabase
+                .from('tables')
+                .select('status, active_customers')
+                .eq('id', tableId)
+                .single();
+
+            if (table) {
+                const activeCustomers = table.active_customers as any[] || [];
+                const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
+
+                if (table.status === 'empty' || !isSessionValid) {
+                    logout();
+                    setWelcomeOpen(true, 'welcome');
+                    toast.info("Session expired.");
+                }
+            }
+        };
+        checkStatus();
+
+        // 2. Realtime Listener
+        const channel = supabase
+            .channel(`table-status-${tableId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `id=eq.${tableId}`
+                },
+                (payload) => {
+                    const newStatus = payload.new.status;
+                    const activeCustomers = payload.new.active_customers as any[] || [];
+                    const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
+
+                    if (newStatus === 'empty' || !isSessionValid) {
+                        // Table cleared or user removed
+                        logout();
+                        setWelcomeOpen(true, 'welcome');
+                        toast.info("Session ended by staff.");
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [tableId, sessionId, logout, setWelcomeOpen, customerName]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -109,10 +172,19 @@ export function WelcomeDialog() {
                 }
             }
 
-            // Mark table as occupied
-            console.log('Attempting to occupy table:', tableId);
-            await occupyTable(tableId);
-            console.log('Table occupation request sent');
+            // Join Table
+            const newSessionId = sessionId || crypto.randomUUID();
+            const customerInfo = {
+                sessionId: newSessionId,
+                name: name.trim(),
+                phone: phone.trim(),
+                joinedAt: new Date().toISOString()
+            };
+
+            console.log('Attempting to join table:', tableId);
+            await joinTable(tableId, customerInfo);
+            setSessionId(newSessionId);
+            console.log('Table join request sent');
         }
 
         if (name.trim()) {

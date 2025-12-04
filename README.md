@@ -8,14 +8,18 @@ A modern, full-stack restaurant management system built with Next.js, Supabase, 
 - **Digital Menu**: Browse categories and items with rich images and descriptions.
 - **Cart & Ordering**: Add items to cart, customize orders (e.g., "Extra spicy"), and place orders directly from the table.
 - **Real-time Status**: Track order status (Queued -> Preparing -> Ready -> Served).
+- **Multi-User Sessions**: Multiple customers can join the same table. Sessions are managed securely via `active_customers` tracking.
+- **Auto-Logout**: Sessions are automatically cleared when the table is marked as "Empty" by staff, ensuring privacy for the next guest.
 - **Secure Access**: **OTP Authentication** for tables (optional admin setting).
-- **Smart URLs**: Access menus via `?table=Label` (e.g., `?table=T1`) for automatic table assignment.
-- **Responsive Design**: Optimized for mobile devices for a seamless dining experience.
+- **Smart URLs**: Access menus via `https://foodcafeshop.in/[slug]/menu?table=Label` for automatic shop and table assignment.
 
 ### 👨‍🍳 Admin / Staff Dashboard
 - **Dashboard Overview**: Real-time metrics for Total Revenue, Active Orders, Table Occupancy, and Popular Items.
 - **Order Management (KDS)**: Kanban-style board to manage order lifecycle.
-- **Table Management**: Visual floor plan to track table status (Empty, Occupied, Billed) with **Real-time Updates**. Manage **Table OTPs** for secure access.
+- **Table Management**: Visual floor plan to track table status (Empty, Occupied, Billed) with **Real-time Updates**.
+    - **Session Control**: Clearing a table automatically logs out all active customers on that table.
+    - **QR Codes**: Generate and print QR codes linked to your specific shop slug.
+- **Shop Management**: Create shops with **custom URL slugs** (validated for uniqueness and format).
 - **Menu Management**: CRUD operations for Menus, Categories, and Items. Support for dietary restrictions (Veg/Non-Veg/Vegan) and item visibility toggles.
 - **Billing & History**: Generate bills, split payments, and view historical sales data with date filtering and sorting.
 - **Analytics**: Visual charts for Revenue Trends and Sales by Category.

@@ -498,7 +498,10 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
 export async function clearTable(tableId: string) {
     const { error } = await supabase
         .from('tables')
-        .update({ status: 'empty' })
+        .update({
+            status: 'empty',
+            active_customers: []
+        })
         .eq('id', tableId);
 
     if (error) throw error;
@@ -950,23 +953,19 @@ export async function getTableByLabel(shopId: string, label: string) {
     return data;
 }
 
-export async function occupyTable(tableId: string) {
-    const { data, error } = await supabase.rpc('occupy_table', {
-        input_table_id: tableId
+// RPC: Join Table
+export async function joinTable(tableId: string, customerInfo: any) {
+    console.log('[API] Joining table:', tableId, customerInfo);
+    const { data, error } = await supabase.rpc('join_table', {
+        input_table_id: tableId,
+        customer_info: customerInfo
     });
 
     if (error) {
-        console.error('Error occupying table:', error);
+        console.error('[API] Error joining table:', error);
         return false;
     }
-
-    if (data === true) {
-        console.log('Table occupied successfully');
-        return true;
-    } else {
-        console.warn('Table could not be occupied (maybe it was not empty?)');
-        return false;
-    }
+    return data; // Returns boolean success
 }
 
 export async function verifyTableOtp(tableId: string, otp: string) {

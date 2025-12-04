@@ -714,3 +714,26 @@ grant execute on function public.occupy_table(uuid) to anon, authenticated, serv
 
 -- Initial Data Seeding
 -- (Settings are now shop-specific, so we don't insert a global row 1)
+
+-- SESSION MANAGEMENT REFACTOR
+-- Add active_customers column to tables
+ALTER TABLE public.tables ADD COLUMN IF NOT EXISTS active_customers JSONB DEFAULT '[]'::JSONB;
+
+-- RPC: Join Table (Replaces occupy_table logic for multi-user)
+CREATE OR REPLACE FUNCTION public.join_table(input_table_id UUID, customer_info JSONB)
+RETURNS BOOLEAN AS $$
+DECLARE
+  rows_updated INTEGER;
+BEGIN
+  UPDATE public.tables
+  SET status = 'occupied',
+      active_customers = active_customers || customer_info,
+      updated_at = timezone('utc'::text, now())
+  WHERE id = input_table_id;
+  
+  GET DIAGNOSTICS rows_updated = row_count;
+  RETURN rows_updated > 0;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.join_table(UUID, JSONB) TO anon, authenticated, service_role;
