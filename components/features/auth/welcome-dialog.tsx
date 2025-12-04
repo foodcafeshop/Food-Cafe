@@ -37,7 +37,7 @@ export function WelcomeDialog() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [otpEnabled, setOtpEnabled] = useState<boolean | null>(null);
 
-    if (pathname?.startsWith('/admin')) return null;
+
 
     useEffect(() => {
         const init = async () => {
@@ -201,6 +201,8 @@ export function WelcomeDialog() {
             setWelcomeOpen(false);
         }
     };
+
+    if (pathname?.startsWith('/admin')) return null;
 
     return (
         <Dialog open={isWelcomeOpen} onOpenChange={(open) => {
