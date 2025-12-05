@@ -10,12 +10,14 @@ import { Settings } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 export default function FinancialSettingsPage() {
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState<Partial<Settings>>({
         tax_rate: 0,
-        service_charge: 0
+        service_charge: 0,
+        tax_included_in_price: false
     });
     const [shopId, setShopId] = useState<string | null>(null);
 
@@ -104,6 +106,26 @@ export default function FinancialSettingsPage() {
                             />
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tax Configuration</CardTitle>
+                    <CardDescription>Configure how taxes are calculated.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="tax-included"
+                            checked={settings.tax_included_in_price || false}
+                            onCheckedChange={(checked) => setSettings({ ...settings, tax_included_in_price: checked })}
+                        />
+                        <Label htmlFor="tax-included">Prices include tax</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        If enabled, the price entered for menu items will be considered as the final price paid by the customer. Tax will be reverse-calculated from this amount.
+                    </p>
                 </CardContent>
             </Card>
 

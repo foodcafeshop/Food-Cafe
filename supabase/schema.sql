@@ -157,6 +157,7 @@ create table public.settings (
   sound_notifications boolean default true,
   auto_print boolean default false,
   enable_otp boolean default false,
+  tax_included_in_price boolean default false,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(shop_id)
 );

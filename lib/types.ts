@@ -86,5 +86,6 @@ export interface Settings {
     sound_notifications: boolean;
     auto_print: boolean;
     enable_otp: boolean;
+    tax_included_in_price: boolean;
     updated_at: string;
 }

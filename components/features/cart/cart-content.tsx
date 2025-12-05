@@ -25,7 +25,7 @@ interface CartContentProps {
 
 export function CartContent({ initialSettings, shopId, shop }: CartContentProps) {
     const { items, updateQuantity, totalPrice, clearCart, tableId } = useCartStore();
-    const { updateSettings } = useSettingsStore();
+    const { taxRate, taxIncludedInPrice, updateSettings } = useSettingsStore();
     const router = useRouter();
 
     const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
@@ -38,14 +38,29 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 currency: initialSettings.currency,
                 taxRate: initialSettings.tax_rate,
                 serviceCharge: initialSettings.service_charge,
-                restaurantName: initialSettings.restaurant_name
+                restaurantName: initialSettings.restaurant_name,
+                taxIncludedInPrice: initialSettings.tax_included_in_price
             });
         }
     }, [initialSettings, updateSettings]);
 
     const subtotal = totalPrice();
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
+    // Calculate tax based on setting using the store taxRate
+    const currentTaxRate = taxRate ?? 10; // Fallback to 10 if not set
+
+    let taxAmount = 0;
+    let totalAmount = 0;
+
+    if (taxIncludedInPrice) {
+        // If tax is included, the subtotal IS the total amount the user pays
+        totalAmount = subtotal;
+        // Back-calculate tax: Price = Cost * (1 + TaxRate/100) -> Cost = Price / (1 + TaxRate/100) -> Tax = Price - Cost
+        taxAmount = subtotal - (subtotal / (1 + currentTaxRate / 100));
+    } else {
+        // If tax is excluded, add tax on top
+        taxAmount = subtotal * (currentTaxRate / 100);
+        totalAmount = subtotal + taxAmount;
+    }
 
     // Use prop settings for immediate render, fallback to store if needed
     const currencySymbol = getCurrencySymbol(initialSettings?.currency);
@@ -54,9 +69,22 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
         // Get the latest tableId and calculate total from the store directly to avoid stale closures
         const currentTableId = useCartStore.getState().tableId;
         const currentItems = useCartStore.getState().items;
+
+        // Re-calculate totals inside handler to ensure freshness
+        const { taxRate, taxIncludedInPrice } = useSettingsStore.getState();
+        const currentRate = taxRate ?? 10;
+
         const currentSubtotal = currentItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-        const currentTax = currentSubtotal * 0.1;
-        const currentTotal = currentSubtotal + currentTax;
+        let currentTax = 0;
+        let currentTotal = 0;
+
+        if (taxIncludedInPrice) {
+            currentTotal = currentSubtotal;
+            currentTax = currentSubtotal - (currentSubtotal / (1 + currentRate / 100));
+        } else {
+            currentTax = currentSubtotal * (currentRate / 100);
+            currentTotal = currentSubtotal + currentTax;
+        }
 
         if (!currentTableId) {
             toast.error("Please scan a QR code to place an order.");
@@ -217,12 +245,14 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                 <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-600 border-b border-dashed border-gray-200 pb-4">
-                                <span>Taxes & Charges (10%)</span>
-                                <span>{currencySymbol}{tax.toFixed(2)}</span>
+                                <span>
+                                    {taxIncludedInPrice ? `Tax (Included in price)` : `Tax (${taxRate}%)`}
+                                </span>
+                                <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between font-bold text-gray-800 text-lg pt-2">
                                 <span>To Pay</span>
-                                <span>{currencySymbol}{total.toFixed(2)}</span>
+                                <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
                             </div>
                         </div>
 
@@ -244,7 +274,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                         <Button size="lg" className="w-full text-lg font-bold h-14 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 hidden md:flex justify-between px-6" onClick={handlePlaceOrder}>
                             <div className="flex flex-col items-start leading-none">
                                 <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
-                                <span>{currencySymbol}{total.toFixed(2)}</span>
+                                <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span>Place Order</span>
@@ -261,7 +291,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                     <Button size="lg" className="w-full text-lg font-bold h-12 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 flex justify-between px-6" onClick={handlePlaceOrder}>
                         <div className="flex flex-col items-start leading-none">
                             <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
-                            <span>{currencySymbol}{total.toFixed(2)}</span>
+                            <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span>Place Order</span>

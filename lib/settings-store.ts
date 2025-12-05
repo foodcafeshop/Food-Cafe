@@ -13,6 +13,7 @@ interface SettingsState {
     darkMode: boolean;
     soundNotifications: boolean;
     autoPrint: boolean;
+    taxIncludedInPrice: boolean;
 
     updateSettings: (settings: Partial<SettingsState>) => void;
     getCurrencySymbol: () => string;
@@ -29,6 +30,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkMode: false,
             soundNotifications: true,
             autoPrint: false,
+            taxIncludedInPrice: false,
 
             updateSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
 
