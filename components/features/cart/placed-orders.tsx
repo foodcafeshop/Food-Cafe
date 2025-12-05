@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getTableOrders } from "@/lib/api";
 import { useCartStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, ChefHat, Utensils } from "lucide-react";
+import { Clock, CheckCircle2, ChefHat, Utensils, XCircle } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
 
 interface PlacedOrdersProps {
@@ -44,6 +44,7 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
             case 'preparing': return 'bg-orange-100 text-orange-600';
             case 'ready': return 'bg-green-100 text-green-600';
             case 'served': return 'bg-blue-100 text-blue-600';
+            case 'cancelled': return 'bg-red-100 text-red-600';
             default: return 'bg-gray-100 text-gray-600';
         }
     };
@@ -54,11 +55,14 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
             case 'preparing': return <ChefHat className="w-3 h-3" />;
             case 'ready': return <CheckCircle2 className="w-3 h-3" />;
             case 'served': return <Utensils className="w-3 h-3" />;
+            case 'cancelled': return <XCircle className="w-3 h-3" />;
             default: return <Clock className="w-3 h-3" />;
         }
     };
 
-    const grandTotal = orders.reduce((sum, order) => sum + order.total_amount, 0);
+    const grandTotal = orders
+        .filter(order => order.status !== 'cancelled')
+        .reduce((sum, order) => sum + order.total_amount, 0);
 
     return (
         <div className="space-y-4">
@@ -86,17 +90,26 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
                                     #{order.order_number || order.id.slice(0, 8)} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
-                            <span className="font-bold text-gray-800">{currencySymbol}{order.total_amount.toFixed(2)}</span>
+                            <span className={`font-bold text-gray-800 ${order.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>
+                                {currencySymbol}{order.total_amount.toFixed(2)}
+                            </span>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${order.status === 'cancelled' ? 'opacity-50' : ''}`}>
                             {order.order_items.map((item: any) => (
                                 <div key={item.id} className="flex justify-between text-sm">
                                     <div className="flex gap-2">
                                         <span className="font-bold text-gray-600">{item.quantity}x</span>
-                                        <span className="text-gray-700">{item.name}</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-700">{item.name}</span>
+                                            {item.notes && (
+                                                <span className="text-xs text-gray-400 italic">Note: {item.notes}</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className="text-gray-500">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</span>
+                                    <span className={`text-gray-500 ${order.status === 'cancelled' ? 'line-through' : ''}`}>
+                                        {currencySymbol}{(item.price * item.quantity).toFixed(2)}
+                                    </span>
                                 </div>
                             ))}
                         </div>

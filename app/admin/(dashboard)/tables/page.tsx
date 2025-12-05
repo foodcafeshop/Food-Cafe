@@ -143,11 +143,12 @@ export default function TableManagementPage() {
         if (!billingTable) return;
 
         try {
-            const orderIds = tableOrders.map(o => o.id);
+            const validOrders = tableOrders.filter(o => o.status !== 'cancelled');
+            const orderIds = validOrders.map(o => o.id);
 
             // Calculate Service Charge
-            const rawSubtotal = tableOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-            const rawTax = tableOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
+            const rawSubtotal = validOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
+            const rawTax = validOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
             const rawServiceCharge = includeServiceCharge ? (rawSubtotal * (serviceChargeRate / 100)) : 0;
 
             const subtotal = roundToThree(rawSubtotal);
@@ -390,7 +391,9 @@ export default function TableManagementPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${tableOrders.flatMap(o => o.order_items).map((item: any) => `
+                            ${tableOrders
+                .filter(o => o.status !== 'cancelled')
+                .flatMap(o => o.order_items).map((item: any) => `
                                 <tr>
                                     <td>${item.name}</td>
                                     <td class="price">${item.quantity}</td>
@@ -492,8 +495,9 @@ export default function TableManagementPage() {
 
     // Helper for billing calculation
     const calculateBilling = () => {
-        const subtotal = tableOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-        const tax = tableOrders.reduce((sum, order) => sum + order.total_amount, 0) - subtotal;
+        const activeOrders = tableOrders.filter(o => o.status !== 'cancelled');
+        const subtotal = activeOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
+        const tax = activeOrders.reduce((sum, order) => sum + order.total_amount, 0) - subtotal;
         const serviceCharge = includeServiceCharge ? (subtotal * (serviceChargeRate / 100)) : 0;
         const grandTotal = subtotal + tax + serviceCharge;
         return { subtotal, tax, serviceCharge, grandTotal };
@@ -999,7 +1003,7 @@ export default function TableManagementPage() {
                                         </div>
                                         <div className="space-y-1">
                                             {order.order_items?.map((item: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between text-sm">
+                                                <div key={idx} className={cn("flex justify-between text-sm", order.status === 'cancelled' && "line-through opacity-50")}>
                                                     <span>{item.quantity}x {item.name}</span>
                                                     <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
                                                 </div>

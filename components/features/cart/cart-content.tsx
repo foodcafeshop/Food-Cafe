@@ -8,12 +8,14 @@ import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/order-store";
 import { useSettingsStore } from "@/lib/settings-store";
 import { useEffect } from "react";
-import { createOrder, createOrderItems } from "@/lib/api";
+import { createOrder, createOrderItems, validateOrderItemsAvailability } from "@/lib/api";
 import { toast } from "sonner";
 import { getCurrencySymbol } from "@/lib/utils";
 import { PlacedOrders } from "@/components/features/cart/placed-orders";
 import { OrderDetailsDialog } from "@/components/features/order/order-details-dialog";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useCartAvailability } from "@/lib/hooks/use-cart-availability";
 
 import { ShopHeader } from "@/components/features/landing/shop-header";
 
@@ -31,20 +33,12 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
     const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-    // Sync settings on mount
-    useEffect(() => {
-        if (initialSettings) {
-            updateSettings({
-                currency: initialSettings.currency,
-                taxRate: initialSettings.tax_rate,
-                serviceCharge: initialSettings.service_charge,
-                restaurantName: initialSettings.restaurant_name,
-                taxIncludedInPrice: initialSettings.tax_included_in_price
-            });
-        }
-    }, [initialSettings, updateSettings]);
+    // Use custom hook for availability
+    const { unavailableItemIds } = useCartAvailability(items, shopId);
 
-    const subtotal = totalPrice();
+    // Calculate total only for available items
+    const availableItems = items.filter(i => !unavailableItemIds.has(i.id));
+    const subtotal = availableItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     // Calculate tax based on setting using the store taxRate
     const currentTaxRate = taxRate ?? 10; // Fallback to 10 if not set
 
@@ -68,7 +62,15 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
     const handlePlaceOrder = async () => {
         // Get the latest tableId and calculate total from the store directly to avoid stale closures
         const currentTableId = useCartStore.getState().tableId;
-        const currentItems = useCartStore.getState().items;
+        const allItems = useCartStore.getState().items;
+        // Re-validate availability just in case (using local state is risky inside async handler if it's stale, but we use realtime)
+        // Better to filter `allItems` against `unavailableItemIds` from state (which is kept fresh).
+        const currentItems = allItems.filter(i => !unavailableItemIds.has(i.id));
+
+        if (currentItems.length === 0) {
+            toast.error("No available items in cart to place order.");
+            return;
+        }
 
         // Re-calculate totals inside handler to ensure freshness
         const { taxRate, taxIncludedInPrice } = useSettingsStore.getState();
@@ -93,6 +95,14 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
         try {
             // 1. Create Order
+            // 1. Validate Item Availability (Real-time check)
+            const { valid, unavailableItems } = await validateOrderItemsAvailability(currentItems.map(i => ({ id: i.id, name: i.name })));
+
+            if (!valid) {
+                toast.error(`Some items are no longer available: ${unavailableItems.join(", ")}. Please remove them to proceed.`);
+                return;
+            }
+
             const { customerName, customerPhone, setWelcomeOpen } = useCartStore.getState();
 
             if (!customerName) {
@@ -117,8 +127,13 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 throw new Error("Failed to create order");
             }
 
+            if (currentItems.length === 0) {
+                toast.error("No available items to order. Please update your cart.");
+                return;
+            }
+
             // 2. Create Order Items
-            const orderItems = items.map(item => ({
+            const orderItems = currentItems.map(item => ({
                 order_id: newOrder.id,
                 menu_item_id: item.id,
                 name: item.name,
@@ -137,9 +152,14 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
             setSelectedOrderId(newOrder.id);
             setIsOrderDialogOpen(true);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Order placement failed:", error);
-            toast.error("Failed to place order. Please try again.");
+            // Display specific error message if available (e.g. "Table is currently billed")
+            if (error instanceof Error || (error && error.message)) {
+                toast.error(error.message || "Failed to place order.");
+            } else {
+                toast.error("Failed to place order. Please try again.");
+            }
         }
     };
 
@@ -189,37 +209,58 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                     {/* Left Column: Cart Items */}
                     <div className="md:col-span-2 space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {items.map((item) => (
-                                <div key={item.id} className="flex gap-4 p-4 border-b border-gray-100 last:border-none">
-                                    <div className="w-24 h-24 shrink-0">
-                                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-1">{item.name}</h3>
-                                        <div className="font-medium text-gray-600 text-sm mt-1">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</div>
-                                    </div>
-                                    <div className="flex flex-col items-end justify-between gap-2">
-                                        <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md shadow-sm h-8 w-20 px-2">
-                                            <button
-                                                className="text-gray-400 hover:text-green-600"
-                                                onClick={() => updateQuantity(item.id, -1)}
-                                            >
-                                                <Minus className="w-3 h-3" />
-                                            </button>
-                                            <span className="text-green-600 font-bold text-sm">{item.quantity}</span>
-                                            <button
-                                                className="text-green-600 hover:text-green-700"
-                                                onClick={() => updateQuantity(item.id, 1)}
-                                            >
-                                                <Plus className="w-3 h-3" />
-                                            </button>
+                            {items.map((item) => {
+                                const isUnavailable = unavailableItemIds.has(item.id);
+                                return (
+                                    <div key={item.id} className={`flex gap-4 p-4 border-b border-gray-100 last:border-none ${isUnavailable ? 'opacity-60 bg-gray-50' : ''}`}>
+                                        <div className="w-24 h-24 shrink-0 relative">
+                                            <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover rounded-lg grayscale-[50%]" style={{ filter: isUnavailable ? 'grayscale(100%)' : 'none' }} />
+                                            {isUnavailable && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                                                    <span className="text-white text-xs font-bold px-2 py-1 bg-red-600 rounded">Out of Stock</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className="text-xs text-gray-400 font-medium">
-                                            {currencySymbol}{item.price} x {item.quantity}
-                                        </span>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-1">{item.name}</h3>
+                                            <div className="font-medium text-gray-600 text-sm mt-1">
+                                                {isUnavailable ? (
+                                                    <span className="text-red-500 text-xs">Item unavailable</span>
+                                                ) : (
+                                                    <>{currencySymbol}{(item.price * item.quantity).toFixed(2)}</>
+                                                )}
+                                            </div>
+                                            {item.notes && (
+                                                <p className="text-xs text-gray-400 italic mt-1 line-clamp-2">
+                                                    Note: {item.notes}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col items-end justify-between gap-2">
+                                            {/* Allow removing even if out of stock */}
+                                            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md shadow-sm h-8 w-20 px-2">
+                                                <button
+                                                    className="text-gray-400 hover:text-green-600"
+                                                    onClick={() => updateQuantity(item.id, -1)}
+                                                >
+                                                    <Minus className="w-3 h-3" />
+                                                </button>
+                                                <span className={`font-bold text-sm ${isUnavailable ? 'text-gray-400' : 'text-green-600'}`}>{item.quantity}</span>
+                                                <button
+                                                    className="text-green-600 hover:text-green-700"
+                                                    disabled={isUnavailable}
+                                                    onClick={() => updateQuantity(item.id, 1)}
+                                                >
+                                                    <Plus className={`w-3 h-3 ${isUnavailable ? 'text-gray-300' : ''}`} />
+                                                </button>
+                                            </div>
+                                            <span className="text-xs text-gray-400 font-medium">
+                                                {currencySymbol}{item.price} x {item.quantity}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Placed Orders Section */}

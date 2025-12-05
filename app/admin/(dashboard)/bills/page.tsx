@@ -277,7 +277,7 @@ export default function BillsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                {Array.isArray(selectedBill.items_snapshot) ? (
+                                {Array.isArray(selectedBill.items_snapshot) && selectedBill.items_snapshot.length > 0 ? (
                                     selectedBill.items_snapshot.map((item: any, idx: number) => (
                                         <div key={idx} className="flex justify-between text-sm">
                                             <div className="flex gap-2">
@@ -288,7 +288,7 @@ export default function BillsPage() {
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-muted-foreground italic">Item details not available for this bill.</p>
+                                    <p className="text-sm text-muted-foreground italic text-center py-2">Item details not available for this bill.</p>
                                 )}
                             </div>
 

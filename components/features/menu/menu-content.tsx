@@ -14,6 +14,8 @@ import { useCartStore } from "@/lib/store";
 import { getTableById } from "@/lib/api";
 import { ShopHeader } from "@/components/features/landing/shop-header";
 
+import { supabase } from "@/lib/supabase";
+
 interface MenuContentProps {
     categories: any[];
     settings: any;
@@ -21,6 +23,7 @@ interface MenuContentProps {
 }
 
 export function MenuContent({ categories: initialCategories, settings, shop }: MenuContentProps) {
+    const [categories, setCategories] = useState(initialCategories);
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialQuery = searchParams.get("search") || "";
@@ -49,11 +52,47 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         fetchTableLabel();
     }, [tableId]);
 
+    // Real-time Menu Text Updates
+    useEffect(() => {
+        if (!shop?.id) return;
+
+        console.log("Subscribing to menu updates for shop:", shop.id);
+        const channel = supabase
+            .channel(`menu-updates-${shop.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'menu_items',
+                    filter: `shop_id=eq.${shop.id}`
+                },
+                (payload) => {
+                    console.log("Menu Item Updated:", payload.new);
+                    const updatedItem = payload.new;
+
+                    setCategories(prevCategories => {
+                        return prevCategories.map(cat => ({
+                            ...cat,
+                            items: cat.items.map((item: any) =>
+                                item.id === updatedItem.id ? { ...item, ...updatedItem } : item
+                            )
+                        }));
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [shop?.id]);
+
     const [dietaryFilter, setDietaryFilter] = useState<string>("all");
     const [sortBy, setSortBy] = useState<string>("recommended");
 
     // Filter categories based on search query and filters
-    const filteredCategories = initialCategories.map(cat => ({
+    const filteredCategories = categories.map(cat => ({
         ...cat,
         items: cat.items.filter((item: any) => {
             // Search Filter
@@ -102,7 +141,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
             {!isSearchOpen && (
                 <div className="bg-white sticky top-20 z-40 shadow-sm">
                     <div className="md:hidden border-t border-gray-100">
-                        <CategoryNav categories={initialCategories} />
+                        <CategoryNav categories={categories} />
                     </div>
 
                     {/* Filters Bar */}
@@ -154,7 +193,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                     {/* Desktop Sidebar Navigation */}
                     <aside className="w-64 shrink-0 hidden md:block sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 custom-scrollbar">
                         <div className="flex flex-col gap-1">
-                            {initialCategories.map((category) => (
+                            {categories.map((category) => (
                                 <a
                                     key={category.id}
                                     href={`#category-${category.id}`}

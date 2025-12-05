@@ -259,6 +259,19 @@ export async function createOrder(order: any) {
                 customerId = await upsertCustomer(shopId, order.customer_name, order.customer_phone);
             }
 
+            // Perform validations
+            if (order.table_id) {
+                const table = await getTableById(order.table_id);
+                if (table) {
+                    if (table.status === 'billed') {
+                        throw new Error("Table is currently billed. Please ask staff to clear the table before placing a new order.");
+                    }
+                    if (table.status === 'empty') {
+                        await updateTableStatus(order.table_id, 'occupied');
+                    }
+                }
+            }
+
             const { data, error } = await supabase
                 .from('orders')
                 .insert({
@@ -281,14 +294,6 @@ export async function createOrder(order: any) {
                     continue;
                 }
                 throw error;
-            }
-
-            // Update table status to 'occupied' if table_id is present AND status is 'empty'
-            if (order.table_id) {
-                const table = await getTableById(order.table_id);
-                if (table && table.status === 'empty') {
-                    await updateTableStatus(order.table_id, 'occupied');
-                }
             }
 
             return data;
@@ -458,8 +463,8 @@ export async function getTableOrders(tableId: string) {
       order_items (*)
     `)
         .eq('table_id', tableId)
-        .in('status', ['queued', 'preparing', 'ready', 'served'])
-        .order('created_at', { ascending: true });
+        .in('status', ['queued', 'preparing', 'ready', 'served', 'cancelled'])
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Error fetching table orders:', error);
@@ -474,17 +479,49 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
     // 1. Get active orders for the table
     const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('id, total_amount, shop_id')
+        .select(`
+            id, 
+            total_amount, 
+            shop_id,
+            status,
+            order_items (
+                menu_item_id,
+                name,
+                price,
+                quantity
+            )
+        `)
         .eq('table_id', tableId)
         .in('status', ['served', 'billed']) // Include billed in case re-settling or partial
         .eq('payment_status', 'pending');
 
     if (ordersError) throw ordersError;
-    if (!orders || orders.length === 0) throw new Error("No pending orders to settle");
+    // Filter out cancelled orders just in case, though they shouldn't be 'served'/'billed' usually
+    const validOrders = (orders || []).filter(o => o.status !== 'cancelled');
 
-    const totalAmount = orders.reduce((sum, order) => sum + order.total_amount, 0);
-    const orderIds = orders.map(o => o.id);
-    const shopId = orders[0].shop_id; // Assume all orders for a table belong to the same shop
+    console.log('Valid Orders for Settle:', validOrders); // DEBUG LOG
+
+    if (!validOrders || validOrders.length === 0) throw new Error("No pending orders to settle");
+
+    const totalAmount = validOrders.reduce((sum, order) => sum + order.total_amount, 0);
+    const orderIds = validOrders.map(o => o.id);
+    const shopId = validOrders[0].shop_id; // Assume all orders for a table belong to the same shop
+
+    // Create snapshot of items for the bill
+    const itemsSnapshot = validOrders.flatMap(order => {
+        if (!order.order_items || !Array.isArray(order.order_items)) {
+            console.warn('Order missing items:', order);
+            return [];
+        }
+        return order.order_items.map((item: any) => ({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            id: item.menu_item_id
+        }));
+    });
+
+    console.log('Generated Items Snapshot:', itemsSnapshot); // DEBUG LOG
 
     // 2. Create Bill with Retry Logic for Unique Bill Number
     const maxRetries = 5;
@@ -502,7 +539,7 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
                     total_amount: roundToThree(totalAmount),
                     payment_method: paymentMethod,
                     order_ids: orderIds,
-                    items_snapshot: [], // TODO: Fetch items if needed, or rely on orders
+                    items_snapshot: itemsSnapshot, // Store the snapshot
                     breakdown: breakdown,
                     bill_number: billNumber
                 })
@@ -543,7 +580,8 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
 
 
 export async function clearTable(tableId: string) {
-    const { error } = await supabase
+    // 1. Clear the table status
+    const { error: tableError } = await supabase
         .from('tables')
         .update({
             status: 'empty',
@@ -551,7 +589,20 @@ export async function clearTable(tableId: string) {
         })
         .eq('id', tableId);
 
-    if (error) throw error;
+    if (tableError) throw tableError;
+
+    // 2. Detach cancelled orders from this table so they don't show up for next session
+    const { error: cleanupError } = await supabase
+        .from('orders')
+        .update({ table_id: null })
+        .eq('table_id', tableId)
+        .eq('status', 'cancelled');
+
+    if (cleanupError) {
+        console.error("Failed to cleanup cancelled orders:", cleanupError);
+        // Don't throw here, as the primary action (clearing table) succeeded
+    }
+
     return true;
 }
 
@@ -1035,4 +1086,61 @@ export async function verifyTableOtp(tableId: string, otp: string) {
         return false;
     }
     return data;
+}
+export async function validateOrderItemsAvailability(items: { id: string, name: string }[]): Promise<{ valid: boolean; unavailableItems: string[] }> {
+    if (items.length === 0) return { valid: true, unavailableItems: [] };
+
+    const itemIds = items.map(i => i.id);
+    const { data: dbItems, error } = await supabase
+        .from('menu_items')
+        .select('id, name, is_available')
+        .in('id', itemIds);
+
+    if (error) {
+        console.error("Error validating items:", error);
+        // Fail safe: assume valid if DB error, or block? Blocking is safer to prevent errors.
+        // But for UX, maybe let it slide or throw? Let's throw to be handled.
+        throw new Error("Could not validate item availability");
+    }
+
+    const unavailableItems: string[] = [];
+
+    items.forEach(item => {
+        const dbItem = dbItems?.find(d => d.id === item.id);
+        // If item not found (deleted?) or is_available is false
+        if (!dbItem || !dbItem.is_available) {
+            unavailableItems.push(item.name);
+        }
+    });
+
+    return {
+        valid: unavailableItems.length === 0,
+        unavailableItems
+    };
+}
+
+export async function cancelOrder(orderId: string) {
+    // 1. Fetch current status to ensure it's still queued
+    const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .single();
+
+    if (fetchError || !order) {
+        throw new Error("Order not found");
+    }
+
+    if (order.status !== 'queued') {
+        throw new Error("Order cannot be cancelled as it is already being prepared or completed.");
+    }
+
+    // 2. Update status to 'cancelled'
+    const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+    if (updateError) throw updateError;
+    return true;
 }

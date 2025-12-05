@@ -754,3 +754,11 @@ CREATE INDEX IF NOT EXISTS idx_menu_items_shop_id_featured ON public.menu_items(
 CREATE INDEX IF NOT EXISTS idx_menu_categories_sort ON public.menu_categories(sort_order);
 CREATE INDEX IF NOT EXISTS idx_category_items_sort ON public.category_items(sort_order);
 CREATE INDEX IF NOT EXISTS idx_reviews_item_created ON public.reviews(menu_item_id, created_at DESC);
+
+-- Realtime Configuration
+-- Note: 'supabase_realtime' publication is created by default in Supabase.
+-- We just need to add our tables to it.
+alter publication supabase_realtime add table public.orders;
+alter publication supabase_realtime add table public.tables;
+alter publication supabase_realtime add table public.menu_items;
+alter publication supabase_realtime add table public.menus;

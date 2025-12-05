@@ -3,14 +3,15 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OrderStatus } from "@/lib/order-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ChefHat, Clock, Utensils, Star } from "lucide-react";
+import { CheckCircle2, ChefHat, Clock, Utensils, Star, XCircle } from "lucide-react";
 import { cn, getCurrencySymbol } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getOrderById } from "@/lib/api";
+import { getOrderById, cancelOrder } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/features/feedback/rating-dialog";
 import { useSettingsStore } from "@/lib/settings-store";
+import { toast } from "sonner";
 
 interface OrderDetailsDialogProps {
     isOpen: boolean;
@@ -70,6 +71,20 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
         return () => clearInterval(timer);
     }, []);
 
+    const handleCancelOrder = async () => {
+        if (!order) return;
+        try {
+            setLoading(true);
+            await cancelOrder(order.id);
+            toast.success("Order cancelled successfully");
+            onClose();
+        } catch (error) {
+            console.error("Failed to cancel order:", error);
+            toast.error("Failed to cancel order: " + (error as Error).message);
+            setLoading(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     const steps: { id: OrderStatus; label: string; icon: any }[] = [
@@ -94,17 +109,33 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                 ) : (
                     <div className="space-y-6">
                         {/* Status Card */}
-                        <div className="bg-primary/5 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2 border border-primary/10">
-                            <div className="h-14 w-14 bg-primary rounded-full flex items-center justify-center animate-pulse">
-                                <ChefHat className="h-7 w-7 text-primary-foreground" />
+                        <div className={cn(
+                            "rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2 border",
+                            order.status === 'cancelled'
+                                ? "bg-red-50 border-red-100"
+                                : "bg-primary/5 border-primary/10"
+                        )}>
+                            <div className={cn(
+                                "h-14 w-14 rounded-full flex items-center justify-center",
+                                order.status === 'cancelled' ? "bg-red-100" : "bg-primary animate-pulse"
+                            )}>
+                                {order.status === 'cancelled' ? (
+                                    <XCircle className="h-7 w-7 text-red-600" />
+                                ) : (
+                                    <ChefHat className="h-7 w-7 text-primary-foreground" />
+                                )}
                             </div>
-                            <h2 className="text-lg font-bold text-primary">
+                            <h2 className={cn(
+                                "text-lg font-bold",
+                                order.status === 'cancelled' ? "text-red-700" : "text-primary"
+                            )}>
                                 {order.status === 'queued' && 'Order Received'}
                                 {order.status === 'preparing' && 'Cooking with Love'}
                                 {order.status === 'ready' && 'Coming to You'}
                                 {order.status === 'served' && 'Enjoy your Meal!'}
+                                {order.status === 'cancelled' && 'Order Cancelled'}
                             </h2>
-                            {order.status !== 'served' && (
+                            {order.status !== 'served' && order.status !== 'cancelled' && (
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Clock className="h-3 w-3" /> Estimated time: {timeLeft} mins
                                 </p>
@@ -112,27 +143,29 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                         </div>
 
                         {/* Timeline */}
-                        <div className="relative flex flex-col gap-6 pl-4 border-l-2 border-muted ml-2">
-                            {steps.map((step, idx) => {
-                                const isCompleted = idx <= currentStepIndex;
-                                const isCurrent = idx === currentStepIndex;
+                        {order.status !== 'cancelled' && (
+                            <div className="relative flex flex-col gap-6 pl-4 border-l-2 border-muted ml-2">
+                                {steps.map((step, idx) => {
+                                    const isCompleted = idx <= currentStepIndex;
+                                    const isCurrent = idx === currentStepIndex;
 
-                                return (
-                                    <div key={step.id} className="relative">
-                                        <div className={cn(
-                                            "absolute -left-[21px] top-0 h-4 w-4 rounded-full border-2 bg-background transition-colors",
-                                            isCompleted ? "border-primary bg-primary" : "border-muted"
-                                        )} />
-                                        <div className={cn("flex items-center gap-3 -mt-1 transition-opacity", isCompleted ? "opacity-100" : "opacity-50")}>
-                                            <step.icon className={cn("h-4 w-4", isCurrent && "text-primary animate-bounce")} />
-                                            <span className={cn("font-medium text-sm", isCurrent && "text-primary font-bold")}>
-                                                {step.label}
-                                            </span>
+                                    return (
+                                        <div key={step.id} className="relative">
+                                            <div className={cn(
+                                                "absolute -left-[21px] top-0 h-4 w-4 rounded-full border-2 bg-background transition-colors",
+                                                isCompleted ? "border-primary bg-primary" : "border-muted"
+                                            )} />
+                                            <div className={cn("flex items-center gap-3 -mt-1 transition-opacity", isCompleted ? "opacity-100" : "opacity-50")}>
+                                                <step.icon className={cn("h-4 w-4", isCurrent && "text-primary animate-bounce")} />
+                                                <span className={cn("font-medium text-sm", isCurrent && "text-primary font-bold")}>
+                                                    {step.label}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
                         {/* Order Summary */}
                         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -161,6 +194,17 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                             >
                                 <Star className="w-4 h-4 mr-2" />
                                 Rate your Experience
+                            </Button>
+                        )}
+
+                        {order.status === 'queued' && (
+                            <Button
+                                variant="destructive"
+                                className="w-full"
+                                onClick={handleCancelOrder}
+                                disabled={loading}
+                            >
+                                Cancel Order
                             </Button>
                         )}
                     </div>
