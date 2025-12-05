@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { MenuItem, DietaryType } from "@/lib/types";
-import { Edit2, Plus, Search, Trash2, X } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, X, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getCurrencySymbol } from "@/lib/utils"; // Added this import
+import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -128,13 +129,96 @@ export default function MenuManagementPage() {
         }
     };
 
+    const handleExport = () => {
+        const exportData = items.map(({ name, description, price, original_price, dietary_type, is_available, is_popular, images, tags }) => ({
+            name,
+            description,
+            price,
+            original_price,
+            dietary_type,
+            is_available,
+            is_popular,
+            image: images?.[0] || '',
+            tags: tags?.join(', ')
+        }));
+        exportToCSV(exportData, `menu_items_${new Date().toISOString().split('T')[0]}`,
+            ['name', 'description', 'price', 'original_price', 'dietary_type', 'is_available', 'is_popular', 'image', 'tags']);
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !shopId) return;
+
+        try {
+            const data = await parseCSV(file);
+            if (data.length === 0) {
+                toast.error("No data found in CSV");
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const row of data) {
+                if (!row.name || !row.price) {
+                    failCount++;
+                    continue;
+                }
+
+                const itemData = {
+                    shop_id: shopId,
+                    name: row.name,
+                    description: row.description,
+                    price: Number(row.price),
+                    original_price: row.original_price ? Number(row.original_price) : null,
+                    dietary_type: row.dietary_type || 'veg',
+                    is_available: row.is_available === true || row.is_available === 'true',
+                    is_popular: row.is_popular === true || row.is_popular === 'true',
+                    images: row.image ? [row.image] : [],
+                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
+                };
+
+                const { error } = await supabase
+                    .from('menu_items')
+                    .insert(itemData);
+
+                if (error) failCount++;
+                else successCount++;
+            }
+
+            toast.success(`Imported ${successCount} items. Failed: ${failCount}`);
+            fetchItems();
+            e.target.value = '';
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to process CSV file");
+        }
+    };
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Menu Items Management</h1>
-                <Button className="gap-2" onClick={handleAddNew}>
-                    <Plus className="h-4 w-4" /> Add New Item
-                </Button>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleImport}
+                            title="Import Items CSV"
+                        />
+                        <Button variant="outline" className="gap-2">
+                            <FileUp className="h-4 w-4" /> Import
+                        </Button>
+                    </div>
+                    <Button variant="outline" className="gap-2" onClick={handleExport}>
+                        <FileDown className="h-4 w-4" /> Export
+                    </Button>
+                    <Button className="gap-2" onClick={handleAddNew}>
+                        <Plus className="h-4 w-4" /> Add New Item
+                    </Button>
+                </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -292,6 +376,6 @@ export default function MenuManagementPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

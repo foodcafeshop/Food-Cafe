@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List } from "lucide-react";
+import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -54,15 +54,35 @@ export default function AdminLayout({
 
     if (!shopId) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-                <h1 className="text-2xl font-bold">No Shop Found</h1>
-                <p className="text-muted-foreground">It looks like you don't have a shop associated with your account.</p>
-                <Button onClick={() => router.push('/admin/create-shop')}>
-                    Create Shop
-                </Button>
-                <Button variant="outline" onClick={() => router.push('/admin/login')}>
-                    Back to Login
-                </Button>
+            <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
+                <div className="text-center space-y-1">
+                    <h1 className="text-2xl font-bold">Welcome, {user?.user_metadata?.full_name || 'User'}!</h1>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                </div>
+
+                <div className="text-center space-y-2 py-4">
+                    <h2 className="text-lg font-semibold">No Shop Found</h2>
+                    <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                        It looks like you don't have a shop associated with your account yet.
+                    </p>
+                </div>
+
+                <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+                    <div className="flex flex-col gap-2 w-full">
+                        {role !== 'staff' && (
+                            <Button className="w-full gap-2" onClick={() => router.push('/admin/create-shop')}>
+                                <Plus className="h-4 w-4" /> Create Shop
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline"
+                            className="w-full gap-2 text-destructive hover:text-destructive"
+                            onClick={() => supabase.auth.signOut().then(() => router.push('/admin/login'))}
+                        >
+                            <LogOut className="h-4 w-4" /> Logout
+                        </Button>
+                    </div>
+                </div>
             </div>
         );
     }

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Users, Move, Printer, Plus, Trash2, Edit2, List, Grid, LayoutGrid, CheckSquare, Square, Receipt } from "lucide-react";
+import { QrCode, Users, Move, Printer, Plus, Trash2, Edit2, List, Grid, LayoutGrid, CheckSquare, Square, Receipt, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { QRCodeSVG } from 'qrcode.react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { getTableOrders, settleTableBill, clearTable, getSettings, updateOrderStatus } from "@/lib/api";
+import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 type TableStatus = 'empty' | 'occupied' | 'billed';
 
@@ -498,6 +499,60 @@ export default function TableManagementPage() {
         return { subtotal, tax, serviceCharge, grandTotal };
     };
 
+    // Export/Import Handlers
+    const handleExport = () => {
+        const exportData = tables.map(({ label, seats, x, y }) => ({ label, seats, x, y }));
+        exportToCSV(exportData, `tables_${shopSlug}_${new Date().toISOString().split('T')[0]}`, ['label', 'seats', 'x', 'y']);
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !shopId) return;
+
+        try {
+            const data = await parseCSV(file);
+            if (data.length === 0) {
+                toast.error("No data found in CSV");
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const row of data) {
+                // Basic validation
+                if (!row.label || !row.seats) {
+                    failCount++;
+                    continue;
+                }
+
+                const tableData = {
+                    shop_id: shopId,
+                    label: row.label,
+                    seats: Number(row.seats) || 2,
+                    x: Number(row.x) || 50,
+                    y: Number(row.y) || 50,
+                    status: 'empty'
+                };
+
+                const { error } = await supabase
+                    .from('tables')
+                    .upsert(tableData, { onConflict: 'shop_id, label' });
+
+                if (error) failCount++;
+                else successCount++;
+            }
+
+            toast.success(`Imported ${successCount} tables. Failed: ${failCount}`);
+            fetchTables();
+            // Reset input
+            e.target.value = '';
+        } catch (error) {
+            console.error("Import error:", error);
+            toast.error("Failed to process CSV file");
+        }
+    };
+
     const billing = calculateBilling();
 
     return (
@@ -507,9 +562,26 @@ export default function TableManagementPage() {
                     <h1 className="text-2xl font-bold">Table Management</h1>
                     <div className="flex gap-2 w-full sm:w-auto">
                         {role === 'admin' && (
-                            <Button className="gap-2 flex-1 sm:flex-none" onClick={handleAddTable}>
-                                <Plus className="h-4 w-4" /> Add Table
-                            </Button>
+                            <>
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".csv"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={handleImport}
+                                        title="Import Tables CSV"
+                                    />
+                                    <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                                        <FileUp className="h-4 w-4" /> Import
+                                    </Button>
+                                </div>
+                                <Button variant="outline" className="gap-2 hidden sm:flex" onClick={handleExport}>
+                                    <FileDown className="h-4 w-4" /> Export
+                                </Button>
+                                <Button className="gap-2 flex-1 sm:flex-none" onClick={handleAddTable}>
+                                    <Plus className="h-4 w-4" /> Add Table
+                                </Button>
+                            </>
                         )}
 
                         {selectedTables.size > 0 ? (

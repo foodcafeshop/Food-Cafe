@@ -201,7 +201,7 @@ create table if not exists public.bills (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   order_ids uuid[] not null,
   items_snapshot jsonb not null,
-  breakdown jsonb,
+  breakdown jsonb
 );
 
 -- 12. Reviews
@@ -442,6 +442,8 @@ create policy "Public can read shops" on public.shops for select using (true);
 create policy "Public can create shops" on public.shops for insert with check (true);
 -- Only Admin of that shop can update
 create policy "Admin can update own shop" on public.shops for update using (public.is_admin_of(id));
+-- Admin can delete own shop
+create policy "Admin can delete own shop" on public.shops for delete using (public.is_admin_of(id));
 
 -- MENUS
 -- Public can read

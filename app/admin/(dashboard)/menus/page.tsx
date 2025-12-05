@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Menu } from "@/lib/types";
-import { Edit2, Plus, Search, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, CheckCircle2, Circle, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DietaryType } from "@/lib/types";
 
 import { toast } from "sonner";
+import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -106,6 +107,63 @@ export default function MenusPage() {
         }
     };
 
+    const handleExport = () => {
+        const exportData = menus.map(({ name, description, tags, dietary_type, is_active }) => ({
+            name,
+            description,
+            tags: tags?.join(', '),
+            dietary_type,
+            is_active
+        }));
+        exportToCSV(exportData, `menus_${new Date().toISOString().split('T')[0]}`, ['name', 'description', 'dietary_type', 'is_active', 'tags']);
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !shopId) return;
+
+        try {
+            const data = await parseCSV(file);
+            if (data.length === 0) {
+                toast.error("No data found in CSV");
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const row of data) {
+                if (!row.name) {
+                    failCount++;
+                    continue;
+                }
+
+                const menuData = {
+                    shop_id: shopId,
+                    name: row.name,
+                    description: row.description,
+                    dietary_type: row.dietary_type || 'all',
+                    is_active: row.is_active === true || row.is_active === 'true',
+                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
+                };
+
+                const { error } = await supabase
+                    .from('menus')
+                    .insert(menuData);
+
+                if (error) failCount++;
+                else successCount++;
+            }
+
+            toast.success(`Imported ${successCount} menus. Failed: ${failCount}`);
+            fetchMenus();
+            e.target.value = '';
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to process CSV file");
+        }
+    };
+
     const filteredMenus = menus.filter(m =>
         m.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -114,9 +172,26 @@ export default function MenusPage() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Menus</h1>
-                <Button className="gap-2" onClick={() => { setCurrentMenu({}); setIsDialogOpen(true); }}>
-                    <Plus className="h-4 w-4" /> Create New Menu
-                </Button>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleImport}
+                            title="Import Menus CSV"
+                        />
+                        <Button variant="outline" className="gap-2">
+                            <FileUp className="h-4 w-4" /> Import
+                        </Button>
+                    </div>
+                    <Button variant="outline" className="gap-2" onClick={handleExport}>
+                        <FileDown className="h-4 w-4" /> Export
+                    </Button>
+                    <Button className="gap-2" onClick={() => { setCurrentMenu({}); setIsDialogOpen(true); }}>
+                        <Plus className="h-4 w-4" /> Create New Menu
+                    </Button>
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

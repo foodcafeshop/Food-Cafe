@@ -5,13 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Category, DietaryType } from "@/lib/types";
-import { Edit2, Plus, Search, Trash2 } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -84,6 +85,62 @@ export default function CategoryManagementPage() {
         }
     };
 
+    const handleExport = () => {
+        const exportData = categories.map(({ name, image, tags, dietary_type }) => ({
+            name,
+            image,
+            tags: tags?.join(', '), // Flatten tags for CSV
+            dietary_type
+        }));
+        exportToCSV(exportData, `categories_${new Date().toISOString().split('T')[0]}`, ['name', 'dietary_type', 'image', 'tags']);
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !shopId) return;
+
+        try {
+            const data = await parseCSV(file);
+            if (data.length === 0) {
+                toast.error("No data found in CSV");
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const row of data) {
+                if (!row.name) {
+                    failCount++;
+                    continue;
+                }
+
+                const categoryData = {
+                    shop_id: shopId,
+                    name: row.name,
+                    image: row.image,
+                    dietary_type: row.dietary_type || 'all',
+                    // Parse tags back to array
+                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
+                };
+
+                const { error } = await supabase
+                    .from('categories')
+                    .insert(categoryData);
+
+                if (error) failCount++;
+                else successCount++;
+            }
+
+            toast.success(`Imported ${successCount} categories. Failed: ${failCount}`);
+            fetchCategories();
+            e.target.value = '';
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to process CSV file");
+        }
+    };
+
     const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -92,9 +149,26 @@ export default function CategoryManagementPage() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Category Management</h1>
-                <Button className="gap-2" onClick={() => { setCurrentCategory({}); setIsDialogOpen(true); }}>
-                    <Plus className="h-4 w-4" /> Add New Category
-                </Button>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleImport}
+                            title="Import Categories CSV"
+                        />
+                        <Button variant="outline" className="gap-2">
+                            <FileUp className="h-4 w-4" /> Import
+                        </Button>
+                    </div>
+                    <Button variant="outline" className="gap-2" onClick={handleExport}>
+                        <FileDown className="h-4 w-4" /> Export
+                    </Button>
+                    <Button className="gap-2" onClick={() => { setCurrentCategory({}); setIsDialogOpen(true); }}>
+                        <Plus className="h-4 w-4" /> Add New Category
+                    </Button>
+                </div>
             </div>
 
             <div className="flex items-center gap-4">
