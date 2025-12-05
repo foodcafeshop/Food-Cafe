@@ -129,37 +129,87 @@ export default function MenusPage() {
                 return;
             }
 
-            let successCount = 0;
-            let failCount = 0;
+            // Check if this is a "Links" file (Menu -> Category)
+            const firstRow = data[0];
+            if ('menu_name' in firstRow && 'category_name' in firstRow) {
+                // Handle Link Import
+                toast.loading("Importing Menu links...");
 
-            for (const row of data) {
-                if (!row.name) {
-                    failCount++;
-                    continue;
+                // Fetch existing menus and categories to map names to IDs
+                const [{ data: dbMenus }, { data: dbCategories }] = await Promise.all([
+                    supabase.from('menus').select('id, name').eq('shop_id', shopId),
+                    supabase.from('categories').select('id, name').eq('shop_id', shopId)
+                ]);
+
+                if (!dbMenus || !dbCategories) {
+                    toast.error("Failed to fetch existing data for linking");
+                    return;
                 }
 
-                const menuData = {
-                    shop_id: shopId,
-                    name: row.name,
-                    description: row.description,
-                    dietary_type: row.dietary_type || 'all',
-                    is_active: row.is_active === true || row.is_active === 'true',
-                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
-                };
+                let linksCreated = 0;
+                let linksFailed = 0;
 
-                const { error } = await supabase
-                    .from('menus')
-                    .insert(menuData);
+                for (const row of data) {
+                    const menuId = dbMenus.find(m => m.name === row.menu_name)?.id;
+                    const catId = dbCategories.find(c => c.name === row.category_name)?.id;
 
-                if (error) failCount++;
-                else successCount++;
+                    if (menuId && catId) {
+                        const { error } = await supabase.from('menu_categories').upsert({
+                            menu_id: menuId,
+                            category_id: catId,
+                            sort_order: row.sort_order || 0
+                        });
+                        if (error) linksFailed++;
+                        else linksCreated++;
+                    } else {
+                        linksFailed++; // Could not resolve names
+                    }
+                }
+                toast.dismiss();
+                toast.success(`Links created: ${linksCreated}. Failed: ${linksFailed}`);
+            } else {
+                // Handle Regular Menu Import
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const row of data) {
+                    if (!row.name) {
+                        failCount++;
+                        continue;
+                    }
+
+                    // Handle tags: if it came from JSON parser as array, use it. If string, split it.
+                    let tags: string[] = [];
+                    if (Array.isArray(row.tags)) {
+                        tags = row.tags;
+                    } else if (typeof row.tags === 'string') {
+                        tags = row.tags.split(',').map((t: string) => t.trim());
+                    }
+
+                    const menuData = {
+                        shop_id: shopId,
+                        name: row.name,
+                        description: row.description,
+                        dietary_type: row.dietary_type || 'all',
+                        is_active: row.is_active === true || row.is_active === 'true',
+                        tags: tags
+                    };
+
+                    const { error } = await supabase
+                        .from('menus')
+                        .insert(menuData);
+
+                    if (error) failCount++;
+                    else successCount++;
+                }
+
+                toast.success(`Imported ${successCount} menus. Failed: ${failCount}`);
+                fetchMenus();
             }
-
-            toast.success(`Imported ${successCount} menus. Failed: ${failCount}`);
-            fetchMenus();
             e.target.value = '';
         } catch (error) {
             console.error(error);
+            toast.dismiss();
             toast.error("Failed to process CSV file");
         }
     };

@@ -165,6 +165,36 @@ export default function MenuManagementPage() {
                     continue;
                 }
 
+                // Handle images: favor 'images' array, fallback to 'image' string
+                let images: string[] = [];
+                if (Array.isArray(row.images)) {
+                    images = row.images;
+                } else if (typeof row.images === 'string') {
+                    // Try parsing if valid JSON array string
+                    try {
+                        const parsed = JSON.parse(row.images);
+                        if (Array.isArray(parsed)) images = parsed;
+                        else images = [row.images];
+                    } catch { images = [row.images]; }
+                } else if (row.image) {
+                    images = [row.image];
+                }
+
+                // Handle tags
+                let tags: string[] = [];
+                if (Array.isArray(row.tags)) {
+                    tags = row.tags;
+                } else if (typeof row.tags === 'string') {
+                    // Try parsing if valid JSON array string (though csv-utils should have done it, this is double safety)
+                    try {
+                        const parsed = JSON.parse(row.tags);
+                        if (Array.isArray(parsed)) tags = parsed;
+                        else tags = row.tags.split(',').map((t: string) => t.trim());
+                    } catch {
+                        tags = row.tags.split(',').map((t: string) => t.trim());
+                    }
+                }
+
                 const itemData = {
                     shop_id: shopId,
                     name: row.name,
@@ -174,8 +204,8 @@ export default function MenuManagementPage() {
                     dietary_type: row.dietary_type || 'veg',
                     is_available: row.is_available === true || row.is_available === 'true',
                     is_popular: row.is_popular === true || row.is_popular === 'true',
-                    images: row.image ? [row.image] : [],
-                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
+                    images: images,
+                    tags: tags
                 };
 
                 const { error } = await supabase

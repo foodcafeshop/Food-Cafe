@@ -23,6 +23,7 @@ export default function AdminDashboard() {
     const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('week');
     const [customDate, setCustomDate] = useState<DateRange | undefined>();
     const [chartMetric, setChartMetric] = useState<'revenue' | 'net' | 'tax' | 'service'>('revenue');
+    const [categoryMetric, setCategoryMetric] = useState<'sales' | 'count'>('sales');
 
     const [shopId, setShopId] = useState<string | null>(null);
 
@@ -280,8 +281,17 @@ export default function AdminDashboard() {
                     </CardContent>
                 </Card>
                 <Card className="col-span-3">
-                    <CardHeader>
-                        <CardTitle>Sales by Category</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Category Breakdown</CardTitle>
+                        <Select value={categoryMetric} onValueChange={(val: any) => setCategoryMetric(val)}>
+                            <SelectTrigger className="w-[110px] h-8 text-xs">
+                                <SelectValue placeholder="Metric" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="sales">By Sales</SelectItem>
+                                <SelectItem value="count">By Count</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[200px] w-full">
@@ -296,13 +306,16 @@ export default function AdminDashboard() {
                                             outerRadius={80}
                                             fill="#8884d8"
                                             paddingAngle={5}
-                                            dataKey="value"
+                                            dataKey={categoryMetric}
                                         >
                                             {stats.categoryChartData.map((entry: any, index: number) => (
-                                                <Cell key={`cell - ${index} `} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'][index % 5]} />
+                                                <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'][index % 5]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, "Sales"]} />
+                                        <Tooltip formatter={(value: number) => [
+                                            categoryMetric === 'sales' ? `${currencySymbol}${value.toFixed(2)}` : value,
+                                            categoryMetric === 'sales' ? "Sales" : "Items"
+                                        ]} />
                                         <Legend />
                                     </PieChart>
                                 </ResponsiveContainer>

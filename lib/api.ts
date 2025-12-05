@@ -858,7 +858,7 @@ export async function getDashboardStats(
     // 7. Category Chart Data (Pie Chart)
     // Re-using orderItems from step 5 which are already filtered by startDate
 
-    const categoryCountMap: Record<string, number> = {};
+    const categoryStatsMap: Record<string, { count: number, sales: number }> = {};
 
     if (orderItems) {
         // We need menu_item_id to link to category
@@ -886,7 +886,7 @@ export async function getDashboardStats(
         // We need to re-fetch order_items to get menu_item_id as step 5 only selected name/quantity
         let orderItemsWithIdsQuery = supabase
             .from('order_items')
-            .select('menu_item_id, quantity, orders!inner(shop_id)')
+            .select('menu_item_id, quantity, price, orders!inner(shop_id)')
             .eq('orders.shop_id', shopId)
             .gte('created_at', startDate.toISOString());
 
@@ -899,14 +899,23 @@ export async function getDashboardStats(
         if (orderItemsWithIds) {
             orderItemsWithIds.forEach(item => {
                 const catName = itemCategoryMap[item.menu_item_id] || 'Other';
-                categoryCountMap[catName] = (categoryCountMap[catName] || 0) + item.quantity;
+                if (!categoryStatsMap[catName]) {
+                    categoryStatsMap[catName] = { count: 0, sales: 0 };
+                }
+                categoryStatsMap[catName].count += item.quantity;
+                categoryStatsMap[catName].sales += (item.price * item.quantity);
             });
         }
     }
 
-    const categoryChartData = Object.entries(categoryCountMap)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
+    const categoryChartData = Object.entries(categoryStatsMap)
+        .map(([name, data]) => ({
+            name,
+            count: data.count,
+            sales: roundToThree(data.sales),
+            value: data.count // Default for backward compatibility if needed, but we'll use specific keys in UI
+        }))
+        .sort((a, b) => b.sales - a.sales); // Sort by sales by default
 
     return {
         totalRevenue,

@@ -106,37 +106,86 @@ export default function CategoryManagementPage() {
                 return;
             }
 
-            let successCount = 0;
-            let failCount = 0;
+            // Check if this is a "Links" file (Category -> Item)
+            const firstRow = data[0];
+            if ('category_name' in firstRow && 'item_name' in firstRow) {
+                // Handle Link Import
+                toast.loading("Importing Category links...");
 
-            for (const row of data) {
-                if (!row.name) {
-                    failCount++;
-                    continue;
+                // Fetch existing categories and menu items to map names to IDs
+                const [{ data: dbCategories }, { data: dbItems }] = await Promise.all([
+                    supabase.from('categories').select('id, name').eq('shop_id', shopId),
+                    supabase.from('menu_items').select('id, name').eq('shop_id', shopId)
+                ]);
+
+                if (!dbCategories || !dbItems) {
+                    toast.error("Failed to fetch existing data for linking");
+                    return;
                 }
 
-                const categoryData = {
-                    shop_id: shopId,
-                    name: row.name,
-                    image: row.image,
-                    dietary_type: row.dietary_type || 'all',
-                    // Parse tags back to array
-                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : []
-                };
+                let linksCreated = 0;
+                let linksFailed = 0;
 
-                const { error } = await supabase
-                    .from('categories')
-                    .insert(categoryData);
+                for (const row of data) {
+                    const catId = dbCategories.find(c => c.name === row.category_name)?.id;
+                    const itemId = dbItems.find(i => i.name === row.item_name)?.id;
 
-                if (error) failCount++;
-                else successCount++;
+                    if (catId && itemId) {
+                        const { error } = await supabase.from('category_items').upsert({
+                            category_id: catId,
+                            menu_item_id: itemId,
+                            sort_order: row.sort_order || 0
+                        });
+                        if (error) linksFailed++;
+                        else linksCreated++;
+                    } else {
+                        linksFailed++; // Could not resolve
+                    }
+                }
+                toast.dismiss();
+                toast.success(`Links created: ${linksCreated}. Failed: ${linksFailed}`);
+            } else {
+                // Handle Regular Category Import
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const row of data) {
+                    if (!row.name) {
+                        failCount++;
+                        continue;
+                    }
+
+                    // Handle tags
+                    let tags: string[] = [];
+                    if (Array.isArray(row.tags)) {
+                        tags = row.tags;
+                    } else if (typeof row.tags === 'string') {
+                        tags = row.tags.split(',').map((t: string) => t.trim());
+                    }
+
+                    const categoryData = {
+                        shop_id: shopId,
+                        name: row.name,
+                        image: row.image,
+                        dietary_type: row.dietary_type || 'all',
+                        tags: tags
+                    };
+
+                    const { error } = await supabase
+                        .from('categories')
+                        .insert(categoryData);
+
+                    if (error) failCount++;
+                    else successCount++;
+                }
+
+                toast.success(`Imported ${successCount} categories. Failed: ${failCount}`);
+                fetchCategories();
             }
-
-            toast.success(`Imported ${successCount} categories. Failed: ${failCount}`);
-            fetchCategories();
             e.target.value = '';
         } catch (error) {
             console.error(error);
+            toast.dismiss();
             toast.error("Failed to process CSV file");
         }
     };

@@ -114,6 +114,15 @@ export default function GeneralSettingsPage() {
                 supabase.from('reviews').select('*').eq('shop_id', shopId).order('created_at', { ascending: false })
             ]);
 
+            // Re-fetch junction tables strictly linked to fetched menus/categories to be safe and correct
+            const menuIds = menus?.map((m: any) => m.id) || [];
+            const categoryIds = categories?.map((c: any) => c.id) || [];
+
+            const [{ data: fetchedMenuCats }, { data: fetchedCatItems }] = await Promise.all([
+                supabase.from('menu_categories').select('*').in('menu_id', menuIds),
+                supabase.from('category_items').select('*').in('category_id', categoryIds)
+            ]);
+
             const zip = new JSZip();
             const dateStr = new Date().toISOString().split('T')[0];
 
@@ -153,6 +162,44 @@ export default function GeneralSettingsPage() {
                 zip.file("reviews.csv", generateCSV(reviews, reviewCols));
             }
 
+            // Export Junction Tables (Raw, as they are just IDs usually)
+            // But if we want portable export, IDs are useless unless we map them.
+            // Wait, simply exporting IDs (UUIDs) won't help import into a NEW shop if we generate NEW UUIDs.
+            // If the user wants to "Import to another shop", we must export the STRUCTURE.
+            // Structure = Menu Name -> Category Name -> Item Name.
+            // This is becoming a much bigger task: "Relational Export/Import".
+            // Since the user asked "What is the best way?", I should probably NOT just dump raw UUIDs.
+            // However, sticking to CSV, we can dump the raw table and let the "Import" logic handle the complexity (lookup by name?).
+            // Let's dump them for now so at least the data exists.
+            if (fetchedMenuCats?.length) {
+                // We need to resolve names to make it portable? Or just dump IDs and assume user will figure it out?
+                // User said "non-tech". Raw UUIDs are bad.
+                // Better: "Menu Name", "Category Name", "Sort Order".
+                const portableMenuCats = fetchedMenuCats.map(mc => {
+                    const menu = menus?.find(m => m.id === mc.menu_id);
+                    const cat = categories?.find(c => c.id === mc.category_id);
+                    return {
+                        menu_name: menu?.name,
+                        category_name: cat?.name,
+                        sort_order: mc.sort_order
+                    };
+                }).filter(x => x.menu_name && x.category_name);
+                zip.file("menu_links.csv", generateCSV(portableMenuCats));
+            }
+
+            if (fetchedCatItems?.length) {
+                const portableCatItems = fetchedCatItems.map(ci => {
+                    const cat = categories?.find(c => c.id === ci.category_id);
+                    const item = menuItems?.find(i => i.id === ci.menu_item_id);
+                    return {
+                        category_name: cat?.name,
+                        item_name: item?.name,
+                        sort_order: ci.sort_order
+                    };
+                }).filter(x => x.category_name && x.item_name);
+                zip.file("category_links.csv", generateCSV(portableCatItems));
+            }
+
             // Generate ZIP
             const content = await zip.generateAsync({ type: "blob" });
             const url = window.URL.createObjectURL(content);
@@ -179,208 +226,227 @@ export default function GeneralSettingsPage() {
     if (loading) return <div>Loading settings...</div>;
 
     return (
-        <div className="p-6 space-y-6 max-w-4xl mx-auto">
+        <div className="p-6 space-y-8 max-w-4xl mx-auto">
+            {/* Header */}
             <div>
                 <h2 className="text-2xl font-bold tracking-tight">General Settings</h2>
                 <p className="text-muted-foreground">
                     Configure your application preferences.
                 </p>
+                <Separator className="mt-4" />
             </div>
-            <Separator />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Localization</CardTitle>
-                    <CardDescription>Set your preferred currency and language.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="currency">Currency</Label>
-                            <Select
-                                value={settings.currency}
-                                onValueChange={(val) => setSettings({ ...settings, currency: val })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="$">USD ($)</SelectItem>
-                                    <SelectItem value="€">EUR (€)</SelectItem>
-                                    <SelectItem value="£">GBP (£)</SelectItem>
-                                    <SelectItem value="₹">INR (₹)</SelectItem>
-                                    <SelectItem value="¥">JPY (¥)</SelectItem>
-                                </SelectContent>
-                            </Select>
+            {/* Configuration Scope - Saved via Button */}
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Localization</CardTitle>
+                        <CardDescription>Set your preferred currency and language.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="currency">Currency</Label>
+                                <Select
+                                    value={settings.currency}
+                                    onValueChange={(val) => setSettings({ ...settings, currency: val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="₹">INR (₹)</SelectItem>
+                                        <SelectItem value="$">USD ($)</SelectItem>
+                                        <SelectItem value="€">EUR (€)</SelectItem>
+                                        <SelectItem value="£">GBP (£)</SelectItem>
+                                        <SelectItem value="¥">JPY (¥)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="language">Language</Label>
+                                <Select
+                                    value={settings.language}
+                                    onValueChange={(val) => setSettings({ ...settings, language: val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select language" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="en">English</SelectItem>
+                                        <SelectItem value="es">Spanish</SelectItem>
+                                        <SelectItem value="fr">French</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="language">Language</Label>
-                            <Select
-                                value={settings.language}
-                                onValueChange={(val) => setSettings({ ...settings, language: val })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="en">English</SelectItem>
-                                    <SelectItem value="es">Spanish</SelectItem>
-                                    <SelectItem value="fr">French</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>System Preferences</CardTitle>
+                        <CardDescription>Customize your admin experience.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Sound Notifications</Label>
+                                <p className="text-sm text-muted-foreground">Play a sound when a new order arrives.</p>
+                            </div>
+                            <Switch
+                                checked={settings.sound_notifications}
+                                onCheckedChange={(checked) => setSettings({ ...settings, sound_notifications: checked })}
+                            />
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>System Preferences</CardTitle>
-                    <CardDescription>Customize your admin experience.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Sound Notifications</Label>
-                            <p className="text-sm text-muted-foreground">Play a sound when a new order arrives.</p>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Auto Print</Label>
+                                <p className="text-sm text-muted-foreground">Automatically print receipts when order is completed.</p>
+                            </div>
+                            <Switch
+                                checked={settings.auto_print}
+                                onCheckedChange={(checked) => setSettings({ ...settings, auto_print: checked })}
+                            />
                         </div>
-                        <Switch
-                            checked={settings.sound_notifications}
-                            onCheckedChange={(checked) => setSettings({ ...settings, sound_notifications: checked })}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Auto Print</Label>
-                            <p className="text-sm text-muted-foreground">Automatically print receipts when order is completed.</p>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Table OTP</Label>
+                                <p className="text-sm text-muted-foreground">Require a unique OTP for customers to place orders.</p>
+                            </div>
+                            <Switch
+                                checked={settings.enable_otp}
+                                onCheckedChange={(checked) => setSettings({ ...settings, enable_otp: checked })}
+                            />
                         </div>
-                        <Switch
-                            checked={settings.auto_print}
-                            onCheckedChange={(checked) => setSettings({ ...settings, auto_print: checked })}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Table OTP</Label>
-                            <p className="text-sm text-muted-foreground">Require a unique OTP for customers to place orders.</p>
+                    </CardContent>
+                </Card>
+
+                <div className="flex justify-end">
+                    <Button onClick={handleSave} size="lg">Save Changes</Button>
+                </div>
+            </div>
+
+            {/* Visual Separation */}
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Advanced Actions
+                    </span>
+                </div>
+            </div>
+
+            {/* Independent Actions Scope */}
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Data Management</CardTitle>
+                        <CardDescription>Manage your shop's data and backups.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Export All Data</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Download a full ZIP archive containing CSVs of all your shop data (tables, menus, orders, etc.).
+                                </p>
+                            </div>
+                            <Button variant="outline" onClick={handleExportAll} className="gap-2">
+                                <Download className="h-4 w-4" />
+                                Export Data (ZIP)
+                            </Button>
                         </div>
-                        <Switch
-                            checked={settings.enable_otp}
-                            onCheckedChange={(checked) => setSettings({ ...settings, enable_otp: checked })}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Data Management</CardTitle>
-                    <CardDescription>Manage your shop's data and backups.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Export All Data</Label>
-                            <p className="text-sm text-muted-foreground">Download a full JSON backup of your shop's data.</p>
-                        </div>
-                        <Button variant="outline" onClick={handleExportAll} className="gap-2">
-                            <Download className="h-4 w-4" />
-                            Export Data
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                <Card className="border-destructive/50">
+                    <CardHeader>
+                        <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                        <CardDescription>Irreversible actions for your shop.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Delete Shop</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Permanently delete your shop, including all staff, menus, orders, and customer data.
+                                </p>
+                            </div>
+                            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="destructive">Delete Shop</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                                        <DialogDescription>
+                                            This action cannot be undone. This will permanently delete your shop <b>{shopSlug}</b> and all associated data.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                        <Label>
+                                            Type <span className="font-bold">{shopSlug}</span> to confirm
+                                        </Label>
+                                        <Input
+                                            value={deleteConfirmation}
+                                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                            placeholder={shopSlug || ""}
+                                        />
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            disabled={deleteConfirmation !== shopSlug}
+                                            onClick={async () => {
+                                                if (!shopId) return;
+                                                try {
+                                                    toast.loading("Deleting shop and staff...");
 
-            <Card className="border-destructive/50">
-                <CardHeader>
-                    <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                    <CardDescription>Irreversible actions for your shop.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Delete Shop</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Permanently delete your shop and all associated data. This action cannot be undone.
-                            </p>
-                        </div>
-                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="destructive">Delete Shop</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Are you absolutely sure?</DialogTitle>
-                                    <DialogDescription>
-                                        This action cannot be undone. This will permanently delete your shop, all associated data, and all staff accounts.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                    <Label>
-                                        Type <span className="font-bold">{shopSlug}</span> to confirm
-                                    </Label>
-                                    <Input
-                                        value={deleteConfirmation}
-                                        onChange={(e) => setDeleteConfirmation(e.target.value)}
-                                        placeholder={shopSlug || ""}
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        disabled={deleteConfirmation !== shopSlug}
-                                        onClick={async () => {
-                                            if (!shopId) return;
-                                            try {
-                                                toast.loading("Deleting shop and staff...");
+                                                    // 1. Fetch all staff members
+                                                    const staffRes = await fetch('/api/admin/staff');
+                                                    if (staffRes.ok) {
+                                                        const staff = await staffRes.json();
 
-                                                // 1. Fetch all staff members
-                                                const staffRes = await fetch('/api/admin/staff');
-                                                if (staffRes.ok) {
-                                                    const staff = await staffRes.json();
+                                                        // 2. Delete each staff member using the API
+                                                        const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-                                                    // 2. Delete each staff member using the API (same method as Team page)
-                                                    // We filter out the current user (admin) because the API blocks deleting admins
-                                                    // The admin will be deleted by the database trigger when the shop is removed
-                                                    const { data: { user: currentUser } } = await supabase.auth.getUser();
+                                                        const deletePromises = staff
+                                                            .filter((member: any) => member.id !== currentUser?.id)
+                                                            .map((member: any) =>
+                                                                fetch(`/api/admin/staff?id=${member.id}`, { method: 'DELETE' })
+                                                            );
 
-                                                    const deletePromises = staff
-                                                        .filter((member: any) => member.id !== currentUser?.id)
-                                                        .map((member: any) =>
-                                                            fetch(`/api/admin/staff?id=${member.id}`, { method: 'DELETE' })
-                                                        );
+                                                        await Promise.all(deletePromises);
+                                                    }
 
-                                                    await Promise.all(deletePromises);
+                                                    // 3. Delete the shop
+                                                    const { error } = await supabase.from('shops').delete().eq('id', shopId);
+                                                    if (error) throw error;
+
+                                                    toast.success("Shop deleted successfully");
+                                                    await supabase.auth.signOut();
+                                                    window.location.href = '/admin/login';
+                                                } catch (error: any) {
+                                                    console.error(error);
+                                                    toast.error("Failed to delete shop: " + error.message);
+                                                    toast.dismiss();
                                                 }
-
-                                                // 3. Delete the shop (Triggers cascade for Admin and data)
-                                                const { error } = await supabase.from('shops').delete().eq('id', shopId);
-                                                if (error) throw error;
-
-                                                toast.success("Shop deleted successfully");
-                                                await supabase.auth.signOut();
-                                                window.location.href = '/admin/login';
-                                            } catch (error: any) {
-                                                console.error(error);
-                                                toast.error("Failed to delete shop: " + error.message);
-                                                toast.dismiss();
-                                            }
-                                        }}
-                                    >
-                                        Delete Shop
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-                <Button onClick={handleSave}>Save Settings</Button>
+                                            }}
+                                        >
+                                            Delete Shop
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

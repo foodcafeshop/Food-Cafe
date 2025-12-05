@@ -209,7 +209,7 @@ export default function CreateShopPage() {
                         <div className="space-y-2">
                             <Label htmlFor="slug">Shop URL</Label>
                             <div className="flex items-center gap-1 text-muted-foreground bg-muted p-2 rounded-md border text-sm">
-                                <span>your-domain.com/</span>
+                                <span>foodcafeshop.in/</span>
                                 <input
                                     className="bg-transparent border-none focus:outline-none flex-1 text-foreground font-medium"
                                     value={slug}

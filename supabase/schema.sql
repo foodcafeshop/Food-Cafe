@@ -39,7 +39,8 @@ create table public.menus (
   images text[] default array[]::text[],
   tags text[] default array[]::text[],
   dietary_type text check (dietary_type in ('all', 'veg', 'non_veg', 'vegan')) default 'all',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(shop_id, name)
 );
 
 -- 2. Categories (Global Sections)
@@ -50,7 +51,8 @@ create table public.categories (
   image text,
   tags text[] default array[]::text[],
   dietary_type text check (dietary_type in ('all', 'veg', 'non_veg', 'vegan')) default 'all',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(shop_id, name)
 );
 
 -- 3. Menu Categories (Junction: Menu <-> Category)
@@ -77,7 +79,8 @@ create table public.menu_items (
   is_featured boolean default false,
   average_rating numeric(3, 1) default 0,
   rating_count integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(shop_id, name)
 );
 
 -- 5. Category Items (Junction: Category <-> Item)
