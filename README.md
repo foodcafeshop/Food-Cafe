@@ -1,4 +1,4 @@
-# 🍔 Food Cafe - Premium Restaurant Management System (SRS)
+# 🍔 Food Cafe - Premium Restaurant Management System
 
 **Version:** 1.0 (Investor Ready)  
 **Last Updated:** Dec 2025

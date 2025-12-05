@@ -34,8 +34,9 @@ const initialOrders: Order[] = [
             {
                 id: '101',
                 name: 'Crispy Corn',
+                shop_id: 'mock-shop',
                 description: '',
-                price: 6.99,
+                price: 200,
                 original_price: null,
                 images: ['https://images.unsplash.com/photo-1554502078-ef0fc409efce?auto=format&fit=crop&w=800&q=80'],
                 dietary_type: 'veg',
@@ -48,10 +49,11 @@ const initialOrders: Order[] = [
                 quantity: 1
             },
             {
-                id: '401',
-                name: 'Mojito',
+                id: '102',
+                name: 'Paneer Tikka',
+                shop_id: 'mock-shop',
                 description: '',
-                price: 7.99,
+                price: 250,
                 original_price: null,
                 images: ['https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80'],
                 dietary_type: 'veg',
