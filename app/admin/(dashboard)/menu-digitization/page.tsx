@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, Loader2, X, AlertCircle, Wand2, Timer, Lock } from "lucide-react";
+import { Upload, FileText, Loader2, X, Wand2, Timer, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMenuDigitization } from "../../context/MenuDigitizationContext";
 
 export default function MenuDigitizationPage() {
@@ -56,15 +55,7 @@ export default function MenuDigitizationPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {!process.env.NEXT_PUBLIC_GEMINI_API_KEY && (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Missing API Key</AlertTitle>
-                            <AlertDescription>
-                                The <code>NEXT_PUBLIC_GEMINI_API_KEY</code> environment variable is not set. This feature requires a Gemini API Key to function.
-                            </AlertDescription>
-                        </Alert>
-                    )}
+
 
                     {/* Timer and Status Banner */}
                     {isUploading && (
