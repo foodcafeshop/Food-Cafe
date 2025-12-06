@@ -169,6 +169,7 @@ export default function MenusPage() {
                 toast.success(`Links created: ${linksCreated}. Failed: ${linksFailed}`);
             } else {
                 // Handle Regular Menu Import
+                toast.loading("Importing menus...");
                 let successCount = 0;
                 let failCount = 0;
 
@@ -203,6 +204,7 @@ export default function MenusPage() {
                     else successCount++;
                 }
 
+                toast.dismiss();
                 toast.success(`Imported ${successCount} menus. Failed: ${failCount}`);
                 fetchMenus();
             }

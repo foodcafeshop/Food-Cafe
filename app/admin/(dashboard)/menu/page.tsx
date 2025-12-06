@@ -156,6 +156,7 @@ export default function MenuManagementPage() {
                 return;
             }
 
+            toast.loading("Importing menu items...");
             let successCount = 0;
             let failCount = 0;
 
@@ -216,6 +217,7 @@ export default function MenuManagementPage() {
                 else successCount++;
             }
 
+            toast.dismiss();
             toast.success(`Imported ${successCount} items. Failed: ${failCount}`);
             fetchItems();
             e.target.value = '';

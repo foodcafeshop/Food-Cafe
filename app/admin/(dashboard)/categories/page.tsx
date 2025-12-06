@@ -146,6 +146,7 @@ export default function CategoryManagementPage() {
                 toast.success(`Links created: ${linksCreated}. Failed: ${linksFailed}`);
             } else {
                 // Handle Regular Category Import
+                toast.loading("Importing categories...");
                 let successCount = 0;
                 let failCount = 0;
 
@@ -179,6 +180,7 @@ export default function CategoryManagementPage() {
                     else successCount++;
                 }
 
+                toast.dismiss();
                 toast.success(`Imported ${successCount} categories. Failed: ${failCount}`);
                 fetchCategories();
             }
