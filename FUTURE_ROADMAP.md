@@ -1,0 +1,39 @@
+# 🗺️ Food Cafe - Future Roadmap
+
+Brief overview of planned features for the **Food Cafe** RMS.
+
+---
+
+### 🤖 1. AI Menu Suggestions
+*   **Context-Aware**: Recommend dishes based on vague inputs (e.g., "spicy", "Italian").
+*   **Order-Based Suggestions**: Analyze current order to suggest pairings (e.g., "Fries with Burger").
+*   **Dietary Matching**: Filter items by complex dietary needs.
+
+### 🛠️ 2. Advanced Customization
+*   **Modifiers**: Support for add-ons (Extra Cheese), removals (No Onions), and variants (Size).
+*   **Dynamic Pricing**: Update total cost in real-time based on selected modifiers.
+
+### 🥗 3. Nutritional Insights
+*   **Calorie Counter**: Real-time total for current order.
+*   **Macros**: View Protein, Carbs, Fats per item.
+*   **Health Tags**: Auto-flag "High Protein", "Low Calorie", etc.
+
+### 🎟️ 4. Coupon System
+*   **Promo Codes**: Support for percentage/flat discount codes.
+*   **Auto-Apply**: Automatically apply best available deal.
+*   **Usage Limits**: Cap usage per user or total redemptions.
+
+### 🌗 5. UI/UX Customization
+*   **Theme Switch**: Toggle Dark/Light mode.
+*   **System Sync**: Auto-match device preference
+
+---
+
+### 📝 Original Requests
+*   "Add feature to suggest menu items based on customer inputs, using AI"
+*   "View calories based on orders"
+*   "dark/light theme switch"
+*   "Add option to add coupons"
+*   "Add customization feature in menu item"
+*   "Suggest menu item based on order"
+

@@ -52,7 +52,16 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                 {/* Right Side: Image & Add Button */}
                 <div className="relative w-32 h-32 shrink-0">
                     <div className="w-full h-28 rounded-xl overflow-hidden shadow-sm">
-                        <img src={item.images[0] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'} alt={item.name} className="w-full h-full object-cover" onClick={() => setIsModalOpen(true)} />
+                        <img
+                            src={item.images[0] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'}
+                            alt={item.name}
+                            className={`w-full h-full object-cover ${!item.is_available ? 'grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+                            onClick={() => {
+                                if (item.is_available) {
+                                    setIsModalOpen(true);
+                                }
+                            }}
+                        />
                     </div>
 
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24">
