@@ -64,7 +64,7 @@ export const useCartStore = create<CartStore>()(
             },
             clearCart: () => set({ items: [] }),
             totalItems: () => get().items.reduce((acc, item) => acc + item.quantity, 0),
-            totalPrice: () => get().items.reduce((acc, item) => acc + item.price * item.quantity, 0),
+            totalPrice: () => get().items.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0),
             tableId: null,
             setTableId: (id) => set({ tableId: id }),
             customerName: null,

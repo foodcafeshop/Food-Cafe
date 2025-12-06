@@ -38,7 +38,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
     // Calculate total only for available items
     const availableItems = items.filter(i => !unavailableItemIds.has(i.id));
-    const subtotal = availableItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = availableItems.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0);
     // Calculate tax based on setting using the store taxRate
     const currentTaxRate = taxRate ?? 10; // Fallback to 10 if not set
 
@@ -76,7 +76,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
         const { taxRate, taxIncludedInPrice } = useSettingsStore.getState();
         const currentRate = taxRate ?? 10;
 
-        const currentSubtotal = currentItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        const currentSubtotal = currentItems.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0);
         let currentTax = 0;
         let currentTotal = 0;
 
@@ -137,7 +137,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 order_id: newOrder.id,
                 menu_item_id: item.id,
                 name: item.name,
-                price: item.price,
+                price: item.offer_price ?? item.price,
                 quantity: item.quantity,
                 notes: item.notes
             }));
@@ -227,7 +227,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                                 {isUnavailable ? (
                                                     <span className="text-red-500 text-xs">Item unavailable</span>
                                                 ) : (
-                                                    <>{currencySymbol}{(item.price * item.quantity).toFixed(2)}</>
+                                                    <>{currencySymbol}{((item.offer_price ?? item.price) * item.quantity).toFixed(2)}</>
                                                 )}
                                             </div>
                                             {item.notes && (
@@ -255,7 +255,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                                 </button>
                                             </div>
                                             <span className="text-xs text-gray-400 font-medium">
-                                                {currencySymbol}{item.price} x {item.quantity}
+                                                {currencySymbol}{item.offer_price ?? item.price} x {item.quantity}
                                             </span>
                                         </div>
                                     </div>

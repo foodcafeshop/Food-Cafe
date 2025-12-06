@@ -287,9 +287,9 @@ export default function MenuManagementPage() {
                                 </div>
                                 <p className="text-sm text-muted-foreground truncate">{item.description}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-sm font-medium">{currencySymbol}{item.price.toFixed(2)}</span>
-                                    {item.offer_price && item.offer_price > item.price && (
-                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.offer_price.toFixed(2)}</span>
+                                    <span className="text-sm font-medium">{currencySymbol}{(item.offer_price ?? item.price).toFixed(2)}</span>
+                                    {item.offer_price && item.offer_price < item.price && (
+                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.price.toFixed(2)}</span>
                                     )}
                                 </div>
                             </div>

@@ -32,7 +32,12 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                         {item.dietary_type === 'veg' ? (<VegIcon />) : (<NonVegIcon />)}
                     </div>
                     <h3 className="font-bold text-gray-800 text-lg">{item.name}</h3>
-                    <div className="font-medium text-gray-700 text-sm">{currencySymbol}{item.price}</div>
+                    <div className="font-medium text-gray-700 text-sm">
+                        {currencySymbol}{item.offer_price ?? item.price}
+                        {item.offer_price && item.offer_price < item.price && (
+                            <span className="text-xs text-gray-400 line-through ml-2">{currencySymbol}{item.price}</span>
+                        )}
+                    </div>
                     {item.is_popular && (
                         <div className="flex items-center gap-1 text-xs font-semibold text-yellow-500 mt-1">
                             <Star className="w-3 h-3 fill-current" />

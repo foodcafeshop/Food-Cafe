@@ -56,7 +56,10 @@ export function ItemDetailModal({ item, isOpen, onClose, currencySymbol }: ItemD
                         <div className="flex justify-between items-start">
                             <DialogTitle className="text-2xl font-bold">{item.name}</DialogTitle>
                             <Badge variant="outline" className="text-lg font-bold border-primary text-primary">
-                                {currencySymbol}{item.price}
+                                {currencySymbol}{item.offer_price ?? item.price}
+                                {item.offer_price && item.offer_price < item.price && (
+                                    <span className="text-sm text-gray-400 line-through ml-2 font-normal">{currencySymbol}{item.price}</span>
+                                )}
                             </Badge>
                         </div>
                         <DialogDescription className="text-base">
@@ -104,7 +107,7 @@ export function ItemDetailModal({ item, isOpen, onClose, currencySymbol }: ItemD
                         </div>
 
                         <Button className="w-full h-12 text-lg font-bold" onClick={handleAddToCart}>
-                            Add to Order - {currencySymbol}{(item.price * quantity).toFixed(2)}
+                            Add to Order - {currencySymbol}{((item.offer_price ?? item.price) * quantity).toFixed(2)}
                         </Button>
                     </DialogFooter>
                 </div>
