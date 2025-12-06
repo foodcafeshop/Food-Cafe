@@ -146,7 +146,7 @@ export default function GeneralSettingsPage() {
                 zip.file("categories.csv", generateCSV(categories, catCols));
             }
             if (menuItems?.length) {
-                const itemCols = ['name', 'description', 'price', 'original_price', 'images', 'dietary_type', 'tags', 'is_available', 'is_popular', 'is_featured'];
+                const itemCols = ['name', 'description', 'price', 'offer_price', 'images', 'dietary_type', 'tags', 'is_available', 'is_popular', 'is_featured'];
                 zip.file("menu_items.csv", generateCSV(menuItems, itemCols));
             }
             if (orders?.length) {

@@ -650,7 +650,7 @@ export async function getBills(shopId: string) {
 export async function updateMenuItem(id: string, updates: Partial<MenuItem>) {
     const roundedUpdates = { ...updates };
     if (roundedUpdates.price) roundedUpdates.price = roundToThree(roundedUpdates.price);
-    if (roundedUpdates.original_price) roundedUpdates.original_price = roundToThree(roundedUpdates.original_price);
+    if (roundedUpdates.offer_price) roundedUpdates.offer_price = roundToThree(roundedUpdates.offer_price);
 
     const { data, error } = await supabase
         .from('menu_items')

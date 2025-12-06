@@ -70,7 +70,7 @@ create table public.menu_items (
   name text not null,
   description text,
   price decimal(10, 2) not null,
-  original_price decimal(10, 2),
+  offer_price decimal(10, 2),
   images text[] default array[]::text[],
   dietary_type text check (dietary_type in ('veg', 'non_veg', 'vegan')) default 'veg',
   tags text[] default array[]::text[],

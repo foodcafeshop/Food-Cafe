@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
                                     name: itemName,
                                     description: item.description || '',
                                     price: Number(item.price) || 0,
-                                    original_price: null, // Only for discounted items
+                                    offer_price: null, // Only for discounted items
                                     images: imageUrl ? [imageUrl] : [],
                                     dietary_type: validateDietary(item.dietary_type),
                                     tags: Array.isArray(item.tags) ? item.tags.join(',') : '',

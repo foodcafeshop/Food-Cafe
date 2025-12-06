@@ -56,7 +56,7 @@ export interface MenuItem {
     name: string;
     description: string | null;
     price: number;
-    original_price: number | null;
+    offer_price: number | null;
     shop_id: string;
     images: string[];
     dietary_type: DietaryType;

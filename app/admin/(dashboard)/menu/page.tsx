@@ -87,7 +87,7 @@ export default function MenuManagementPage() {
             name: '',
             description: '',
             price: 0,
-            original_price: 0,
+            offer_price: 0,
             images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'],
             dietary_type: 'veg',
             is_available: true,
@@ -130,11 +130,11 @@ export default function MenuManagementPage() {
     };
 
     const handleExport = () => {
-        const exportData = items.map(({ name, description, price, original_price, dietary_type, is_available, is_popular, images, tags }) => ({
+        const exportData = items.map(({ name, description, price, offer_price, dietary_type, is_available, is_popular, images, tags }) => ({
             name,
             description,
             price,
-            original_price,
+            offer_price,
             dietary_type,
             is_available,
             is_popular,
@@ -142,7 +142,7 @@ export default function MenuManagementPage() {
             tags: tags?.join(', ')
         }));
         exportToCSV(exportData, `menu_items_${new Date().toISOString().split('T')[0]}`,
-            ['name', 'description', 'price', 'original_price', 'dietary_type', 'is_available', 'is_popular', 'image', 'tags']);
+            ['name', 'description', 'price', 'offer_price', 'dietary_type', 'is_available', 'is_popular', 'image', 'tags']);
     };
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +201,7 @@ export default function MenuManagementPage() {
                     name: row.name,
                     description: row.description,
                     price: Number(row.price),
-                    original_price: row.original_price ? Number(row.original_price) : null,
+                    offer_price: row.offer_price ? Number(row.offer_price) : null,
                     dietary_type: row.dietary_type || 'veg',
                     is_available: row.is_available === true || row.is_available === 'true',
                     is_popular: row.is_popular === true || row.is_popular === 'true',
@@ -288,8 +288,8 @@ export default function MenuManagementPage() {
                                 <p className="text-sm text-muted-foreground truncate">{item.description}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="text-sm font-medium">{currencySymbol}{item.price.toFixed(2)}</span>
-                                    {item.original_price && item.original_price > item.price && (
-                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.original_price.toFixed(2)}</span>
+                                    {item.offer_price && item.offer_price > item.price && (
+                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.offer_price.toFixed(2)}</span>
                                     )}
                                 </div>
                             </div>
@@ -349,9 +349,9 @@ export default function MenuManagementPage() {
                                 <div className="flex-1">
                                     <Input
                                         type="number"
-                                        placeholder="Original Price (Optional)"
-                                        value={currentItem.original_price || ''}
-                                        onChange={e => setCurrentItem({ ...currentItem, original_price: parseFloat(e.target.value) })}
+                                        placeholder="Offer Price (Optional)"
+                                        value={currentItem.offer_price || ''}
+                                        onChange={e => setCurrentItem({ ...currentItem, offer_price: parseFloat(e.target.value) })}
                                     />
                                 </div>
                             </div>
