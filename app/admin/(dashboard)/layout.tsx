@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus } from "lucide-react";
+import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useShopId } from "@/lib/hooks/use-shop-id";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { MenuDigitizationProvider } from "../context/MenuDigitizationContext";
 
 export default function AdminLayout({
     children,
@@ -180,6 +181,12 @@ export default function AdminLayout({
                                     Items
                                 </Button>
                             </Link>
+                            <Link href="/admin/menu-digitization" onClick={() => setOpen(false)}>
+                                <Button variant={pathname === "/admin/menu-digitization" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                                    <Camera className="h-4 w-4" />
+                                    Menu Digitization
+                                </Button>
+                            </Link>
                         </div>
 
                         <div className="space-y-2">
@@ -287,7 +294,9 @@ export default function AdminLayout({
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-auto">
-                    {children}
+                    <MenuDigitizationProvider>
+                        {children}
+                    </MenuDigitizationProvider>
                 </main>
             </div>
         </div>

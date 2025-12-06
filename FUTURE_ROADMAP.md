@@ -27,6 +27,15 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Theme Switch**: Toggle Dark/Light mode.
 *   **System Sync**: Auto-match device preference
 
+### 👨‍🍳 6. Staff-Placed Orders
+*   **Take Order Mode**: Admin/Staff button to open table view with `placed_by_staff` flag.
+*   **Attribution**: Orders tagged with `staffId` for commission/tracking.
+
+### 📸 7. AI Menu Digitization
+*   **Photo Import**: Upload multiple photos of physical menus.
+*   **Auto-Generation**: AI parses text to generate CSVs for Menus, Categories, Items, and their relationships.
+
+
 ---
 
 ### 📝 Original Requests
@@ -36,4 +45,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   "Add option to add coupons"
 *   "Add customization feature in menu item"
 *   "Suggest menu item based on order"
+*   "Add feature to allow staff place order for a table"
+*   "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
+
 

@@ -66,6 +66,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Visual Editor**: Create, edit, and organize Categories and Items.
     *   **Bulk Operations**:
         *   **Smart CSV Import**: Import menus and categories with automatic JSON parsing for tags/images.
+        *   **AI Menu Digitization**: Upload photos of physical menus to auto-generate a structured CSV ZIP.
+            *   **Smart Parsing**: Uses Google Gemini AI to extract items, prices, and descriptions.
+            *   **Auto-Enhancement**: Generates appetizing descriptions and fetches relevant stock images (via Bing Search) for every item.
+            *   **Intelligent Logic**: Handles multi-price items (e.g. "Full/Half"), strictly enforces database schema constraints, and auto-generates tags.
+            *   **Premium UX**: Featuring resilient background processing (persists during navigation), live timer, and AI status animations.
         *   **Relational Linking**: Advanced import logic connects Menus to Categories and Categories to Items by **Name**.
         *   **Data Integrity**: Database enforces `UNIQUE(shop_id, name)` constraints.
 
