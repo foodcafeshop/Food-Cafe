@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera } from "lucide-react";
+import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,7 +24,7 @@ export default function AdminLayout({
 
     useEffect(() => {
         if (!loading && role === 'staff') {
-            const allowedPaths = ['/admin/orders', '/admin/bills', '/admin/kds', '/admin/tables'];
+            const allowedPaths = ['/admin/orders', '/admin/bills', '/admin/kds', '/admin/tables', '/admin/take-order'];
             const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
 
             if (!isAllowed) {
@@ -136,6 +136,7 @@ export default function AdminLayout({
                             Kitchen Display
                         </Button>
                     </Link>
+
                     <Link href="/admin/orders" onClick={() => setOpen(false)}>
                         <Button variant={pathname === "/admin/orders" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <List className="h-4 w-4" />
@@ -152,6 +153,12 @@ export default function AdminLayout({
                         <Button variant={pathname === "/admin/tables" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <Grid className="h-4 w-4" />
                             Tables
+                        </Button>
+                    </Link>
+                    <Link href="/admin/take-order" onClick={() => setOpen(false)}>
+                        <Button variant={pathname === "/admin/take-order" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <PlusCircle className="h-4 w-4" />
+                            Take Order
                         </Button>
                     </Link>
                 </div>

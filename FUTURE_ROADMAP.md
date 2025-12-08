@@ -39,13 +39,12 @@ Brief overview of planned features for the **Food Cafe** RMS.
 ---
 
 ### 📝 Original Requests
-*   "Add feature to suggest menu items based on customer inputs, using AI"
-*   "View calories based on orders"
-*   "dark/light theme switch"
-*   "Add option to add coupons"
-*   "Add customization feature in menu item"
-*   "Suggest menu item based on order"
-*   "Add feature to allow staff place order for a table"
-*   "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
-
+*   [ ] "Add feature to suggest menu items based on customer inputs, using AI"
+*   [ ] "View calories based on orders"
+*   [ ] "dark/light theme switch"
+*   [ ] "Add option to add coupons"
+*   [ ] "Add customization feature in menu item"
+*   [ ] "Suggest menu item based on order"
+*   [ ] "Add feature to allow staff place order for a table"
+*   [x] "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
 

@@ -616,6 +616,28 @@ export async function updateTableStatus(tableId: string, status: string) {
     return true;
 }
 
+
+export async function getTables(shopId: string) {
+    const { data, error } = await supabase
+        .from('tables')
+        .select(`
+            *,
+            table_secrets (otp)
+        `)
+        .eq('shop_id', shopId)
+        .order('label');
+
+    if (error) {
+        throw error;
+    }
+
+    // Flatten the OTP
+    return data?.map((t: any) => ({
+        ...t,
+        otp: t.table_secrets?.otp || t.table_secrets?.[0]?.otp || '----'
+    })) || [];
+}
+
 export async function getTableById(tableId: string) {
     const { data, error } = await supabase
         .from('tables')
