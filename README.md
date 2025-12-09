@@ -18,6 +18,8 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 3.  **Collaborative Social Dining**: **Unique Selling Point (USP)**. Multiple guests at the same table can scan the QR code and join a shared "Live Session". They see each other's items in real-time before placing the group order.
 4.  **Mobile-First Administration**: Shop owners and staff can manage the entire floor, bills, and menu from their smartphones with a fully responsive admin interface.
 5.  **Data-Driven Growth**: Real-time financial analytics and product performance reports empower owners to make informed menu decisions.
+6.  **Installable App (PWA)**: Works offline and installs on devices like a native app for instant access and smoother performance.
+7.  **Theme Personalization**: Flexible appearance settings with Light, Dark, or System Sync modes to suit any environment.
 
 ---
 
@@ -57,6 +59,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Floor Management (Mobile Optimized)**:
     *   **Visual Floor Plan**: A canvas-style view of the restaurant layout, now fully responsive with a **Card View** for mobile devices.
     *   **Live Status Indicators**: Tables change color in real-time: **Empty** (Green), **Occupied** (Blue), **Billed** (Red).
+    *   **Staff Take Order**: Dedicated interface for waiters to place orders for tables, view OTPs, and add item notes directly.
     *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
 *   **Financial & Billing Engine**:
     *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.

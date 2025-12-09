@@ -16,8 +16,12 @@ import { Separator } from "@/components/ui/separator";
 import { Download } from "lucide-react";
 import JSZip from "jszip";
 import { generateCSV } from "@/lib/csv-utils";
+import { useTheme } from "next-themes";
 
 export default function GeneralSettingsPage() {
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState<Partial<Settings>>({
         currency: '$',
@@ -289,6 +293,28 @@ export default function GeneralSettingsPage() {
                         <CardDescription>Customize your admin experience.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Appearance</Label>
+                                <p className="text-sm text-muted-foreground">Select the color theme for the dashboard.</p>
+                            </div>
+                            <div className="w-[180px]">
+                                <Select
+                                    value={theme}
+                                    onValueChange={setTheme}
+                                    disabled={!mounted}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select theme" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="light">Light</SelectItem>
+                                        <SelectItem value="dark">Dark</SelectItem>
+                                        <SelectItem value="system">System</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Sound Notifications</Label>

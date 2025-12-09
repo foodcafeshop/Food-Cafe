@@ -47,10 +47,10 @@ export function TableSelector({ onSelect, onBill, selectedTableId }: TableSelect
 
     const getStatusColor = (status: Table['status']) => {
         switch (status) {
-            case 'empty': return 'bg-green-50 text-green-700 border-green-200';
-            case 'occupied': return 'bg-blue-50 text-blue-700 border-blue-200';
-            case 'billed': return 'bg-red-50 text-red-700 border-red-200';
-            default: return 'bg-gray-50';
+            case 'empty': return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
+            case 'occupied': return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
+            case 'billed': return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
+            default: return 'bg-gray-50 dark:bg-muted/50';
         }
     };
 
