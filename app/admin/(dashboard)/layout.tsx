@@ -10,6 +10,7 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { MenuDigitizationProvider } from "../context/MenuDigitizationContext";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export default function AdminLayout({
     children,
@@ -301,9 +302,16 @@ export default function AdminLayout({
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-auto">
-                    <MenuDigitizationProvider>
-                        {children}
-                    </MenuDigitizationProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="system"
+                        enableSystem
+                        disableTransitionOnChange
+                    >
+                        <MenuDigitizationProvider>
+                            {children}
+                        </MenuDigitizationProvider>
+                    </ThemeProvider>
                 </main>
             </div>
         </div>
