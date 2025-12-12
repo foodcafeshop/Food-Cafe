@@ -38,7 +38,7 @@ export default function PricingSection() {
     return (
         <section className="py-24 px-4 w-full max-w-7xl mx-auto">
             <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-white mb-4">Unbeatable Indian Pricing</h2>
+                <h2 className="text-4xl font-bold text-white mb-4">Unbeatable Pricing</h2>
                 <p className="text-xl text-gray-400">Premium features, affordable for every outlet.</p>
             </div>
 

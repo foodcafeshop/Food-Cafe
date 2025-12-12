@@ -14,7 +14,7 @@ export default function PlatformLanding() {
             <HeroSection />
 
             {/* Demo Preview - Overlapping Hero for depth */}
-            <div className="relative z-20 -mt-32 mb-20 px-4">
+            <div className="relative z-20 -mt-32 mb-20 px-4 pointer-events-none">
                 <div className="max-w-6xl mx-auto">
                     <DemoPreview />
                 </div>

@@ -22,7 +22,7 @@ export default function HeroSection() {
         return () => clearInterval(timer);
     }, []);
     return (
-        <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-slate-950 pt-20">
+        <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-slate-950 pt-20 pb-32">
             {/* Background Effects */}
             <div className="absolute top-0 inset-x-0 h-[500px] w-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-400/20 via-slate-950/0 to-transparent pointer-events-none" />
             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
@@ -83,9 +83,9 @@ export default function HeroSection() {
                     transition={{ duration: 0.8, delay: 0.6 }}
                     className="flex flex-col sm:flex-row gap-4 justify-center"
                 >
-                    <Link href="/admin/login">
+                    <Link href="/admin/login?signup=true">
                         <Button size="lg" className="h-14 px-8 text-lg font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-full transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(234,88,12,0.5)]">
-                            Partner Login <ArrowRight className="ml-2 h-5 w-5" />
+                            Start for Free <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </Link>
                     <Link href="/food-cafe">

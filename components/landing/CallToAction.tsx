@@ -33,9 +33,9 @@ export default function CallToAction() {
                     transition={{ delay: 0.4 }}
                     className="flex flex-col sm:flex-row gap-6 justify-center"
                 >
-                    <Link href="/admin/login">
+                    <Link href="/admin/login?signup=true">
                         <Button size="lg" className="h-16 px-12 text-xl font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-2xl shadow-orange-900/50">
-                            Partner Login <ArrowRight className="ml-2" />
+                            Start for Free <ArrowRight className="ml-2" />
                         </Button>
                     </Link>
                     <Link href="/food-cafe">
