@@ -35,6 +35,11 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Photo Import**: Upload multiple photos of physical menus.
 *   **Auto-Generation**: AI parses text to generate CSVs for Menus, Categories, Items, and their relationships.
 
+### 🚀 8. High-Converting Landing Page (Live ✅)
+*   **Target Audience**: Restaurant/Cafe owners.
+*   **Workflow Explanation**: Intuitive, visual walkthrough of the RMS capabilities.
+*   **Design**: High-end, futuristic aesthetic to attract business owners.
+
 
 ---
 
@@ -47,4 +52,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Suggest menu item based on order"
 *   [x] "Add feature to allow staff place order for a table"
 *   [x] "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
+*   [x] "Create attractive and futuristic looking homepage for users (restaurant owners)"
 

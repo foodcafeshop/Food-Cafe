@@ -1,45 +1,44 @@
-import { Button } from "@/components/ui/button";
-import { ChefHat, Store } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import HeroSection from "@/components/landing/HeroSection";
+import StatsTicker from "@/components/landing/StatsTicker";
+import FeaturesGrid from "@/components/landing/FeaturesGrid";
+import PricingSection from "@/components/landing/PricingSection";
+import Testimonials from "@/components/landing/Testimonials";
+import CallToAction from "@/components/landing/CallToAction";
+import DemoPreview from "@/components/landing/DemoPreview";
 
 export default function PlatformLanding() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-white p-4 text-center">
-            <div className="bg-white p-12 rounded-3xl shadow-xl max-w-2xl w-full space-y-8 border border-orange-100">
-                <div className="flex justify-center">
-                    <div className="h-24 w-24 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-200">
-                        <ChefHat className="h-12 w-12 text-white" />
-                    </div>
-                </div>
+        <main className="min-h-screen bg-slate-950 text-white selection:bg-orange-500 selection:text-white overflow-x-hidden">
+            <HeroSection />
 
-                <div className="space-y-4">
-                    <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                        Welcome to Food Cafe Platform
-                    </h1>
-                    <p className="text-xl text-gray-600 max-w-lg mx-auto">
-                        The all-in-one solution for managing your restaurant's digital presence.
-                    </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 max-w-md mx-auto">
-                    <Link href="/admin/login">
-                        <Button size="lg" className="w-full h-14 text-lg font-bold bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-200">
-                            Merchant Login
-                        </Button>
-                    </Link>
-                    <Link href="/food-cafe">
-                        <Button size="lg" variant="outline" className="w-full h-14 text-lg font-bold border-2">
-                            View Demo Shop
-                        </Button>
-                    </Link>
-                </div>
-
-                <div className="pt-8 border-t border-gray-100">
-                    <p className="text-sm text-gray-500">
-                        Powered by <span className="font-bold text-orange-500">Gemini Antigravity</span>
-                    </p>
+            {/* Demo Preview - Overlapping Hero for depth */}
+            <div className="relative z-20 -mt-32 mb-20 px-4">
+                <div className="max-w-6xl mx-auto">
+                    <DemoPreview />
                 </div>
             </div>
-        </div>
+
+            <StatsTicker />
+
+            <div className="relative">
+                {/* Background Gradient for content area */}
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950 pointer-events-none" />
+
+                <div className="relative z-10 space-y-32 pb-32">
+                    <FeaturesGrid />
+                    <PricingSection />
+                    <Testimonials />
+                    <CallToAction />
+                </div>
+            </div>
+
+            <footer className="py-12 text-center text-gray-600 border-t border-slate-900 bg-slate-950">
+                <p>&copy; {new Date().getFullYear()} Food Cafe. All rights reserved.</p>
+            </footer>
+        </main>
     );
 }
+
+
