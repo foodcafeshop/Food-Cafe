@@ -7,7 +7,7 @@ import Image from "next/image";
 import { getLandingPageData } from "@/lib/api";
 import { MenuItemCard } from "@/components/features/menu/menu-item-card";
 import { getCurrencySymbol, cn } from "@/lib/utils";
-import { HeaderSearch } from "@/components/features/landing/header-search";
+
 import { CartBadge } from "@/components/features/cart/cart-badge";
 import { ShopHeader } from "@/components/features/landing/shop-header";
 import { notFound } from "next/navigation";
