@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TableSelector } from "@/components/features/staff/TableSelector";
 import { MenuBrowser } from "@/components/features/staff/MenuBrowser";
 import { OrderCart, CartItem } from "@/components/features/staff/OrderCart";
@@ -14,8 +14,13 @@ import { generateOrderNumber } from "@/lib/utils";
 
 import { BillingDialog } from "@/components/features/staff/BillingDialog";
 
+import { useRouter } from "next/navigation";
+
+// ...
+
 export default function TakeOrderPage() {
     const { shopId } = useShopId();
+    const router = useRouter();
     const [step, setStep] = useState<'table' | 'order'>('table');
     const [selectedTable, setSelectedTable] = useState<{ id: string; label: string } | null>(null);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -25,10 +30,46 @@ export default function TakeOrderPage() {
     const [billingTableId, setBillingTableId] = useState<string | null>(null);
     const [billingTableLabel, setBillingTableLabel] = useState<string>('');
 
+    // Check Hash and Listen for Changes
+    useEffect(() => {
+        const checkHash = async () => {
+            // Wait for window to be available
+            if (typeof window === 'undefined') return;
+
+            const hash = window.location.hash;
+            if (hash && hash.length > 1 && shopId) {
+                const label = hash.substring(1);
+                try {
+                    const { data } = await import("@/lib/supabase").then(async ({ supabase }) =>
+                        supabase.from('tables').select('id, label').eq('shop_id', shopId).eq('label', label).single()
+                    );
+
+                    if (data) {
+                        setSelectedTable(data);
+                        setStep('order');
+                    }
+                } catch (e) {
+                    console.error("Failed to load table from hash", e);
+                }
+            } else {
+                // If no hash, go back to table view
+                setStep('table');
+                setSelectedTable(null);
+            }
+        };
+
+        checkHash();
+
+        window.addEventListener('hashchange', checkHash);
+        return () => {
+            window.removeEventListener('hashchange', checkHash);
+        };
+    }, [shopId]);
 
     const handleTableSelect = (id: string, label: string) => {
         setSelectedTable({ id, label });
         setStep('order');
+        router.push(`/admin/take-order#${label}`);
     };
 
     const handleBackToTables = () => {
@@ -37,10 +78,12 @@ export default function TakeOrderPage() {
                 setCartItems([]);
                 setStep('table');
                 setSelectedTable(null);
+                router.push('/admin/take-order');
             }
         } else {
             setStep('table');
             setSelectedTable(null);
+            router.push('/admin/take-order');
         }
     };
 

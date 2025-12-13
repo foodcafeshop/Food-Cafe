@@ -37,7 +37,9 @@ export function TableSelector({ onSelect, onBill, selectedTableId }: TableSelect
         try {
             setLoading(true);
             const data = await getTables(shopId!);
-            setTables(data);
+            setTables(data.sort((a: Table, b: Table) =>
+                a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
+            ));
         } catch (error) {
             console.error("Failed to load tables", error);
         } finally {

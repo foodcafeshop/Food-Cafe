@@ -124,7 +124,9 @@ export default function TableManagementPage() {
                 ...t,
                 otp: t.table_secrets?.otp || t.table_secrets?.[0]?.otp || '----'
             })) || [];
-            setTables(tablesWithOtp);
+            setTables(tablesWithOtp.sort((a: any, b: any) =>
+                a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
+            ));
         }
         setLoading(false);
     };

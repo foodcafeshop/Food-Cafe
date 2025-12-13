@@ -152,14 +152,24 @@ export function MenuBrowser({ onAddToCart }: MenuBrowserProps) {
             <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {filteredItems.map(item => (
-                        <Card key={item.id} className="p-3 flex gap-3 hover:shadow-md transition-shadow group">
+                        <Card key={item.id} className={cn(
+                            "p-3 flex gap-3 hover:shadow-md transition-shadow group relative",
+                            !item.is_available && "opacity-70 bg-muted/50"
+                        )}>
+                            {!item.is_available && (
+                                <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center rounded-lg">
+                                    <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded shadow-sm">
+                                        Out of Stock
+                                    </span>
+                                </div>
+                            )}
                             {item.images?.[0] && (
                                 <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
                                     <Image
                                         src={item.images[0]}
                                         alt={item.name}
                                         fill
-                                        className="object-cover"
+                                        className={cn("object-cover", !item.is_available && "grayscale")}
                                         sizes="64px"
                                     />
                                 </div>
@@ -176,6 +186,7 @@ export function MenuBrowser({ onAddToCart }: MenuBrowserProps) {
                                     variant="secondary"
                                     className="self-end h-7 text-xs w-full mt-2"
                                     onClick={() => onAddToCart(item)}
+                                    disabled={!item.is_available}
                                 >
                                     <Plus className="h-3 w-3 mr-1" /> Add
                                 </Button>
