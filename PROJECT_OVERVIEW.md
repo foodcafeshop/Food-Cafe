@@ -33,7 +33,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Dynamic Digital Menu**:
     *   **Rich Media**: High-quality images for every item.
     *   **Live Dietary Filters**: Instant toggles for **Veg**, **Non-Veg**, and **Vegan**.
-    *   **Smart Search**: Instant search across all menu items.
+    *   **Smart Instant Search**:
+        *   **Offline First**: Search filters the menu instantly on the client-side without network latency.
+        *   **Deep Discovery**: Searches across **Names**, **Descriptions**, and hidden **Tags** (e.g., "Spicy", "Chef Special") to find relevant items instantly.
+        *   **Live URL Sync**: Search queries update the URL in real-time for easy sharing of filtered views.
     *   **Real-Time Availability**: Out-of-stock items disappear instantly from all active menus to prevent disappointment.
     *   **Performance Optimized**: Pre-fetching and database indexing ensure sub-100ms menu loads.
     *   **Immersive Photo Gallery**:

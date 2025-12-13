@@ -171,7 +171,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
     if (items.length === 0) {
         return (
             <div className="min-h-screen bg-gray-50 pb-20">
-                <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} />
+                <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} showSearch={false} />
 
                 <main className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
                     {/* Empty Cart Message */}
@@ -202,7 +202,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32 md:pb-12">
-            <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} />
+            <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} showMenuLink={true} showCartLink={false} showSearch={false} />
 
             <main className="container max-w-7xl mx-auto px-4 py-6">
                 <div className="grid md:grid-cols-3 gap-8 items-start">

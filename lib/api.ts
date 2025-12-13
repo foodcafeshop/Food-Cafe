@@ -91,7 +91,7 @@ export async function getFullMenuData(slug: string) {
             category_id,
             sort_order,
             menu_items (
-                id, name, description, price, images, dietary_type, is_available, average_rating, rating_count
+                id, name, description, price, images, dietary_type, tags, is_available, average_rating, rating_count
             )
         `)
         .in('category_id', categoryIds)

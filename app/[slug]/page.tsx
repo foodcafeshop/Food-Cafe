@@ -68,8 +68,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Header */}
-      <ShopHeader shop={shop} slug={slug} />
-
+      <ShopHeader shop={shop} slug={slug} showMenuLink={true} showCartLink={true} showSearch={false} />
       {/* Hero Section */}
       <div className="relative h-[300px] w-full bg-gradient-to-r from-orange-500 to-red-600">
         {shop?.cover_image ? (

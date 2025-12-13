@@ -3,7 +3,7 @@
 import { ShoppingBag, ChefHat, ChevronDown, Star, Home, Utensils, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { HeaderSearch } from "@/components/features/landing/header-search";
+import { HeaderSearch } from "@/components/features/menu/header-search";
 import { CartBadge } from "@/components/features/cart/cart-badge";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/store";
@@ -14,9 +14,10 @@ interface ShopHeaderProps {
     showHomeLink?: boolean;
     showMenuLink?: boolean;
     showCartLink?: boolean;
+    showSearch?: boolean;
 }
 
-export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = false, showCartLink = true }: ShopHeaderProps) {
+export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = false, showCartLink = true, showSearch = true }: ShopHeaderProps) {
     return (
         <header className="sticky top-0 z-50 bg-white shadow-sm">
             <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
@@ -51,7 +52,7 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                 </div>
 
                 <div className="flex items-center gap-6">
-                    <HeaderSearch />
+                    {showSearch && <HeaderSearch slug={slug} />}
 
                     {showHomeLink && (
                         <Link href={`/${slug}`} className="flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">

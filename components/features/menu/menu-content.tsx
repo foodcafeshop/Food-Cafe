@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MenuItemCard } from "@/components/features/menu/menu-item-card";
 import { CategoryNav } from "@/components/features/menu/category-nav";
 import { CartFooter } from "@/components/features/cart/cart-footer";
@@ -39,6 +39,13 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
             setTableId(tableIdParam);
         }
     }, [searchParams, setTableId]);
+
+    // Sync search query from URL
+    useEffect(() => {
+        const query = searchParams.get("search") || "";
+        setSearchQuery(query);
+        setIsSearchOpen(!!query);
+    }, [searchParams]);
 
     useEffect(() => {
         const fetchTableLabel = async () => {
@@ -96,8 +103,10 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         ...cat,
         items: cat.items.filter((item: any) => {
             // Search Filter
-            const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+            const searchLower = searchQuery.toLowerCase();
+            const matchesSearch = item.name.toLowerCase().includes(searchLower) ||
+                item.description?.toLowerCase().includes(searchLower) ||
+                item.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower));
 
             // Dietary Filter
             const matchesDietary = dietaryFilter === "all" || item.dietary_type === dietaryFilter;
@@ -113,6 +122,8 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         })
     })).filter(cat => cat.items.length > 0);
 
+    const pathname = usePathname();
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);
@@ -124,13 +135,13 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         } else {
             params.delete("search");
         }
-        router.replace(`/menu?${params.toString()}`, { scroll: false });
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
     const clearSearch = () => {
         setSearchQuery("");
         setIsSearchOpen(false);
-        router.replace("/menu", { scroll: false });
+        router.replace(pathname, { scroll: false });
     };
 
     return (
