@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
+import { Users, CheckSquare } from "lucide-react";
 import { getTables } from "@/lib/api";
 import { useShopId } from "@/lib/hooks/use-shop-id";
 import { cn } from "@/lib/utils";
@@ -19,10 +19,11 @@ interface Table {
 interface TableSelectorProps {
     onSelect: (tableId: string, tableLabel: string) => void;
     onBill: (tableId: string) => void;
+    onClear?: (tableId: string) => void;
     selectedTableId: string | null;
 }
 
-export function TableSelector({ onSelect, onBill, selectedTableId }: TableSelectorProps) {
+export function TableSelector({ onSelect, onBill, onClear, selectedTableId }: TableSelectorProps) {
     const { shopId } = useShopId();
     const [tables, setTables] = useState<Table[]>([]);
     const [loading, setLoading] = useState(true);
@@ -101,6 +102,21 @@ export function TableSelector({ onSelect, onBill, selectedTableId }: TableSelect
                                 }}
                             >
                                 Bill
+                            </Button>
+                        )}
+                        {table.status === 'billed' && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 gap-1"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Mark ${table.label} as Empty?`)) {
+                                        onClear?.(table.id);
+                                    }
+                                }}
+                            >
+                                <CheckSquare className="h-3 w-3" /> Clear
                             </Button>
                         )}
                     </div>

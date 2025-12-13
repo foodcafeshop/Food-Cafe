@@ -39,7 +39,7 @@ function LoginForm() {
                     setLoading(false);
                     return;
                 }
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -50,7 +50,13 @@ function LoginForm() {
                     }
                 });
                 if (error) throw error;
-                toast.success("Account created! Please check your email to confirm.");
+
+                if (data.session) {
+                    toast.success("Account created!");
+                    window.location.href = '/admin';
+                } else {
+                    toast.success("Account created! Please check your email to confirm.");
+                }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
@@ -58,8 +64,7 @@ function LoginForm() {
                 });
                 if (error) throw error;
                 toast.success("Welcome back!");
-                router.push('/admin');
-                router.refresh();
+                window.location.href = '/admin';
             }
         } catch (error: any) {
             console.error("Auth error:", error);
@@ -74,7 +79,7 @@ function LoginForm() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
                 },
             });
             if (error) throw error;

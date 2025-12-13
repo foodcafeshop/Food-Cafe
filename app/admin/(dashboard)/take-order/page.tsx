@@ -232,6 +232,26 @@ export default function TakeOrderPage() {
 
     const [refreshKey, setRefreshKey] = useState(0);
 
+    const handleClearTable = async (tableId: string) => {
+        try {
+            // Dynamically import clearTable to avoid top-level import issues if any, 
+            // though we could add to top imports. Sticking to pattern used for some other actions or just import it.
+            // Actually, let's use the top-level import we will add.
+            const { clearTable } = await import("@/lib/api");
+            await clearTable(tableId);
+            toast.success("Table marked as empty");
+            setRefreshKey(prev => prev + 1);
+            if (selectedTable?.id === tableId) {
+                setSelectedTable(null);
+                setStep('table');
+                router.push('/admin/take-order');
+            }
+        } catch (error) {
+            console.error("Failed to clear table", error);
+            toast.error("Failed to mark table as empty");
+        }
+    };
+
     return (
         <div className="h-full flex flex-col p-6">
             <div className="flex items-center gap-4 mb-6">
@@ -251,6 +271,7 @@ export default function TakeOrderPage() {
                         key={refreshKey}
                         onSelect={handleTableSelect}
                         onBill={handleBill}
+                        onClear={handleClearTable}
                         selectedTableId={null}
                     />
                 ) : (
