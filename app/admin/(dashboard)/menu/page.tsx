@@ -229,10 +229,10 @@ export default function MenuManagementPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Menu Items Management</h1>
-                <div className="flex gap-2">
-                    <div className="relative">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold">Menu Items</h1>
+                <div className="grid grid-cols-2 sm:flex gap-2 w-full md:w-auto">
+                    <div className="relative col-span-1">
                         <input
                             type="file"
                             accept=".csv"
@@ -240,14 +240,14 @@ export default function MenuManagementPage() {
                             onChange={handleImport}
                             title="Import Items CSV"
                         />
-                        <Button variant="outline" className="gap-2">
+                        <Button variant="outline" className="gap-2 w-full">
                             <FileUp className="h-4 w-4" /> Import
                         </Button>
                     </div>
-                    <Button variant="outline" className="gap-2" onClick={handleExport}>
+                    <Button variant="outline" className="gap-2 col-span-1" onClick={handleExport}>
                         <FileDown className="h-4 w-4" /> Export
                     </Button>
-                    <Button className="gap-2" onClick={handleAddNew}>
+                    <Button className="gap-2 col-span-2 sm:col-span-1" onClick={handleAddNew}>
                         <Plus className="h-4 w-4" /> Add New Item
                     </Button>
                 </div>
@@ -272,29 +272,31 @@ export default function MenuManagementPage() {
                     <div className="text-center py-8 text-muted-foreground">No items found. Add one to get started.</div>
                 ) : (
                     filteredItems.map((item) => (
-                        <Card key={item.id} className="flex flex-row items-center p-4 gap-4 overflow-hidden">
-                            <div className="h-16 w-16 rounded-md overflow-hidden shrink-0 bg-muted relative">
-                                <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
+                        <Card key={item.id} className="flex flex-col md:flex-row items-center p-4 gap-4 overflow-hidden">
+                            <div className="w-full md:w-auto flex items-center gap-4 flex-1 min-w-0">
+                                <div className="h-16 w-16 rounded-md overflow-hidden shrink-0 bg-muted relative">
+                                    <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-semibold truncate">{item.name}</h3>
+                                        {item.is_popular && <Badge variant="secondary" className="text-[10px]">Popular</Badge>}
+                                        <Badge variant="outline" className={item.dietary_type === 'veg' ? "text-green-600 border-green-600" : item.dietary_type === 'non_veg' ? "text-red-600 border-red-600" : "text-green-600 border-green-600"}>
+                                            {item.dietary_type === 'vegan' ? 'VEGAN' : item.dietary_type === 'veg' ? 'VEG' : 'NON-VEG'}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm font-medium">{currencySymbol}{(item.offer_price ?? item.price).toFixed(2)}</span>
+                                        {item.offer_price && item.offer_price < item.price && (
+                                            <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.price.toFixed(2)}</span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-semibold truncate">{item.name}</h3>
-                                    {item.is_popular && <Badge variant="secondary" className="text-[10px]">Popular</Badge>}
-                                    <Badge variant="outline" className={item.dietary_type === 'veg' ? "text-green-600 border-green-600" : item.dietary_type === 'non_veg' ? "text-red-600 border-red-600" : "text-green-600 border-green-600"}>
-                                        {item.dietary_type === 'vegan' ? 'VEGAN' : item.dietary_type === 'veg' ? 'VEG' : 'NON-VEG'}
-                                    </Badge>
-                                </div>
-                                <p className="text-sm text-muted-foreground truncate">{item.description}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-sm font-medium">{currencySymbol}{(item.offer_price ?? item.price).toFixed(2)}</span>
-                                    {item.offer_price && item.offer_price < item.price && (
-                                        <span className="text-xs text-muted-foreground line-through">{currencySymbol}{item.price.toFixed(2)}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-6 border-t md:border-none pt-4 md:pt-0">
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-muted-foreground">In Stock</span>
                                     <Switch

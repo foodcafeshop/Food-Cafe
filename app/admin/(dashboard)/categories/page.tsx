@@ -198,10 +198,10 @@ export default function CategoryManagementPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold">Category Management</h1>
-                <div className="flex gap-2">
-                    <div className="relative">
+                <div className="grid grid-cols-2 sm:flex gap-2 w-full md:w-auto">
+                    <div className="relative col-span-1">
                         <input
                             type="file"
                             accept=".csv"
@@ -209,15 +209,15 @@ export default function CategoryManagementPage() {
                             onChange={handleImport}
                             title="Import Categories CSV"
                         />
-                        <Button variant="outline" className="gap-2">
+                        <Button variant="outline" className="gap-2 w-full">
                             <FileUp className="h-4 w-4" /> Import
                         </Button>
                     </div>
-                    <Button variant="outline" className="gap-2" onClick={handleExport}>
+                    <Button variant="outline" className="gap-2 col-span-1" onClick={handleExport}>
                         <FileDown className="h-4 w-4" /> Export
                     </Button>
-                    <Button className="gap-2" onClick={() => { setCurrentCategory({}); setIsDialogOpen(true); }}>
-                        <Plus className="h-4 w-4" /> Add New Category
+                    <Button className="gap-2 col-span-2 sm:col-span-1" onClick={() => { setCurrentCategory({}); setIsDialogOpen(true); }}>
+                        <Plus className="h-4 w-4" /> Add New
                     </Button>
                 </div>
             </div>
