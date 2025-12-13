@@ -51,7 +51,8 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Table Reservations**: Booking engine for future dates and times (currently unsupported by schema).
 *   **Events & Blog**: Dynamic content management for "What's On" or news updates.
 *   **Advanced Promos**: "Enter code" style discount banners and conditional offers.
-*   **Gallery Management**: Admin UI to upload and specific gallery images (currently requires manual DB array update).
+*   **Gallery Management (Live ✅)**: Admin UI to upload/manage gallery images (limit: 16).
+*   **Smart Search (Live ✅)**: Offline-capable, tag-based search for instant menu filtering.
 
 ---
 
@@ -65,5 +66,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Add feature to allow staff place order for a table"
 *   [x] "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
 *   [x] "Create attractive and futuristic looking homepage for users (restaurant owners)"
+*   [x] "Add photo gallery management"
+*   [x] "Add smart search for menu items"
 *   [ ] "add billing and payment support, accordingly add restrictions on various actions"
 
