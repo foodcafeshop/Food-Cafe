@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCartStore } from "@/lib/store";
 import { ChefHat } from "lucide-react";
+import Image from "next/image";
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { verifyTableOtp, getShopDetails, getSettings, getTableByLabel, joinTable } from "@/lib/api";
@@ -226,8 +227,13 @@ export function WelcomeDialog() {
                 }
             }}>
                 <DialogHeader className="flex flex-col items-center text-center space-y-4">
-                    <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center">
-                        <ChefHat className="h-8 w-8 text-orange-600" />
+                    <div className="relative h-16 w-16 rounded-full flex items-center justify-center overflow-hidden shadow-sm">
+                        <Image
+                            src="/fc_logo_orange.webp"
+                            alt="Logo"
+                            fill
+                            className="object-contain rounded-lg"
+                        />
                     </div>
                     <div>
                         <DialogTitle className="text-2xl font-bold">

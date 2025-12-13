@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChefHat, Lock, Mail, Users } from "lucide-react";
+import Image from "next/image";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -87,8 +88,13 @@ function LoginForm() {
             <Card className="w-full max-w-sm border-none shadow-lg">
                 <CardHeader className="space-y-1 text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="h-12 w-12 bg-primary rounded-full flex items-center justify-center">
-                            <ChefHat className="h-6 w-6 text-primary-foreground" />
+                        <div className="relative h-12 w-12 rounded-full overflow-hidden shadow-sm">
+                            <Image
+                                src="/fc_logo_orange.webp"
+                                alt="Food Cafe Logo"
+                                fill
+                                className="object-contain rounded-xl"
+                            />
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold">

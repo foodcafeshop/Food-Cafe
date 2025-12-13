@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
@@ -93,7 +94,14 @@ export default function AdminLayout({
         <div className="flex flex-col h-full">
             <div className="h-auto py-4 flex flex-col justify-center px-6 border-b">
                 <div className="flex items-center">
-                    <ChefHat className="h-6 w-6 text-primary mr-2" />
+                    <div className="relative h-8 w-8 mr-2">
+                        <Image
+                            src="/fc_logo_orange.webp"
+                            alt="Logo"
+                            fill
+                            className="object-contain rounded-md"
+                        />
+                    </div>
                     <span className="font-bold text-lg">
                         FC {role === 'staff' ? 'Staff Panel' : 'Admin Panel'}
                     </span>
@@ -277,7 +285,14 @@ export default function AdminLayout({
                 <header className="md:hidden h-16 border-b bg-card flex items-center px-4 justify-between">
                     <div className="flex flex-col">
                         <div className="flex items-center">
-                            <ChefHat className="h-6 w-6 text-primary mr-2" />
+                            <div className="relative h-8 w-8 mr-2">
+                                <Image
+                                    src="/fc_logo_orange.webp"
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain rounded-lg shadow-sm"
+                                />
+                            </div>
                             <span className="font-bold text-lg">
                                 FC {role === 'staff' ? 'Staff Panel' : 'Admin Panel'}
                             </span>

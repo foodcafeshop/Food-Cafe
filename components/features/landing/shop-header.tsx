@@ -2,6 +2,7 @@
 
 import { ShoppingBag, ChefHat, ChevronDown, Star, Home, Utensils, LogOut, User } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { HeaderSearch } from "@/components/features/landing/header-search";
 import { CartBadge } from "@/components/features/cart/cart-badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,14 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                         {shop?.logo_url ? (
                             <img src={shop.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
                         ) : (
-                            <ChefHat className="h-8 w-8" />
+                            <div className="relative h-8 w-8">
+                                <Image
+                                    src="/fc_logo_orange.webp"
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain rounded-full"
+                                />
+                            </div>
                         )}
                         <span className="tracking-tight">{shop?.name || 'Food Cafe'}</span>
                     </Link>

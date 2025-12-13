@@ -5,8 +5,8 @@ import { Play } from "lucide-react";
 
 export default function DemoPreview() {
     return (
-        <section className="py-24 px-4 w-full">
-            <div className="max-w-6xl mx-auto">
+        <section className="py-24 px-4 w-full pointer-events-none">
+            <div className="max-w-6xl mx-auto pointer-events-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-4xl font-bold text-white mb-4">Powerful Dashboard</h2>
                     <p className="text-xl text-gray-400">Manage your entire restaurant from one screen.</p>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Search, ShoppingBag, ChefHat, Utensils, ArrowRight, LayoutDashboard, MapPin, ChevronDown, Star, Phone, Mail, Clock, FileText } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { getLandingPageData } from "@/lib/api";
 import { MenuItemCard } from "@/components/features/menu/menu-item-card";
 import { getCurrencySymbol, cn } from "@/lib/utils";
@@ -33,8 +34,13 @@ export default async function Home({ params }: { params: { slug: string } }) {
             {shop.logo_url ? (
               <img src={shop.logo_url} alt="Logo" className="h-20 w-20 rounded-full object-cover" />
             ) : (
-              <div className="h-20 w-20 bg-orange-100 rounded-full flex items-center justify-center">
-                <ChefHat className="h-10 w-10 text-orange-600" />
+              <div className="relative h-20 w-20 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/fc_logo_orange.webp"
+                  alt="Logo"
+                  fill
+                  className="object-contain p-2"
+                />
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChefHat } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -30,16 +31,26 @@ export default function HeroSection() {
 
             {/* Brand Logo */}
             <div className="absolute top-6 left-6 md:left-12 z-20 flex items-center gap-3">
-                <div className="bg-orange-600 p-2 rounded-xl shadow-lg shadow-orange-900/20">
-                    <ChefHat className="text-white h-6 w-6" />
+                <div className="relative h-10 w-10">
+                    <Image
+                        src="/fc_logo_orange.webp"
+                        alt="Food Cafe Logo"
+                        fill
+                        className="object-contain rounded-xl shadow-sm"
+                    />
                 </div>
                 <span className="text-2xl font-bold text-white tracking-tight">Food Cafe</span>
             </div>
 
             <div className="relative z-10 container mx-auto px-4 text-center">
                 <div className="inline-flex items-center justify-center p-2 mb-8 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm overflow-hidden">
-                    <div className="bg-orange-500 rounded-full p-1.5 mr-3 flex-shrink-0">
-                        <ChefHat size={16} className="text-white" />
+                    <div className="relative h-6 w-6 mr-3 flex-shrink-0">
+                        <Image
+                            src="/fc_logo_orange.webp"
+                            alt="Logo"
+                            fill
+                            className="object-contain rounded-md"
+                        />
                     </div>
                     <div className="h-6 overflow-hidden relative w-64 md:w-80 text-left">
                         <AnimatePresence mode="wait">
