@@ -37,6 +37,10 @@ export function WelcomeDialog() {
     const [error, setError] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [otpEnabled, setOtpEnabled] = useState<boolean | null>(null);
+    const [shopName, setShopName] = useState("");
+    const [shopLogo, setShopLogo] = useState("");
+    const [currentShopId, setCurrentShopId] = useState("");
+    const [manualTableLabel, setManualTableLabel] = useState("");
 
 
 
@@ -56,6 +60,9 @@ export function WelcomeDialog() {
 
             const shop = await getShopDetails(slug);
             if (shop) {
+                setShopName(shop.name);
+                setShopLogo(shop.logo_url || "");
+                setCurrentShopId(shop.id);
                 // 2. Fetch Settings
                 const settings = await getSettings(shop.id);
                 setOtpEnabled(settings?.enable_otp ?? false);
@@ -147,9 +154,37 @@ export function WelcomeDialog() {
 
         if (!name.trim()) return;
 
-        // Verify OTP if tableId is present
-        if (tableId) {
-            if (!otp.trim()) {
+        // Resolve Table ID if manual
+        let targetTableId = tableId;
+
+        if (!targetTableId) {
+            if (!manualTableLabel.trim()) {
+                setError("Please enter your Table Number.");
+                return;
+            }
+            setIsVerifying(true);
+            try {
+                const table = await getTableByLabel(currentShopId, manualTableLabel.trim());
+                if (!table) {
+                    setError("Invalid Table Number. Please check and try again.");
+                    setIsVerifying(false);
+                    return;
+                }
+                targetTableId = table.id;
+                // Update global state
+                setTableId(targetTableId);
+            } catch (err) {
+                console.error(err);
+                setError("Failed to verify table. Please try again.");
+                setIsVerifying(false);
+                return;
+            }
+            setIsVerifying(false); // Reset for OTP check
+        }
+
+        // Verify OTP if tableId is present (now it should be)
+        if (targetTableId) {
+            if (otpEnabled !== false && !otp.trim()) {
                 setError("Please enter the Table OTP provided by staff.");
                 return;
             }
@@ -160,11 +195,10 @@ export function WelcomeDialog() {
                     setError("Invalid OTP. (Hint: Default is 0000)");
                     return;
                 }
-                // Success, proceed
             } else {
-                // Remote check
+                // Try remote check
                 setIsVerifying(true);
-                const isValid = await verifyTableOtp(tableId, otp.trim());
+                const isValid = await verifyTableOtp(targetTableId, otp.trim());
                 setIsVerifying(false);
 
                 if (!isValid) {
@@ -178,21 +212,18 @@ export function WelcomeDialog() {
             const customerInfo = {
                 sessionId: newSessionId,
                 name: name.trim(),
-                phone: phone.trim(),
                 joinedAt: new Date().toISOString()
             };
 
-            console.log('Attempting to join table:', tableId);
-            await joinTable(tableId, customerInfo);
+            console.log('Attempting to join table:', targetTableId);
+            await joinTable(targetTableId, customerInfo);
             setSessionId(newSessionId);
             console.log('Table join request sent');
         }
 
         if (name.trim()) {
             setCustomerName(name.trim());
-            if (phone.trim()) {
-                setCustomerPhone(phone.trim());
-            }
+
             setWelcomeOpen(false);
         }
     };
@@ -228,16 +259,20 @@ export function WelcomeDialog() {
             }}>
                 <DialogHeader className="flex flex-col items-center text-center space-y-4">
                     <div className="relative h-16 w-16 rounded-full flex items-center justify-center overflow-hidden shadow-sm">
-                        <Image
-                            src="/fc_logo_orange.webp"
-                            alt="Logo"
-                            fill
-                            className="object-contain rounded-lg"
-                        />
+                        {shopLogo ? (
+                            <img src={shopLogo} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                            <Image
+                                src="/fc_logo_orange.webp"
+                                alt="Logo"
+                                fill
+                                className="object-contain rounded-lg"
+                            />
+                        )}
                     </div>
                     <div>
                         <DialogTitle className="text-2xl font-bold">
-                            {welcomeMode === 'checkout' ? 'Details Required' : 'Welcome to Food Cafe!'}
+                            {welcomeMode === 'checkout' ? 'Details Required' : `Welcome to ${shopName || 'Food Cafe'}!`}
                         </DialogTitle>
                         <DialogDescription className="text-base mt-2">
                             {welcomeMode === 'checkout'
@@ -259,33 +294,37 @@ export function WelcomeDialog() {
                             className="h-11"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number (Optional)</Label>
-                        <Input
-                            id="phone"
-                            placeholder="+91 98765 43210"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="h-11"
-                            type="tel"
-                        />
-                    </div>
 
-                    {tableId && (
+
+                    {/* Manual Table Entry if no tableId from URL */}
+                    {!tableId && (
                         <div className="space-y-2">
-                            <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
+                            <Label htmlFor="tableLabel">Table Number <span className="text-red-500">*</span></Label>
                             <Input
-                                id="otp"
-                                placeholder="Enter 4-digit code"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
+                                id="tableLabel"
+                                placeholder="e.g. T1"
+                                value={manualTableLabel}
+                                onChange={(e) => setManualTableLabel(e.target.value)}
                                 required
                                 className="h-11"
-                                maxLength={6}
                             />
-                            <p className="text-xs text-gray-500">Please ask the staff for the table code.</p>
                         </div>
                     )}
+
+
+                    <div className="space-y-2">
+                        <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
+                        <Input
+                            id="otp"
+                            placeholder="Enter 4-digit code"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            required
+                            className="h-11"
+                            maxLength={6}
+                        />
+                        <p className="text-xs text-gray-500">Please ask the staff for the table code.</p>
+                    </div>
 
                     {error && (
                         <div className="text-sm text-red-500 font-medium text-center bg-red-50 p-2 rounded">

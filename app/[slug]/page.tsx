@@ -12,6 +12,7 @@ import { CartBadge } from "@/components/features/cart/cart-badge";
 import { ShopHeader } from "@/components/features/landing/shop-header";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { GallerySection } from "@/components/features/landing/gallery-section";
 
 export const dynamic = 'force-dynamic';
 
@@ -164,7 +165,16 @@ export default async function Home({ params }: { params: { slug: string } }) {
                       <p className="text-xs text-gray-500 line-clamp-1">{item.description}</p>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="font-bold text-gray-900 text-sm">{currencySymbol}{item.price}</span>
+                      <div className="flex flex-col">
+                        {item.offer_price && item.offer_price < item.price ? (
+                          <>
+                            <span className="text-[10px] text-gray-400 line-through">{currencySymbol}{item.price}</span>
+                            <span className="font-bold text-gray-900 text-sm">{currencySymbol}{item.offer_price}</span>
+                          </>
+                        ) : (
+                          <span className="font-bold text-gray-900 text-sm">{currencySymbol}{item.price}</span>
+                        )}
+                      </div>
                       {item.average_rating > 0 && (
                         <div className="flex items-center gap-0.5 text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded-md font-medium">
                           <Star className="h-2.5 w-2.5 fill-current" />
@@ -231,6 +241,11 @@ export default async function Home({ params }: { params: { slug: string } }) {
             </div>
           </section>
         )}
+        {/* Gallery Section */}
+        {(shop.gallery_images?.length > 0 || shop.cover_image) && (
+          <GallerySection images={shop.gallery_images} coverImage={shop.cover_image} />
+        )}
+
         {/* About Us Section */}
         <section className="space-y-6 pb-8">
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">

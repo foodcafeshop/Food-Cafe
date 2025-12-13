@@ -15,6 +15,7 @@ export interface Shop {
     owner_name: string | null;
     logo_url: string | null;
     cover_image: string | null;
+    gallery_images?: string[];
     opening_hours: any;
     social_links: any;
     average_rating: number;

@@ -1,4 +1,4 @@
-# 🍔 Food Cafe - Premium Restaurant Management System
+# 🍔 Food Cafe - Premium Restaurant Management System (SRS)
 
 **Version:** 1.0 (Investor Ready)  
 **Last Updated:** Dec 2025
@@ -18,8 +18,6 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 3.  **Collaborative Social Dining**: **Unique Selling Point (USP)**. Multiple guests at the same table can scan the QR code and join a shared "Live Session". They see each other's items in real-time before placing the group order.
 4.  **Mobile-First Administration**: Shop owners and staff can manage the entire floor, bills, and menu from their smartphones with a fully responsive admin interface.
 5.  **Data-Driven Growth**: Real-time financial analytics and product performance reports empower owners to make informed menu decisions.
-6.  **Installable App (PWA)**: Works offline and installs on devices like a native app for instant access and smoother performance.
-7.  **Theme Personalization**: Flexible appearance settings with Light, Dark, or System Sync modes to suit any environment.
 
 ---
 
@@ -38,7 +36,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Smart Search**: Instant search across all menu items.
     *   **Real-Time Availability**: Out-of-stock items disappear instantly from all active menus to prevent disappointment.
     *   **Performance Optimized**: Pre-fetching and database indexing ensure sub-100ms menu loads.
-    *   **Immersive Photo Gallery**: High-quality "Ambiance" section with lightbox viewer and smart pagination.
+    *   **Immersive Photo Gallery**:
+        *   **Interactive Lightbox**: Customers can view the restaurant's ambiance through a high-quality, full-screen image gallery.
+        *   **Smart Pagination**: "See More" functionality keeps the initial load fast (limited to 8 images) while allowing deep exploration.
+        *   **Accessible Design**: Fully keyboard and screen-reader accessible carousel.
 *   **Live Order Tracking**: An "Uber-like" status tracker shows the food journey: *Queued -> Preparing -> Ready -> Served*.
 
 ### 👨‍🍳 2. Intelligent Kitchen Display System (KDS)
@@ -60,7 +61,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Floor Management (Mobile Optimized)**:
     *   **Visual Floor Plan**: A canvas-style view of the restaurant layout, now fully responsive with a **Card View** for mobile devices.
     *   **Live Status Indicators**: Tables change color in real-time: **Empty** (Green), **Occupied** (Blue), **Billed** (Red).
-    *   **Staff Take Order**: Dedicated interface for waiters to place orders for tables, view OTPs, and add item notes directly.
+    *   **Staff Take Order Interface**:
+        *   **Table Selection**: Grid view with real-time status and OTP display for secure customer verification.
+        *   **Smart Menu Browser**: Searchable, categorized menu with "Add to Cart" functionality.
+        *   **Contextual Actions**: Ability to bill tables directly or clear them after payment.
+        *   **Order Customization**: Staff can add specific notes (e.g., "Less Spicy", "No Ice") to individual items.
     *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
 *   **Financial & Billing Engine**:
     *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.
@@ -85,9 +90,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Admin**: can manage operations, menus, and add/edit/delete staff members.
         *   **Staff**: Restricted to order taking and table updates (cannot delete tables or view sensitive settings).
     *   **Secure Invitations**: Add staff securely; they inherit shop context automatically.
-*   **Gallery Management**:
-    *   **Visual Editor**: Admin interface to manage shop's photo gallery (up to 16 images).
-    *   **Auto-Cleanup**: Automatically filters void inputs for a clean database.
+*   **Content Management**:
+    *   **Gallery Control**:
+        *   **Visual Manager**: Shop owners can manage the "Our Ambiance" gallery directly from the profile settings.
+        *   **Input Validation**: Supports up to 16 high-res image URLs with automatic cleanup of empty inputs.
 *   **Localization**:
     *   **Multi-Currency Support**: Native support for global currencies, with **INR (₹)** prioritized.
 *   **Enterprize-Grade Data Management**:
@@ -115,6 +121,8 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Authorization**: Supabase Auth with custom `user_roles` linking users to specific Shops.
 *   **UI/UX**: Tailwind CSS + Shadcn UI for a premium, accessible, and responsive design.
 *   **Mobile Optimization**: Dedicated mobile views (Cards vs Tables) for complex admin interfaces.
+*   **Progressive Web App (PWA)**: Fully installable app experience with offline capabilities, persistent assets caching, and "app-like" navigation (no full page reloads).
+*   **Theme Support**: Built-in `next-themes` integration allowing dynamic switching between Light, Dark, and System modes.
 *   **Deploy**: Vercel for edge-network distribution and automatic scaling.
 
 ---
@@ -132,49 +140,4 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Supabase account
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/food-cafe.git
-    cd food-cafe
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Environment Setup:**
-    Create a `.env.local` file in the root directory and add your Supabase credentials:
-    ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-    ```
-
-4.  **Database Setup:**
-    - Run the SQL scripts in `supabase/schema.sql` in your Supabase SQL Editor to create tables and policies.
-    - (Optional) Run the seed script to populate initial data:
-      ```bash
-      npx tsx run-seed.ts
-      ```
-
-5.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-
-6.  **Open the app:**
-    - Customer View: [http://localhost:3000](http://localhost:3000)
-    - Admin Dashboard: [http://localhost:3000/admin](http://localhost:3000/admin)
-
-## License
-
-This project is licensed under the MIT License.
+*Built with ❤️ for the Future of Dining.*

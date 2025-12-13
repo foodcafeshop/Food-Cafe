@@ -22,6 +22,7 @@ create table public.shops (
   cover_image text,
   opening_hours jsonb,
   social_links jsonb,
+  gallery_images text[] default array[]::text[] check (cardinality(gallery_images) <= 16),
   average_rating numeric(3, 1) default 0,
   rating_count integer default 0,
   is_live boolean not null default false,

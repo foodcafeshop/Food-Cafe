@@ -41,6 +41,18 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Design**: High-end, futuristic aesthetic to attract business owners.
 
 
+### 💳 9. Billing & Payment Support
+*   **Payment Integration**: Support for payment processing.
+*   **Action Restrictions**: Restrict actions based on billing/payment status.
+
+
+
+### 🍽️ 10. Advanced Restaurant Landing Page Features
+*   **Table Reservations**: Booking engine for future dates and times (currently unsupported by schema).
+*   **Events & Blog**: Dynamic content management for "What's On" or news updates.
+*   **Advanced Promos**: "Enter code" style discount banners and conditional offers.
+*   **Gallery Management**: Admin UI to upload and specific gallery images (currently requires manual DB array update).
+
 ---
 
 ### 📝 Original Requests
@@ -53,4 +65,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Add feature to allow staff place order for a table"
 *   [x] "Add feature to upload multiple photos of paper menu and it will use AI to generate csv files"
 *   [x] "Create attractive and futuristic looking homepage for users (restaurant owners)"
+*   [ ] "add billing and payment support, accordingly add restrictions on various actions"
 

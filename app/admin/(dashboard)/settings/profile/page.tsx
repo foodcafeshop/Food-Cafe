@@ -55,7 +55,12 @@ export default function ProfileSettingsPage() {
     const handleSave = async () => {
         if (!slug) return;
         try {
-            await updateShopDetails(slug, shop);
+            const cleanedShop = {
+                ...shop,
+                gallery_images: shop.gallery_images?.filter(url => url.trim() !== '') || []
+            };
+            await updateShopDetails(slug, cleanedShop);
+            setShop(cleanedShop);
             toast.success('Profile updated successfully');
         } catch (error) {
             console.error('Error saving profile:', error);
@@ -193,6 +198,52 @@ export default function ProfileSettingsPage() {
                             onChange={(e) => setShop({ ...shop, cover_image: e.target.value })}
                         />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gallery Images</CardTitle>
+                    <CardDescription>Add up to 16 images to be displayed in the gallery section of your shop's landing page.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                        {(shop.gallery_images || []).map((url, index) => (
+                            <div key={index} className="flex gap-2">
+                                <Input
+                                    value={url}
+                                    placeholder="https://..."
+                                    onChange={(e) => {
+                                        const newImages = [...(shop.gallery_images || [])];
+                                        newImages[index] = e.target.value;
+                                        setShop({ ...shop, gallery_images: newImages });
+                                    }}
+                                />
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => {
+                                        const newImages = [...(shop.gallery_images || [])];
+                                        newImages.splice(index, 1);
+                                        setShop({ ...shop, gallery_images: newImages });
+                                    }}
+                                >
+                                    X
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                    {(shop.gallery_images?.length || 0) < 16 && (
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShop({ ...shop, gallery_images: [...(shop.gallery_images || []), ''] });
+                            }}
+                            className="w-full"
+                        >
+                            + Add Image
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
 
