@@ -218,11 +218,11 @@ export async function POST(req: NextRequest) {
         // --- Generate ZIP ---
         const zip = new JSZip();
 
-        if (menus.length) zip.file("menus.csv", Papa.unparse(menus));
-        if (categories.length) zip.file("categories.csv", Papa.unparse(categories));
-        if (menuItems.length) zip.file("menu_items.csv", Papa.unparse(menuItems));
-        if (menuLinks.length) zip.file("menu_links.csv", Papa.unparse(menuLinks));
-        if (categoryLinks.length) zip.file("category_links.csv", Papa.unparse(categoryLinks));
+        if (menus.length) zip.file("1_menus.csv", Papa.unparse(menus));
+        if (categories.length) zip.file("2_categories.csv", Papa.unparse(categories));
+        if (menuItems.length) zip.file("3_menu_items.csv", Papa.unparse(menuItems));
+        if (menuLinks.length) zip.file("4_menu_links.csv", Papa.unparse(menuLinks));
+        if (categoryLinks.length) zip.file("5_category_links.csv", Papa.unparse(categoryLinks));
 
         const zipBuffer = await zip.generateAsync({ type: "uint8array" });
 

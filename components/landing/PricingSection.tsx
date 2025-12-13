@@ -8,20 +8,20 @@ const plans = [
     {
         name: "QSR / Cafe",
         price: "FREE",
-        originalPrice: "₹499",
+        originalPrice: "₹349",
         period: "/ 3 months",
         description: "For small cafes & quick service restaurants.",
         features: ["Smart QR Menu (No App)", "Up to 10 Tables", "Basic KDS", "Order Management", "WhatsApp Support"],
         highlight: false,
-        launchOffer: "Launch Offer (Then ₹499/mo)"
+        launchOffer: "Launch Offer (Then ₹349/mo)"
     },
     {
         name: "Restaurant",
-        price: "₹999",
-        originalPrice: "₹1999",
+        price: "₹749",
+        originalPrice: "₹1499",
         period: "/mo",
         description: "Full-stack system for growing restaurants.",
-        features: ["Everything in QSR", "Unlimited Tables", "Advanced KDS", "Inventory Management", "Staff Roles & RBAC", "Sales Analytics"],
+        features: ["Everything in QSR", "100 Tables", "Advanced KDS", "Inventory Management", "Staff Roles & RBAC", "Sales Analytics"],
         highlight: true,
         launchOffer: "Save 50% (Launch Offer)"
     },

@@ -26,7 +26,7 @@ export default function AdminLayout({
 
     useEffect(() => {
         if (!loading && role === 'staff') {
-            const allowedPaths = ['/admin/orders', '/admin/bills', '/admin/kds', '/admin/tables', '/admin/take-order'];
+            const allowedPaths = ['/admin/orders', '/admin/bills', '/admin/kds', '/admin/take-order'];
             const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
 
             if (!isAllowed) {
@@ -103,7 +103,7 @@ export default function AdminLayout({
                         />
                     </div>
                     <span className="font-bold text-lg">
-                        FC {role === 'staff' ? 'Staff Panel' : 'Admin Panel'}
+                        FC {role === 'staff' ? 'Staff Panel' : 'Merchant Panel'}
                     </span>
                 </div>
                 {shopDetails && (
@@ -158,12 +158,6 @@ export default function AdminLayout({
                             Bills
                         </Button>
                     </Link>
-                    <Link href="/admin/tables" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/tables" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                            <Grid className="h-4 w-4" />
-                            Tables
-                        </Button>
-                    </Link>
                     <Link href="/admin/take-order" onClick={() => setOpen(false)}>
                         <Button variant={pathname === "/admin/take-order" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <PlusCircle className="h-4 w-4" />
@@ -209,6 +203,12 @@ export default function AdminLayout({
                             <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Management
                             </h4>
+                            <Link href="/admin/tables" onClick={() => setOpen(false)}>
+                                <Button variant={pathname === "/admin/tables" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                                    <Grid className="h-4 w-4" />
+                                    Tables
+                                </Button>
+                            </Link>
                             <Link href="/admin/reviews" onClick={() => setOpen(false)}>
                                 <Button variant={pathname === "/admin/reviews" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Users className="h-4 w-4" />
@@ -294,7 +294,7 @@ export default function AdminLayout({
                                 />
                             </div>
                             <span className="font-bold text-lg">
-                                FC {role === 'staff' ? 'Staff Panel' : 'Admin Panel'}
+                                FC {role === 'staff' ? 'Staff Panel' : 'Merchant Panel'}
                             </span>
                         </div>
                         {shopDetails && (

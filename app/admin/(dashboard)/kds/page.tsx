@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 export default function KDSPage() {
     const { shopId } = useShopId();
     const [orders, setOrders] = useState<any[]>([]);
+    const prevOrdersCount = useRef(0);
 
     useEffect(() => {
         if (shopId) {
@@ -39,7 +40,20 @@ export default function KDSPage() {
     const fetchOrders = async () => {
         if (!shopId) return;
         const data = await getActiveOrders(shopId);
-        setOrders(data || []);
+
+        // Check if we have new orders to play sound
+        if (data && data.length > prevOrdersCount.current) {
+            // New order received
+            const audio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-951.mp3");
+            audio.play().catch(e => console.log("Audio play failed", e));
+        }
+
+        if (data) {
+            prevOrdersCount.current = data.length;
+            setOrders(data);
+        } else {
+            setOrders([]);
+        }
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
@@ -159,7 +173,7 @@ function OrderCard({ order, onNext, onPrev, onCancel }: { order: any; onNext: ()
                     <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
                 </div>
                 <span className={cn("text-xs font-medium mr-6", timeElapsed > 15 ? "text-destructive" : "text-muted-foreground")}>
-                    {timeElapsed}m ago
+                    {timeElapsed > 60 ? `${Math.floor(timeElapsed / 60)}h ${timeElapsed % 60}m` : `${timeElapsed}m`} ago
                 </span>
             </CardHeader>
             <CardContent className="p-4 pt-2 space-y-2">

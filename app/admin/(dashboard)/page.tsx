@@ -54,17 +54,18 @@ export default function AdminDashboard() {
                 customRangeArg = { from: customDate.from, to: customDate.to || customDate.from };
             }
 
-            const [settings, dashboardStats, peakHours] = await Promise.all([
+            const [settings, dashboardStats, peakHours, { data: shopLive }] = await Promise.all([
                 getSettings(shopId),
                 getDashboardStats(shopId, dateRange, customRangeArg),
-                getPeakHoursStats(shopId)
+                getPeakHoursStats(shopId),
+                supabase.from('shops').select('is_live').eq('id', shopId).single()
             ]);
 
             if (settings?.currency) {
                 setCurrencySymbol(getCurrencySymbol(settings.currency));
             }
             if (dashboardStats) {
-                setStats({ ...dashboardStats, peakHours });
+                setStats({ ...dashboardStats, peakHours, isLive: shopLive?.is_live });
             }
             setLoading(false);
         };
@@ -189,8 +190,10 @@ export default function AdminDashboard() {
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">Online</div>
-                        <p className="text-xs text-muted-foreground">All systems operational</p>
+                        <div className={cn("text-2xl font-bold", stats?.isLive ? "text-green-600" : "text-destructive")}>
+                            {stats?.isLive ? 'Online' : 'Offline'}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{stats?.isLive ? 'Shop is live and accepting orders' : 'Shop is currently offline'}</p>
                     </CardContent>
                 </Card>
             </div>
