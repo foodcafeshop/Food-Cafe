@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 // ...
 
 export default function TakeOrderPage() {
-    const { shopId } = useShopId();
+    const { shopId, user } = useShopId();
     const router = useRouter();
     const [step, setStep] = useState<'table' | 'order'>('table');
     const [selectedTable, setSelectedTable] = useState<{ id: string; label: string } | null>(null);
@@ -29,6 +29,13 @@ export default function TakeOrderPage() {
     // Billing State
     const [billingTableId, setBillingTableId] = useState<string | null>(null);
     const [billingTableLabel, setBillingTableLabel] = useState<string>('');
+    const [settings, setSettings] = useState<any>(null);
+
+    useEffect(() => {
+        if (shopId) {
+            import("@/lib/api").then(({ getSettings }) => getSettings(shopId).then(setSettings));
+        }
+    }, [shopId]);
 
     // Check Hash and Listen for Changes
     useEffect(() => {
@@ -142,7 +149,16 @@ export default function TakeOrderPage() {
             // `createOrderItems` exists in `api.ts` too.
             // Let's use those helpers.
 
-            const totalAmount = cartItems.reduce((sum, item) => sum + ((item.offer_price || item.price) * item.quantity), 0);
+            const subtotal = cartItems.reduce((sum, item) => sum + ((item.offer_price || item.price) * item.quantity), 0);
+
+            const { taxIncludedInPrice, taxRate } = settings || {};
+            const currentTaxRate = taxRate ?? 10;
+            let totalAmount = subtotal;
+
+            if (settings && !taxIncludedInPrice) {
+                const taxAmount = subtotal * (currentTaxRate / 100);
+                totalAmount = subtotal + taxAmount;
+            }
             const orderNumber = generateOrderNumber(); // We need to import this or move it. 
             // util imports: `import { generateOrderNumber } from "@/lib/utils";` (Line 13)
 
@@ -161,6 +177,9 @@ export default function TakeOrderPage() {
                 payment_status: 'pending',
                 customer_name: 'Staff Order',
                 // customer_phone: ... // Optional
+                is_staff_order: true,
+                staff_name: user?.user_metadata?.full_name || 'Staff',
+                staff_id: user?.id,
             };
 
             // We need `createOrder` to return the created order so we get the ID.

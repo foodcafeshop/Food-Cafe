@@ -75,4 +75,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Add smart search for menu items"
 *   [x] "Split app into Customer and merchant apps"
 *   [ ] "add billing and payment support, accordingly add restrictions on various actions"
+*   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 

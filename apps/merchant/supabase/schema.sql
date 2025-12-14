@@ -134,7 +134,10 @@ create table public.orders (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   ready_at timestamp with time zone,
-  served_at timestamp with time zone
+  served_at timestamp with time zone,
+  is_staff_order boolean default false,
+  staff_name text,
+  staff_id uuid references auth.users(id)
 );
 
 -- 9. Order Items

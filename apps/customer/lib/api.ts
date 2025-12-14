@@ -281,7 +281,8 @@ export async function createOrder(order: any) {
                     total_amount: roundToThree(order.total_amount),
                     customer_name: order.customer_name,
                     customer_phone: order.customer_phone,
-                    customer_id: customerId
+                    customer_id: customerId,
+                    is_staff_order: false
                 })
                 .select()
                 .single();

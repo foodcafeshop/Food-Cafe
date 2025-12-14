@@ -167,10 +167,13 @@ function OrderCard({ order, onNext, onPrev, onCancel }: { order: any; onNext: ()
                 <XCircle className="h-4 w-4" />
             </Button>
 
-            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline">Table {order.tables?.label || order.table_id}</Badge>
-                    <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
+            <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline">Table {order.tables?.label || order.table_id}</Badge>
+                        <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
+                        {order.is_staff_order && <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 h-5">{order.staff_name || 'Staff'}</Badge>}
+                    </div>
                 </div>
                 <span className={cn("text-xs font-medium mr-6", timeElapsed > 15 ? "text-destructive" : "text-muted-foreground")}>
                     {timeElapsed > 60 ? `${Math.floor(timeElapsed / 60)}h ${timeElapsed % 60}m` : `${timeElapsed}m`} ago

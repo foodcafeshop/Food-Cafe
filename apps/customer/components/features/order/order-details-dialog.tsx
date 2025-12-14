@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { OrderStatus } from "@/lib/order-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, ChefHat, Clock, Utensils, Star, XCircle } from "lucide-react";
@@ -170,6 +171,10 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                         {/* Order Summary */}
                         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                             <h3 className="font-bold text-sm text-gray-700">Order Summary</h3>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                                <span>Ordered by <span className="font-medium text-gray-900">{order.staff_name || order.customer_name || 'Guest'}</span></span>
+                                {order.is_staff_order && <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 h-5 hover:bg-purple-100">Staff</Badge>}
+                            </div>
                             <div className="space-y-2">
                                 {order.order_items?.map((item: any, i: number) => (
                                     <div key={i} className="flex justify-between items-start text-sm">

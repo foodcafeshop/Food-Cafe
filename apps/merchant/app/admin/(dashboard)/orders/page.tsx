@@ -116,7 +116,7 @@ export default function OrdersPage() {
                                     </Badge>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                    {new Date(order.created_at).toLocaleString()}
+                                    {new Date(order.created_at).toLocaleString()} • {order.staff_name || order.customer_name || 'Guest'}
                                 </div>
                                 <div className="text-sm font-medium mt-1">
                                     {order.order_items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
@@ -143,27 +143,33 @@ export default function OrdersPage() {
                     </DialogHeader>
                     {selectedOrder && (
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center border-b pb-2">
-                                <div>
-                                    <div className="font-bold">Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</div>
-                                    <div className="text-sm text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleString()}</div>
-                                </div>
-                                <div className="flex gap-2">
-                                    {!isEditing && selectedOrder.status !== 'billed' && selectedOrder.status !== 'cancelled' && (
-                                        <Button size="sm" variant="outline" onClick={() => { setEditItems(JSON.parse(JSON.stringify(selectedOrder.order_items))); setIsEditing(true); }}>
-                                            <Edit2 className="h-4 w-4 mr-2" /> Edit
-                                        </Button>
-                                    )}
-                                    <Badge className={cn("capitalize", getStatusColor(selectedOrder.status))}>
-                                        {selectedOrder.status}
-                                    </Badge>
+                            <div>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="font-bold text-lg">Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</div>
+                                        <div className="text-sm text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleString()}</div>
+                                        <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                                            <span>Ordered by <span className="font-medium text-foreground">{selectedOrder.staff_name || selectedOrder.customer_name || 'Guest'}</span></span>
+                                            {selectedOrder.is_staff_order && <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 text-[10px] h-5 px-1.5">Staff</Badge>}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {!isEditing && selectedOrder.status !== 'billed' && selectedOrder.status !== 'cancelled' && (
+                                            <Button size="sm" variant="outline" onClick={() => { setEditItems(JSON.parse(JSON.stringify(selectedOrder.order_items))); setIsEditing(true); }}>
+                                                <Edit2 className="h-4 w-4 mr-2" /> Edit
+                                            </Button>
+                                        )}
+                                        <Badge className={cn("capitalize", getStatusColor(selectedOrder.status))}>
+                                            {selectedOrder.status}
+                                        </Badge>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4 py-2">
                                 {(isEditing ? editItems : selectedOrder.order_items)?.map((item: any, index: number) => (
-                                    <div key={index} className="flex justify-between items-start text-sm">
-                                        <div className="flex gap-2 items-center">
+                                    <div key={index} className="flex justify-between items-start text-sm group">
+                                        <div className="flex gap-3 items-center">
                                             {isEditing ? (
                                                 <div className="flex items-center gap-1 mr-2">
                                                     <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => {
@@ -173,7 +179,7 @@ export default function OrdersPage() {
                                                             setEditItems(newItems);
                                                         }
                                                     }}>-</Button>
-                                                    <span className="w-4 text-center font-bold">{item.quantity}</span>
+                                                    <span className="w-6 text-center font-bold tabular-nums">{item.quantity}</span>
                                                     <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => {
                                                         const newItems = [...editItems];
                                                         newItems[index].quantity++;
@@ -181,18 +187,18 @@ export default function OrdersPage() {
                                                     }}>+</Button>
                                                 </div>
                                             ) : (
-                                                <span className="font-bold w-6">{item.quantity}x</span>
+                                                <span className="font-bold w-4">{item.quantity}x</span>
                                             )}
 
                                             <div>
-                                                <div className={cn(isEditing && "font-medium")}>{item.name}</div>
-                                                {item.notes && <div className="text-xs text-muted-foreground italic">{item.notes}</div>}
+                                                <div className={cn("font-medium", isEditing && "text-base")}>{item.name}</div>
+                                                {item.notes && <div className="text-xs text-muted-foreground italic mt-0.5">{item.notes}</div>}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3">
                                             <div className="font-medium">{currency}{(item.price * item.quantity).toFixed(2)}</div>
                                             {isEditing && (
-                                                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => {
+                                                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => {
                                                     const newItems = editItems.filter((_, i) => i !== index);
                                                     setEditItems(newItems);
                                                 }}>
@@ -203,17 +209,35 @@ export default function OrdersPage() {
                                     </div>
                                 ))}
                                 {isEditing && editItems.length === 0 && (
-                                    <div className="text-center text-muted-foreground py-4">Order is empty.</div>
+                                    <div className="text-center text-muted-foreground py-8 border-2 border-dashed rounded-lg">Order is empty</div>
                                 )}
                             </div>
 
-                            <div className="border-t pt-2 flex justify-between items-center font-bold text-lg">
-                                <span>Total</span>
-                                <span>{currency}{isEditing
-                                    ? editItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toFixed(2)
-                                    : selectedOrder.total_amount.toFixed(2)}
-                                </span>
-                            </div>
+                            {(() => {
+                                const currentItems = isEditing ? editItems : selectedOrder.order_items;
+                                const subtotal = currentItems?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                                const total = isEditing ? subtotal : selectedOrder.total_amount;
+                                const tax = Math.max(0, total - subtotal);
+
+                                return (
+                                    <div className="border-t pt-4 space-y-2">
+                                        <div className="flex justify-between text-sm text-muted-foreground">
+                                            <span>Subtotal</span>
+                                            <span>{currency}{subtotal.toFixed(2)}</span>
+                                        </div>
+                                        {tax > 0.01 && (
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>Tax</span>
+                                                <span>{currency}{tax.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center pt-2">
+                                            <span className="font-bold text-lg">Total</span>
+                                            <span className="font-bold text-lg">{currency}{total.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {isEditing && (
                                 <div className="flex gap-2 pt-2">
