@@ -181,10 +181,30 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                                     </div>
                                 ))}
                             </div>
-                            <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-gray-800">
-                                <span>Total</span>
-                                <span>{displayCurrency}{order.total_amount.toFixed(2)}</span>
-                            </div>
+
+                            {(() => {
+                                const subtotal = order.order_items?.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0) || 0;
+                                const tax = order.total_amount - subtotal;
+
+                                return (
+                                    <div className="border-t border-gray-200 pt-3 space-y-2">
+                                        <div className="flex justify-between text-sm text-gray-600">
+                                            <span>Subtotal</span>
+                                            <span>{displayCurrency}{subtotal.toFixed(2)}</span>
+                                        </div>
+                                        {tax > 0.01 && (
+                                            <div className="flex justify-between text-sm text-gray-600">
+                                                <span>Tax</span>
+                                                <span>{displayCurrency}{tax.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between font-bold text-gray-800 pt-1">
+                                            <span>Total</span>
+                                            <span>{displayCurrency}{order.total_amount.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {(order.status === 'served' || order.status === 'billed') && (
