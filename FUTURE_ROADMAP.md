@@ -54,6 +54,11 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Gallery Management (Live ✅)**: Admin UI to upload/manage gallery images (limit: 16).
 *   **Smart Search (Live ✅)**: Offline-capable, tag-based search for instant menu filtering.
 
+### 🏗️ 11. Architecture Split (Live ✅)
+*   **Monorepo Structure**: Split codebase into `apps/merchant` and `apps/customer`.
+*   **Performance**: Independent builds and deployments for smaller bundles.
+*   **Security**: Strict separation of admin logic from customer-facing code.
+
 ---
 
 ### 📝 Original Requests
@@ -68,5 +73,6 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Create attractive and futuristic looking homepage for users (restaurant owners)"
 *   [x] "Add photo gallery management"
 *   [x] "Add smart search for menu items"
+*   [x] "Split app into Customer and merchant apps"
 *   [ ] "add billing and payment support, accordingly add restrictions on various actions"
 
