@@ -38,7 +38,7 @@ export default function CallToAction() {
                             Start for Free <ArrowRight className="ml-2" />
                         </Button>
                     </Link>
-                    <Link href="/food-cafe">
+                    <Link href="https://foodcafeshop.in/food-cafe">
                         <Button size="lg" variant="outline" className="h-16 px-12 text-xl font-bold bg-white text-slate-900 hover:bg-gray-100 border-0 rounded-full">
                             View Demo Shop
                         </Button>

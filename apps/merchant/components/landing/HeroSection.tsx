@@ -99,7 +99,7 @@ export default function HeroSection() {
                             Start for Free <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </Link>
-                    <Link href="/food-cafe">
+                    <Link href="https://foodcafeshop.in/food-cafe">
                         <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold bg-transparent border-slate-700 text-white hover:bg-slate-800 rounded-full transition-all">
                             View Demo Shop
                         </Button>
