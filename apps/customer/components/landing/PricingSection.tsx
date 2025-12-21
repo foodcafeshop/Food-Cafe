@@ -50,9 +50,9 @@ export default function PricingSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: idx * 0.1 }}
-                        className={`relative p-8 rounded-2xl border backdrop-blur-sm flex flex-col ${plan.highlight
+                        className={`relative p-8 rounded-2xl border flex flex-col ${plan.highlight
                             ? "bg-slate-900/80 border-orange-500 shadow-2xl shadow-orange-900/20"
-                            : "bg-slate-950/50 border-slate-800"
+                            : "bg-slate-950/80 border-slate-800"
                             }`}
                     >
                         {plan.launchOffer && (

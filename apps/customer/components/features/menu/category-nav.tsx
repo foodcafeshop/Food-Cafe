@@ -29,7 +29,7 @@ export function CategoryNav({ categories }: CategoryNavProps) {
     };
 
     return (
-        <div className="sticky top-16 z-40 bg-background/95 backdrop-blur border-b overflow-x-auto no-scrollbar py-2">
+        <div className="sticky top-16 z-40 bg-background border-b overflow-x-auto no-scrollbar py-2">
             <div className="flex px-4 gap-2 min-w-max">
                 {categories.map((cat) => (
                     <button

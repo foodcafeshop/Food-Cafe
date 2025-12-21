@@ -81,7 +81,7 @@ export default function OrderStatusPage() {
 
     return (
         <div className="min-h-screen bg-muted/30 pb-10">
-            <header className="bg-background/95 backdrop-blur border-b sticky top-0 z-50">
+            <header className="bg-background border-b sticky top-0 z-50">
                 <div className="container flex h-16 items-center px-4">
                     <Link href="/menu">
                         <Button variant="ghost" size="icon" className="-ml-2">

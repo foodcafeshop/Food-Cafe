@@ -22,6 +22,7 @@ function AnalyticsVisual() {
                     key={i}
                     initial={{ height: 0 }}
                     whileInView={{ height: `${h}%` }}
+                    viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
                     className="w-4 bg-orange-500/50 rounded-t-sm"
                 />
@@ -36,6 +37,7 @@ function KDSVisual() {
             <motion.div
                 initial={{ x: -100 }}
                 whileInView={{ x: 0 }}
+                viewport={{ once: true }}
                 transition={{ type: "spring", bounce: 0.5 }}
                 className="flex flex-col gap-2"
             >
@@ -43,7 +45,7 @@ function KDSVisual() {
                 <div className="h-2 w-24 bg-gray-700 rounded" />
                 <div className="h-2 w-20 bg-gray-700 rounded" />
             </motion.div>
-            <div className="absolute top-2 right-2 h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+            <div className="absolute top-2 right-2 h-2 w-2 bg-green-500 rounded-full" />
         </div>
     );
 }
@@ -56,6 +58,7 @@ function SocialVisual() {
                     key={i}
                     initial={{ scale: 0, x: 20 }}
                     whileInView={{ scale: 1, x: 0 }}
+                    viewport={{ once: true }}
                     transition={{ type: "spring", delay: i * 0.1 }}
                     className="h-10 w-10 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-xs text-white font-bold"
                 >
@@ -73,10 +76,10 @@ function LiveVisual() {
     return (
         <div className="relative flex items-center justify-center h-20">
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-12 w-12 bg-orange-500/20 rounded-full animate-ping" />
+                <div className="h-12 w-12 bg-orange-500/20 rounded-full" />
             </div>
             <div className="relative bg-orange-950/50 border border-orange-500/50 px-3 py-1 rounded-full text-orange-400 text-xs font-bold flex items-center gap-2">
-                <div className="h-2 w-2 bg-orange-500 rounded-full animate-pulse" />
+                <div className="h-2 w-2 bg-orange-500 rounded-full" />
                 LIVE UPDATE
             </div>
         </div>

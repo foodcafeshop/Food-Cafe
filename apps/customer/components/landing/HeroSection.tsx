@@ -43,7 +43,7 @@ export default function HeroSection() {
             </div>
 
             <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="inline-flex items-center justify-center p-2 mb-8 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm overflow-hidden">
+                <div className="inline-flex items-center justify-center p-2 mb-8 rounded-full bg-slate-900/80 border border-slate-800 overflow-hidden">
                     <div className="relative h-6 w-6 mr-3 flex-shrink-0">
                         <Image
                             src="/fc_logo_orange.webp"

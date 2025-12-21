@@ -11,7 +11,7 @@ const stats = [
 
 export default function StatsTicker() {
     return (
-        <section className="py-10 border-y border-white/5 bg-black/20 backdrop-blur-sm">
+        <section className="py-10 border-y border-white/5 bg-slate-900/80">
             <div className="container mx-auto px-4">
                 <div className="flex flex-wrap justify-center gap-8 md:gap-16">
                     {stats.map((stat, idx) => (
