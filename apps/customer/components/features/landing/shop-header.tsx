@@ -55,23 +55,23 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                     {showSearch && <HeaderSearch slug={slug} />}
 
                     {showHomeLink && (
-                        <Link href={`/${slug}`} className="flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">
+                        <Link href={`/${slug}`} className="hidden md:flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">
                             <Home className="h-5 w-5" />
-                            <span className="hidden md:inline">Home</span>
+                            <span>Home</span>
                         </Link>
                     )}
 
                     {showMenuLink && (
-                        <Link href={`/${slug}/menu`} className="flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">
+                        <Link href={`/${slug}/menu`} className="hidden md:flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium">
                             <Utensils className="h-5 w-5" />
-                            <span className="hidden md:inline">Menu</span>
+                            <span>Menu</span>
                         </Link>
                     )}
 
                     {showCartLink && (
-                        <Link href={`/${slug}/cart`} className="flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium relative">
+                        <Link href={`/${slug}/cart`} className="hidden md:flex items-center gap-2 text-gray-700 hover:text-orange-500 cursor-pointer font-medium relative">
                             <ShoppingBag className="h-5 w-5" />
-                            <span className="hidden md:inline">Cart</span>
+                            <span>Cart</span>
                             <CartBadge />
                         </Link>
                     )}

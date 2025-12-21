@@ -13,6 +13,7 @@ import { ShopHeader } from "@/components/features/landing/shop-header";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { GallerySection } from "@/components/features/landing/gallery-section";
+import { QuickActionsBar } from "@/components/features/landing/quick-actions-bar";
 
 export const dynamic = 'force-dynamic';
 
@@ -189,7 +190,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
 
 
 
-      <main className="container max-w-7xl mx-auto px-4 py-8 space-y-16">
+      <main className="container max-w-7xl mx-auto px-4 py-6 space-y-10">
 
         {/* What's on your mind? (Categories) - Enhanced */}
         {categories && categories.length > 0 && (
@@ -496,24 +497,23 @@ export default async function Home({ params }: { params: { slug: string } }) {
 
                 {/* Social Links */}
                 {socialLinks && (socialLinks.instagram || socialLinks.facebook || socialLinks.website || socialLinks.youtube) && (
-                  <div className="space-y-3 md:col-span-2">
+                  <div className="space-y-3">
                     <h3 className="font-bold text-gray-900 flex items-center gap-3 text-lg">
                       <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-md">
                         <Globe className="h-5 w-5 text-white" />
                       </div>
                       Follow Us
                     </h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-3">
                       {socialLinks.instagram && (
                         <a
                           href={socialLinks.instagram}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
-                          style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' }}
+                          className="h-11 w-11 bg-[#E1306C] text-white rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
+                          aria-label="Instagram"
                         >
-                          <Instagram className="h-4 w-4" />
-                          {extractUsername(socialLinks.instagram, 'instagram')}
+                          <Instagram className="h-5 w-5" />
                         </a>
                       )}
                       {socialLinks.facebook && (
@@ -521,10 +521,10 @@ export default async function Home({ params }: { params: { slug: string } }) {
                           href={socialLinks.facebook}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 bg-[#1877F2] text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                          className="h-11 w-11 bg-[#1877F2] text-white rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
+                          aria-label="Facebook"
                         >
-                          <Facebook className="h-4 w-4" />
-                          {extractUsername(socialLinks.facebook, 'facebook')}
+                          <Facebook className="h-5 w-5" />
                         </a>
                       )}
                       {socialLinks.youtube && (
@@ -532,10 +532,10 @@ export default async function Home({ params }: { params: { slug: string } }) {
                           href={socialLinks.youtube}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 bg-[#FF0000] text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                          className="h-11 w-11 bg-[#FF0000] text-white rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
+                          aria-label="YouTube"
                         >
-                          <Youtube className="h-4 w-4" />
-                          {extractUsername(socialLinks.youtube, 'youtube')}
+                          <Youtube className="h-5 w-5" />
                         </a>
                       )}
                       {socialLinks.website && (
@@ -543,10 +543,10 @@ export default async function Home({ params }: { params: { slug: string } }) {
                           href={socialLinks.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                          className="h-11 w-11 bg-gray-700 text-white rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
+                          aria-label="Website"
                         >
-                          <Globe className="h-4 w-4" />
-                          {extractUsername(socialLinks.website, 'website')}
+                          <Globe className="h-5 w-5" />
                         </a>
                       )}
                     </div>
@@ -558,44 +558,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
         </section>
       </main>
 
-      {/* Quick Actions Bar - Fixed Mobile Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t shadow-lg safe-area-pb">
-        <div className="flex items-center justify-around py-2 px-4">
-          {shop?.contact_phone && (
-            <a
-              href={`tel:${shop.contact_phone}`}
-              className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
-            >
-              <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                <Phone className="h-5 w-5 text-green-600" />
-              </div>
-              <span className="text-xs font-medium">Call</span>
-            </a>
-          )}
-          {(shop?.location_url || socialLinks?.google_maps) && (
-            <a
-              href={shop?.location_url || socialLinks?.google_maps}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
-            >
-              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Navigation className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="text-xs font-medium">Directions</span>
-            </a>
-          )}
-          <Link
-            href={`/${slug}/menu`}
-            className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
-          >
-            <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <Utensils className="h-5 w-5 text-orange-600" />
-            </div>
-            <span className="text-xs font-medium">Menu</span>
-          </Link>
-        </div>
-      </div>
+      <QuickActionsBar slug={slug} activePage="home" />
     </div>
   );
 }

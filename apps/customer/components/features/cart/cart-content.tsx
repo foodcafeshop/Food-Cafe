@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 import { useCartAvailability } from "@/lib/hooks/use-cart-availability";
 
 import { ShopHeader } from "@/components/features/landing/shop-header";
+import { QuickActionsBar } from "@/components/features/landing/quick-actions-bar";
 
 interface CartContentProps {
     initialSettings: any;
@@ -196,6 +197,8 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                     orderId={selectedOrderId}
                     currencySymbol={currencySymbol}
                 />
+
+                <QuickActionsBar slug={shop.slug} activePage="cart" />
             </div>
         );
     }
@@ -326,21 +329,24 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 </div>
             </main>
 
-            {/* Mobile Checkout Footer */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50">
-                <div className="container max-w-7xl mx-auto">
-                    <Button size="lg" className="w-full text-lg font-bold h-12 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 flex justify-between px-6" onClick={handlePlaceOrder}>
+            {/* Mobile Checkout Footer - floating button above navigation */}
+            <div className="md:hidden fixed bottom-20 left-0 right-0 px-4 z-40">
+                <div className="container max-w-md mx-auto">
+                    <Button size="lg" className="w-full text-lg font-bold h-14 bg-green-600 hover:bg-green-700 text-white shadow-xl flex justify-between px-6 rounded-2xl" onClick={handlePlaceOrder}>
                         <div className="flex flex-col items-start leading-none">
                             <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
-                            <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
+                            <span className="font-extrabold">{currencySymbol}{totalAmount.toFixed(2)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 font-bold">
                             <span>Place Order</span>
                             <ChevronLeft className="h-5 w-5 rotate-180" />
                         </div>
                     </Button>
                 </div>
             </div>
+
+            {/* Mobile Navigation Footer */}
+            <QuickActionsBar slug={shop.slug} activePage="cart" />
         </div>
     );
 }

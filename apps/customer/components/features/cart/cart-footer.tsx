@@ -51,7 +51,7 @@ export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
     if (count === 0) return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-50 pb-8">
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 pb-4 md:pb-8">
             <div className="container max-w-md mx-auto">
                 <Link href={`/${slug}/cart`}>
                     <Button

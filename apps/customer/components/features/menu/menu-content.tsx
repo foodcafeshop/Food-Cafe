@@ -13,6 +13,7 @@ import { getCurrencySymbol } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
 import { getTableById } from "@/lib/api";
 import { ShopHeader } from "@/components/features/landing/shop-header";
+import { QuickActionsBar } from "@/components/features/landing/quick-actions-bar";
 
 import { supabase } from "@/lib/supabase";
 
@@ -260,6 +261,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                 </div>
             </main>
             <CartFooter currencySymbol={currencySymbol} slug={shop.slug} />
+            <QuickActionsBar slug={shop.slug} activePage="menu" />
         </div>
     );
 }
