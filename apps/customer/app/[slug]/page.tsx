@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingBag, ChefHat, Utensils, ArrowRight, LayoutDashboard, MapPin, ChevronDown, Star, Phone, Mail, Clock, FileText, Sparkles, Quote } from "lucide-react";
+import { Search, ShoppingBag, ChefHat, Utensils, ArrowRight, LayoutDashboard, MapPin, ChevronDown, Star, Phone, Mail, Clock, FileText, Sparkles, Quote, Instagram, Facebook, Globe, Leaf, Navigation, ExternalLink, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getLandingPageData } from "@/lib/api";
@@ -65,6 +65,39 @@ export default async function Home({ params }: { params: { slug: string } }) {
   // Determine currency symbol from settings or default
   const currencySymbol = getCurrencySymbol(settings?.currency);
 
+  // Compute available dietary types from menu items
+  const allItems = [
+    ...(featuredItems || []),
+    ...(categories?.flatMap((cat: any) => cat.menu_items || []) || [])
+  ];
+  const dietaryTypes = {
+    veg: allItems.some((item: any) => item.dietary_type === 'veg'),
+    nonVeg: allItems.some((item: any) => item.dietary_type === 'non_veg'),
+    vegan: allItems.some((item: any) => item.dietary_type === 'vegan')
+  };
+
+  // Parse social links
+  const socialLinks = shop.social_links as { instagram?: string; facebook?: string; website?: string; google_maps?: string; youtube?: string } | null;
+
+  // Helper function to extract username from social URLs
+  const extractUsername = (url: string, platform: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname.replace(/^\//, '').replace(/\/$/, '');
+      if (platform === 'instagram' || platform === 'facebook') {
+        return '@' + path.split('/')[0];
+      }
+      if (platform === 'youtube') {
+        if (path.startsWith('@')) return path;
+        if (path.includes('channel/')) return 'YouTube';
+        return '@' + path.split('/')[0];
+      }
+      return urlObj.hostname.replace('www.', '');
+    } catch {
+      return platform.charAt(0).toUpperCase() + platform.slice(1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-orange-50/30 to-white pb-20 food-pattern-bg">
       {/* Header */}
@@ -88,7 +121,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
           <div className="absolute top-32 left-20 text-4xl float-animation-delayed opacity-70 drop-shadow-lg">🍛</div>
           <div className="absolute bottom-32 right-24 text-4xl float-animation-slow opacity-75 drop-shadow-lg">🍲</div>
           <div className="absolute top-20 left-1/2 text-3xl float-animation opacity-60 drop-shadow-lg hidden md:block">🥘</div>
-          <div className="absolute bottom-40 left-32 text-3xl float-animation-delayed opacity-65 drop-shadow-lg hidden md:block">🌶️</div>
+          <div className="absolute bottom-40 left-32 text-3xl float-animation-delayed opacity-65 drop-shadow-lg hidden md:block">🍕</div>
         </div>
 
         {/* Gradient Overlay */}
@@ -116,9 +149,27 @@ export default async function Home({ params }: { params: { slug: string } }) {
                     Open Now
                   </span>
                 )}
-                <span className="bg-white/40 px-4 py-1.5 rounded-full border border-white/30 font-medium">
-                  {shop.shop_type || 'Restaurant'}
-                </span>
+                {/* Dietary Badges */}
+                {dietaryTypes.veg && (
+                  <span className="bg-green-600/60 px-3 py-1.5 rounded-full border border-green-500/40 text-green-100 font-medium flex items-center gap-1.5 text-sm">
+                    <Leaf className="h-3.5 w-3.5" />
+                    Veg
+                  </span>
+                )}
+                {dietaryTypes.nonVeg && (
+                  <span className="bg-red-600/60 px-3 py-1.5 rounded-full border border-red-500/40 text-red-100 font-medium flex items-center gap-1.5 text-sm">
+                    <span className="h-3 w-3 rounded-sm border-2 border-red-300 flex items-center justify-center">
+                      <span className="h-1.5 w-1.5 bg-red-300 rounded-full" />
+                    </span>
+                    Non-Veg
+                  </span>
+                )}
+                {dietaryTypes.vegan && (
+                  <span className="bg-emerald-600/60 px-3 py-1.5 rounded-full border border-emerald-500/40 text-emerald-100 font-medium flex items-center gap-1.5 text-sm">
+                    <Leaf className="h-3.5 w-3.5" />
+                    Vegan
+                  </span>
+                )}
               </div>
 
               {/* CTA Button */}
@@ -442,11 +493,110 @@ export default async function Home({ params }: { params: { slug: string } }) {
                     </div>
                   </div>
                 )}
+
+                {/* Social Links */}
+                {socialLinks && (socialLinks.instagram || socialLinks.facebook || socialLinks.website || socialLinks.youtube) && (
+                  <div className="space-y-3 md:col-span-2">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-3 text-lg">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-md">
+                        <Globe className="h-5 w-5 text-white" />
+                      </div>
+                      Follow Us
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {socialLinks.instagram && (
+                        <a
+                          href={socialLinks.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                          style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' }}
+                        >
+                          <Instagram className="h-4 w-4" />
+                          {extractUsername(socialLinks.instagram, 'instagram')}
+                        </a>
+                      )}
+                      {socialLinks.facebook && (
+                        <a
+                          href={socialLinks.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-[#1877F2] text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                        >
+                          <Facebook className="h-4 w-4" />
+                          {extractUsername(socialLinks.facebook, 'facebook')}
+                        </a>
+                      )}
+                      {socialLinks.youtube && (
+                        <a
+                          href={socialLinks.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-[#FF0000] text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                        >
+                          <Youtube className="h-4 w-4" />
+                          {extractUsername(socialLinks.youtube, 'youtube')}
+                        </a>
+                      )}
+                      {socialLinks.website && (
+                        <a
+                          href={socialLinks.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+                        >
+                          <Globe className="h-4 w-4" />
+                          {extractUsername(socialLinks.website, 'website')}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </section>
       </main>
-    </div >
+
+      {/* Quick Actions Bar - Fixed Mobile Footer */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t shadow-lg safe-area-pb">
+        <div className="flex items-center justify-around py-2 px-4">
+          {shop?.contact_phone && (
+            <a
+              href={`tel:${shop.contact_phone}`}
+              className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
+            >
+              <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Phone className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-xs font-medium">Call</span>
+            </a>
+          )}
+          {(shop?.location_url || socialLinks?.google_maps) && (
+            <a
+              href={shop?.location_url || socialLinks?.google_maps}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
+            >
+              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Navigation className="h-5 w-5 text-blue-600" />
+              </div>
+              <span className="text-xs font-medium">Directions</span>
+            </a>
+          )}
+          <Link
+            href={`/${slug}/menu`}
+            className="flex flex-col items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors p-2"
+          >
+            <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <Utensils className="h-5 w-5 text-orange-600" />
+            </div>
+            <span className="text-xs font-medium">Menu</span>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
+

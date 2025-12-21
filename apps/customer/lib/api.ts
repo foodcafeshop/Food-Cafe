@@ -137,7 +137,7 @@ export async function getLandingPageData(slug: string) {
     // 1. Fetch Shop Details (Blocking, needed for ID)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, description, address, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, shop_type, social_links')
+        .select('id, name, description, address, location_url, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, shop_type, social_links')
         .eq('slug', slug)
         .single();
 

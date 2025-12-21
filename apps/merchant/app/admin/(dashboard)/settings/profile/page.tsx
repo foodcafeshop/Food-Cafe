@@ -179,6 +179,90 @@ export default function ProfileSettingsPage() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Location & Social Media</CardTitle>
+                    <CardDescription>Help customers find you and connect on social media.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="locationUrl">Google Maps Location URL</Label>
+                        <Input
+                            id="locationUrl"
+                            placeholder="https://maps.google.com/..."
+                            value={shop.location_url || ''}
+                            onChange={(e) => setShop({ ...shop, location_url: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">Paste your Google Maps share link for the &quot;Directions&quot; button.</p>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="instagram">Instagram</Label>
+                            <Input
+                                id="instagram"
+                                placeholder="https://instagram.com/yourshop"
+                                value={(shop.social_links as any)?.instagram || ''}
+                                onChange={(e) => setShop({
+                                    ...shop,
+                                    social_links: { ...(shop.social_links as any || {}), instagram: e.target.value }
+                                })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="facebook">Facebook</Label>
+                            <Input
+                                id="facebook"
+                                placeholder="https://facebook.com/yourshop"
+                                value={(shop.social_links as any)?.facebook || ''}
+                                onChange={(e) => setShop({
+                                    ...shop,
+                                    social_links: { ...(shop.social_links as any || {}), facebook: e.target.value }
+                                })}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="website">Website</Label>
+                            <Input
+                                id="website"
+                                placeholder="https://yourshop.com"
+                                value={(shop.social_links as any)?.website || ''}
+                                onChange={(e) => setShop({
+                                    ...shop,
+                                    social_links: { ...(shop.social_links as any || {}), website: e.target.value }
+                                })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="youtube">YouTube</Label>
+                            <Input
+                                id="youtube"
+                                placeholder="https://youtube.com/@yourshop"
+                                value={(shop.social_links as any)?.youtube || ''}
+                                onChange={(e) => setShop({
+                                    ...shop,
+                                    social_links: { ...(shop.social_links as any || {}), youtube: e.target.value }
+                                })}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="googleMaps">Google Maps Profile</Label>
+                        <Input
+                            id="googleMaps"
+                            placeholder="https://g.page/yourshop"
+                            value={(shop.social_links as any)?.google_maps || ''}
+                            onChange={(e) => setShop({
+                                ...shop,
+                                social_links: { ...(shop.social_links as any || {}), google_maps: e.target.value }
+                            })}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Branding</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
