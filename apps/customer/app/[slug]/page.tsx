@@ -204,36 +204,39 @@ export default async function Home({ params }: { params: { slug: string } }) {
               </div>
             </div>
 
-            <div className="flex gap-6 md:gap-8 overflow-x-auto no-scrollbar snap-scroll-x pb-4 -mx-4 px-4" role="list" aria-label="Food categories">
-              {categories.map((cat: any, index: number) => (
-                <Link
-                  href={`/${slug}/menu#category-${cat.id}`}
-                  key={cat.id}
-                  className="flex flex-col items-center gap-3 min-w-[100px] group cursor-pointer touch-active"
-                  role="listitem"
-                  aria-label={`Browse ${cat.name} category`}
-                >
-                  {/* Outer ring with gradient */}
-                  <div className="relative">
-                    {/* Animated pulse ring */}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400 to-red-400 opacity-0 group-hover:opacity-100 scale-100 group-hover:scale-110 transition-all duration-500 blur-md"></div>
+            {/* Outer wrapper with negative margin to allow shadows at edges */}
+            <div className="-mx-4 md:-mx-6">
+              <div className="flex gap-4 md:gap-8 overflow-x-auto no-scrollbar snap-scroll-x p-6" role="list" aria-label="Food categories">
+                {categories.map((cat: any, index: number) => (
+                  <Link
+                    href={`/${slug}/menu#category-${cat.id}`}
+                    key={cat.id}
+                    className="flex flex-col items-center gap-3 min-w-[100px] group cursor-pointer touch-active shrink-0"
+                    role="listitem"
+                    aria-label={`Browse ${cat.name} category`}
+                  >
+                    {/* Outer ring with gradient */}
+                    <div className="relative">
+                      {/* Animated pulse ring */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400 to-red-400 opacity-0 group-hover:opacity-100 scale-100 group-hover:scale-110 transition-all duration-500 blur-md"></div>
 
-                    {/* Main circle */}
-                    <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-500 ring-4 ring-orange-100 group-hover:ring-orange-300 hover-scale">
-                      {cat.image ? (
-                        <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                          <Utensils className="h-8 w-8 text-orange-400" />
-                        </div>
-                      )}
+                      {/* Main circle */}
+                      <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-500 ring-4 ring-orange-100 group-hover:ring-orange-300 hover-scale">
+                        {cat.image ? (
+                          <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                            <Utensils className="h-8 w-8 text-orange-400" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <span className="font-bold text-gray-700 text-base md:text-lg group-hover:text-orange-600 transition-colors text-center">
-                    {cat.name}
-                  </span>
-                </Link>
-              ))}
+                    <span className="font-bold text-gray-700 text-base md:text-lg group-hover:text-orange-600 transition-colors text-center">
+                      {cat.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </section>
         )}

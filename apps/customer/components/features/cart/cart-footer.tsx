@@ -68,7 +68,7 @@ export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
                         </div>
                         <div className="flex items-center gap-2 font-bold">
                             <span>View Cart</span>
-                            <ShoppingBag className="h-5 w-5 fill-current" />
+                            <ShoppingBag className="h-5 w-5" />
                         </div>
                     </Button>
                 </Link>
