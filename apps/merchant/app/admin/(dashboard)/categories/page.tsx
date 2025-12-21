@@ -16,6 +16,13 @@ import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
+// Generate image URL from category name (same as AI menu digitization)
+const generateImageUrl = (term: string): string => {
+    if (!term) return '';
+    const keyword = encodeURIComponent(term.trim());
+    return `https://tse2.mm.bing.net/th?q=${keyword}&w=300&h=300&c=7&rs=1&p=0&dpr=3&pid=1.7&mkt=en-IN&adlt=moderate`;
+};
+
 export default function CategoryManagementPage() {
     const { shopId } = useShopId();
     const [categories, setCategories] = useState<Category[]>([]);
@@ -50,6 +57,9 @@ export default function CategoryManagementPage() {
 
     const handleSave = async () => {
         if (!currentCategory.name || !shopId) return;
+
+        // Auto-generate image if not provided
+        currentCategory.image = currentCategory.image || generateImageUrl(currentCategory.name);
 
         const { data, error } = await supabase
             .from('categories')

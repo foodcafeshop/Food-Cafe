@@ -20,6 +20,13 @@ import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
+// Generate image URL from menu name (same as AI menu digitization)
+const generateImageUrl = (term: string): string => {
+    if (!term) return '';
+    const keyword = encodeURIComponent(term.trim());
+    return `https://tse2.mm.bing.net/th?q=${keyword}&w=300&h=300&c=7&rs=1&p=0&dpr=3&pid=1.7&mkt=en-IN&adlt=moderate`;
+};
+
 export default function MenusPage() {
     const { shopId } = useShopId();
     const [menus, setMenus] = useState<Menu[]>([]);
@@ -55,9 +62,15 @@ export default function MenusPage() {
     const handleSave = async () => {
         if (!currentMenu.name || !shopId) return;
 
+        // Auto-generate image if not provided
+        let images = currentMenu.images || [];
+        if (!images.length || !images[0]) {
+            images = [generateImageUrl(currentMenu.name)];
+        }
+
         const { data, error } = await supabase
             .from('menus')
-            .upsert({ ...currentMenu, shop_id: shopId })
+            .upsert({ ...currentMenu, images, shop_id: shopId })
             .select()
             .single();
 

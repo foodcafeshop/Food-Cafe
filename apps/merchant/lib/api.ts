@@ -1166,3 +1166,228 @@ export async function cancelOrder(orderId: string) {
     if (updateError) throw updateError;
     return true;
 }
+
+// ========================================
+// Inventory Management API
+// ========================================
+
+import { InventoryItem, MenuItemIngredient, InventoryAdjustment, AdjustmentReason } from './types';
+
+// Inventory Items CRUD
+export async function getInventoryItems(shopId: string) {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('shop_id', shopId)
+        .order('name');
+
+    if (error) {
+        console.error('Error fetching inventory items:', error);
+        return [];
+    }
+    return data as InventoryItem[];
+}
+
+export async function getInventoryItem(id: string) {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        console.error('Error fetching inventory item:', error);
+        return null;
+    }
+    return data as InventoryItem;
+}
+
+export async function createInventoryItem(item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .insert(item)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as InventoryItem;
+}
+
+export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>) {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as InventoryItem;
+}
+
+export async function deleteInventoryItem(id: string) {
+    const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+    return true;
+}
+
+// Low Stock Items
+export async function getLowStockItems(shopId: string) {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('shop_id', shopId)
+        .or('stock_quantity.lte.low_stock_threshold,stock_quantity.eq.0')
+        .order('stock_quantity');
+
+    if (error) {
+        console.error('Error fetching low stock items:', error);
+        return [];
+    }
+    return data as InventoryItem[];
+}
+
+// Stock Adjustments
+export async function adjustStock(
+    shopId: string,
+    inventoryItemId: string,
+    adjustment: number,
+    reason: AdjustmentReason,
+    notes?: string,
+    referenceId?: string
+) {
+    // 1. Get current quantity
+    const { data: item, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('stock_quantity')
+        .eq('id', inventoryItemId)
+        .single();
+
+    if (fetchError || !item) throw new Error('Inventory item not found');
+
+    const previousQuantity = item.stock_quantity;
+    const newQuantity = previousQuantity + adjustment;
+
+    // 2. Update inventory item
+    const { error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ stock_quantity: newQuantity })
+        .eq('id', inventoryItemId);
+
+    if (updateError) throw updateError;
+
+    // 3. Create adjustment record
+    const { data: adjustmentRecord, error: adjustmentError } = await supabase
+        .from('inventory_adjustments')
+        .insert({
+            shop_id: shopId,
+            inventory_item_id: inventoryItemId,
+            previous_quantity: previousQuantity,
+            new_quantity: newQuantity,
+            adjustment,
+            reason,
+            notes,
+            reference_id: referenceId
+        })
+        .select()
+        .single();
+
+    if (adjustmentError) throw adjustmentError;
+    return adjustmentRecord as InventoryAdjustment;
+}
+
+export async function getStockAdjustments(inventoryItemId: string, limit = 50) {
+    const { data, error } = await supabase
+        .from('inventory_adjustments')
+        .select('*')
+        .eq('inventory_item_id', inventoryItemId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching stock adjustments:', error);
+        return [];
+    }
+    return data as InventoryAdjustment[];
+}
+
+// Menu Item Ingredients (Recipes)
+export async function getMenuItemIngredients(menuItemId: string) {
+    const { data, error } = await supabase
+        .from('menu_item_ingredients')
+        .select(`
+            *,
+            inventory_items (*)
+        `)
+        .eq('menu_item_id', menuItemId);
+
+    if (error) {
+        console.error('Error fetching menu item ingredients:', error);
+        return [];
+    }
+    return data.map((item: any) => ({
+        ...item,
+        inventory_item: item.inventory_items
+    })) as MenuItemIngredient[];
+}
+
+export async function setMenuItemIngredients(
+    menuItemId: string,
+    ingredients: { inventory_item_id: string; quantity_required: number }[]
+) {
+    // 1. Delete existing ingredients
+    await supabase
+        .from('menu_item_ingredients')
+        .delete()
+        .eq('menu_item_id', menuItemId);
+
+    // 2. Insert new ingredients
+    if (ingredients.length > 0) {
+        const { error } = await supabase
+            .from('menu_item_ingredients')
+            .insert(
+                ingredients.map(ing => ({
+                    menu_item_id: menuItemId,
+                    inventory_item_id: ing.inventory_item_id,
+                    quantity_required: ing.quantity_required
+                }))
+            );
+
+        if (error) throw error;
+    }
+
+    return true;
+}
+
+// Get all recipes for a shop (for recipe management page)
+export async function getAllRecipes(shopId: string) {
+    const { data, error } = await supabase
+        .from('menu_items')
+        .select(`
+            id,
+            name,
+            images,
+            menu_item_ingredients (
+                id,
+                quantity_required,
+                inventory_items (
+                    id,
+                    name,
+                    unit,
+                    stock_quantity
+                )
+            )
+        `)
+        .eq('shop_id', shopId)
+        .order('name');
+
+    if (error) {
+        console.error('Error fetching recipes:', error);
+        return [];
+    }
+    return data;
+}

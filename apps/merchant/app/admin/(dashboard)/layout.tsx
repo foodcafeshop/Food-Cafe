@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle, Package, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -195,6 +195,24 @@ export default function AdminLayout({
                                 <Button variant={pathname === "/admin/menu-digitization" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Camera className="h-4 w-4" />
                                     Menu Digitization
+                                </Button>
+                            </Link>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                Inventory
+                            </h4>
+                            <Link href="/admin/inventory" onClick={() => setOpen(false)}>
+                                <Button variant={pathname === "/admin/inventory" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                                    <Package className="h-4 w-4" />
+                                    Stock Levels
+                                </Button>
+                            </Link>
+                            <Link href="/admin/inventory/recipes" onClick={() => setOpen(false)}>
+                                <Button variant={pathname === "/admin/inventory/recipes" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Recipes
                                 </Button>
                             </Link>
                         </div>

@@ -91,3 +91,46 @@ export interface Settings {
     tax_included_in_price: boolean;
     updated_at: string;
 }
+
+// Inventory Management Types
+export interface InventoryItem {
+    id: string;
+    shop_id: string;
+    name: string;
+    image_url?: string | null;
+    unit: string; // 'kg', 'g', 'L', 'ml', 'pcs', 'dozen'
+    stock_quantity: number;
+    low_stock_threshold: number;
+    cost_per_unit?: number | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface MenuItemIngredient {
+    id: string;
+    menu_item_id: string;
+    inventory_item_id: string;
+    quantity_required: number;
+    created_at: string;
+    // Joined fields
+    inventory_item?: InventoryItem;
+    menu_item?: MenuItem;
+}
+
+export type AdjustmentReason = 'restock' | 'usage' | 'order' | 'wastage' | 'damage' | 'theft' | 'correction' | 'other';
+
+export interface InventoryAdjustment {
+    id: string;
+    shop_id: string;
+    inventory_item_id: string;
+    previous_quantity: number;
+    new_quantity: number;
+    adjustment: number;
+    reason: AdjustmentReason;
+    notes?: string | null;
+    reference_id?: string | null;
+    created_by?: string | null;
+    created_at: string;
+    // Joined fields
+    inventory_item?: InventoryItem;
+}

@@ -34,6 +34,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 ### 📸 7. AI Menu Digitization (Live ✅)
 *   **Photo Import**: Upload multiple photos of physical menus.
 *   **Auto-Generation**: AI parses text to generate CSVs for Menus, Categories, Items, and their relationships.
+*   **Auto Image Generation**: When adding menus, categories, menu items, or inventory items without an image, a thumbnail is auto-generated from the item name using Bing image search.
 
 ### 🚀 8. High-Converting Landing Page (Live ✅)
 *   **Target Audience**: Restaurant/Cafe owners.
@@ -41,20 +42,29 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Design**: High-end, futuristic aesthetic to attract business owners.
 
 
-### 💳 9. Billing & Payment Support
+### 📦 9. Inventory Management (Live ✅)
+*   **Stock Tracking**: Track current quantity for each raw material/ingredient.
+*   **Low Stock Alerts**: Set thresholds and receive visual notifications when stock runs low.
+*   **Stock Adjustments**: Manual adjustments with reason codes (wastage, damage, theft, restock).
+*   **Adjustment History**: Audit trail for all stock changes.
+*   **Recipes**: Link raw materials to menu items with quantity requirements.
+
+*   **🔮 Future**: Auto-deduct on order, supplier management, and purchase orders.
+
+### 💳 10. Billing & Payment Support
 *   **Payment Integration**: Support for payment processing.
 *   **Action Restrictions**: Restrict actions based on billing/payment status.
 
 
 
-### 🍽️ 10. Advanced Restaurant Landing Page Features
+### 🍽️ 11. Advanced Restaurant Landing Page Features
 *   **Table Reservations**: Booking engine for future dates and times (currently unsupported by schema).
 *   **Events & Blog**: Dynamic content management for "What's On" or news updates.
 *   **Advanced Promos**: "Enter code" style discount banners and conditional offers.
 *   **Gallery Management (Live ✅)**: Admin UI to upload/manage gallery images (limit: 16).
 *   **Smart Search (Live ✅)**: Offline-capable, tag-based search for instant menu filtering.
 
-### 🏗️ 11. Architecture Split (Live ✅)
+### 🏗️ 12. Architecture Split (Live ✅)
 *   **Monorepo Structure**: Split codebase into `apps/merchant` and `apps/customer`.
 *   **Performance**: Independent builds and deployments for smaller bundles.
 *   **Security**: Strict separation of admin logic from customer-facing code.
@@ -76,4 +86,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Split app into Customer and merchant apps"
 *   [ ] "add billing and payment support, accordingly add restrictions on various actions"
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
+*   [x] "Add inventory management to merchant app"
 

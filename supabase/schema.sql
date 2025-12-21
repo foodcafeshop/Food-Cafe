@@ -756,6 +756,90 @@ CREATE INDEX IF NOT EXISTS idx_menu_categories_sort ON public.menu_categories(so
 CREATE INDEX IF NOT EXISTS idx_category_items_sort ON public.category_items(sort_order);
 CREATE INDEX IF NOT EXISTS idx_reviews_item_created ON public.reviews(menu_item_id, created_at DESC);
 
+-- ========================================
+-- Inventory Management
+-- ========================================
+
+-- 1. Inventory Items (Raw Materials)
+CREATE TABLE IF NOT EXISTS public.inventory_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  image_url TEXT,
+  unit TEXT NOT NULL, -- 'kg', 'g', 'L', 'ml', 'pcs', 'dozen'
+  stock_quantity DECIMAL(10, 3) NOT NULL DEFAULT 0,
+  low_stock_threshold DECIMAL(10, 3) DEFAULT 10,
+  cost_per_unit DECIMAL(10, 2), -- for COGS calculation (future)
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  UNIQUE(shop_id, name)
+);
+
+-- 2. Menu Item Ingredients (Recipes)
+CREATE TABLE IF NOT EXISTS public.menu_item_ingredients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  menu_item_id UUID REFERENCES public.menu_items(id) ON DELETE CASCADE,
+  inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  quantity_required DECIMAL(10, 3) NOT NULL, -- amount needed per menu item
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  UNIQUE(menu_item_id, inventory_item_id)
+);
+
+-- 3. Inventory Adjustments (Audit Trail)
+CREATE TABLE IF NOT EXISTS public.inventory_adjustments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  previous_quantity DECIMAL(10, 3),
+  new_quantity DECIMAL(10, 3),
+  adjustment DECIMAL(10, 3) NOT NULL,
+  reason TEXT CHECK (reason IN ('restock', 'usage', 'order', 'wastage', 'damage', 'theft', 'correction', 'other')),
+  notes TEXT,
+  reference_id UUID, -- link to order_id if reason='order'
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Inventory Indexes
+CREATE INDEX IF NOT EXISTS idx_inventory_items_shop ON public.inventory_items(shop_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_low_stock ON public.inventory_items(shop_id, stock_quantity, low_stock_threshold);
+CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_menu_item ON public.menu_item_ingredients(menu_item_id);
+CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_inventory_item ON public.menu_item_ingredients(inventory_item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_shop ON public.inventory_adjustments(shop_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_item ON public.inventory_adjustments(inventory_item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_created ON public.inventory_adjustments(created_at DESC);
+
+-- Inventory RLS
+ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can read inventory_items" ON public.inventory_items FOR SELECT USING (public.is_staff_of(shop_id));
+CREATE POLICY "Admin can insert inventory_items" ON public.inventory_items FOR INSERT WITH CHECK (public.is_admin_of(shop_id));
+CREATE POLICY "Admin can update inventory_items" ON public.inventory_items FOR UPDATE USING (public.is_admin_of(shop_id));
+CREATE POLICY "Admin can delete inventory_items" ON public.inventory_items FOR DELETE USING (public.is_admin_of(shop_id));
+
+ALTER TABLE public.menu_item_ingredients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public can read menu_item_ingredients" ON public.menu_item_ingredients FOR SELECT USING (true);
+CREATE POLICY "Admin can insert menu_item_ingredients" ON public.menu_item_ingredients FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+CREATE POLICY "Admin can update menu_item_ingredients" ON public.menu_item_ingredients FOR UPDATE USING (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+CREATE POLICY "Admin can delete menu_item_ingredients" ON public.menu_item_ingredients FOR DELETE USING (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+
+ALTER TABLE public.inventory_adjustments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can read inventory_adjustments" ON public.inventory_adjustments FOR SELECT USING (public.is_staff_of(shop_id));
+CREATE POLICY "Staff can insert inventory_adjustments" ON public.inventory_adjustments FOR INSERT WITH CHECK (public.is_staff_of(shop_id));
+
+-- Inventory updated_at Trigger
+CREATE OR REPLACE FUNCTION public.update_inventory_item_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = TIMEZONE('utc'::text, NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_inventory_items_updated_at
+BEFORE UPDATE ON public.inventory_items
+FOR EACH ROW
+EXECUTE FUNCTION public.update_inventory_item_timestamp();
+
 -- Realtime Configuration
 -- Note: 'supabase_realtime' publication is created by default in Supabase.
 -- We just need to add our tables to it.

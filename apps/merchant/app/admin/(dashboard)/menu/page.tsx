@@ -19,6 +19,13 @@ import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
+// Generate image URL from item name (same as AI menu digitization)
+const generateImageUrl = (term: string): string => {
+    if (!term) return '';
+    const keyword = encodeURIComponent(term.trim());
+    return `https://tse2.mm.bing.net/th?q=${keyword}&w=300&h=300&c=7&rs=1&p=0&dpr=3&pid=1.7&mkt=en-IN&adlt=moderate`;
+};
+
 export default function MenuManagementPage() {
     const { shopId } = useShopId();
     const [items, setItems] = useState<MenuItem[]>([]);
@@ -88,7 +95,7 @@ export default function MenuManagementPage() {
             description: '',
             price: 0,
             offer_price: 0,
-            images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'],
+            images: [], // Will be auto-generated on save if empty
             dietary_type: 'veg',
             is_available: true,
             is_popular: false,
@@ -100,11 +107,16 @@ export default function MenuManagementPage() {
     const handleSave = async () => {
         if (!currentItem.name || !currentItem.price || !shopId) return;
 
+        // Auto-generate image if not provided
+        let images = Array.isArray(currentItem.images) ? currentItem.images : [currentItem.images];
+        if (!images.length || !images[0]) {
+            images = [generateImageUrl(currentItem.name)];
+        }
+
         const itemData = {
             ...currentItem,
             shop_id: shopId,
-            // Ensure images is an array
-            images: Array.isArray(currentItem.images) ? currentItem.images : [currentItem.images],
+            images: images,
         };
 
         const { data, error } = await supabase
