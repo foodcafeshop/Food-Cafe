@@ -99,6 +99,7 @@ export default function AdminLayout({
                             src="/fc_logo_orange.webp"
                             alt="Logo"
                             fill
+                            priority
                             className="object-contain rounded-md"
                         />
                     </div>
@@ -291,23 +292,24 @@ export default function AdminLayout({
     );
 
     return (
-        <div className="min-h-screen flex bg-muted/20">
+        <div className="h-screen w-full flex bg-muted/20 overflow-hidden">
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-card border-r hidden md:flex flex-col h-screen sticky top-0">
+            <aside className="w-64 bg-card border-r hidden md:flex flex-col h-full">
                 <NavContent />
             </aside>
 
             {/* Mobile Header & Content */}
-            <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
                 {/* Mobile Header */}
-                <header className="md:hidden h-16 border-b bg-card flex items-center px-4 justify-between">
+                <header className="md:hidden h-16 border-b bg-card flex items-center px-4 justify-between shrink-0">
                     <div className="flex flex-col">
                         <div className="flex items-center">
                             <div className="relative h-8 w-8 mr-2">
                                 <Image
-                                    src="/fc_logo_orange.webp"
+                                    src="/fc_logo_v2.webp"
                                     alt="Logo"
                                     fill
+                                    priority
                                     className="object-contain rounded-lg shadow-sm"
                                 />
                             </div>
