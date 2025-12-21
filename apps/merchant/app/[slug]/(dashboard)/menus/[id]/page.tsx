@@ -164,7 +164,9 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 
 export default function MenuBuilderPage() {
     const { shopId } = useShopId();
-    const { id } = useParams();
+    const params = useParams();
+    const id = params.id as string;
+    const slug = params.slug as string;
     const router = useRouter();
     const [menu, setMenu] = useState<Menu | null>(null);
     const [sections, setSections] = useState<Category[]>([]); // Global sections
@@ -384,11 +386,10 @@ export default function MenuBuilderPage() {
     };
 
     if (!menu) return <div className="p-8">Loading...</div>;
-
     return (
         <div className="p-6 space-y-6 pb-24">
             <div className="flex items-center gap-4">
-                <Link href="/admin/menus">
+                <Link href={`/${slug}/menus`}>
                     <Button variant="ghost" size="icon">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>

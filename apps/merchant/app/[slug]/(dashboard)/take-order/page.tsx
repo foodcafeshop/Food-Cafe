@@ -14,13 +14,15 @@ import { generateOrderNumber } from "@/lib/utils";
 
 import { BillingDialog } from "@/components/features/staff/BillingDialog";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 // ...
 
 export default function TakeOrderPage() {
     const { shopId, user } = useShopId();
     const router = useRouter();
+    const params = useParams();
+    const slug = params.slug as string;
     const [step, setStep] = useState<'table' | 'order'>('table');
     const [selectedTable, setSelectedTable] = useState<{ id: string; label: string } | null>(null);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -76,7 +78,7 @@ export default function TakeOrderPage() {
     const handleTableSelect = (id: string, label: string) => {
         setSelectedTable({ id, label });
         setStep('order');
-        router.push(`/admin/take-order#${label}`);
+        router.push(`/${slug}/take-order#${label}`);
     };
 
     const handleBackToTables = () => {
@@ -85,12 +87,12 @@ export default function TakeOrderPage() {
                 setCartItems([]);
                 setStep('table');
                 setSelectedTable(null);
-                router.push('/admin/take-order');
+                router.push(`/${slug}/take-order`);
             }
         } else {
             setStep('table');
             setSelectedTable(null);
-            router.push('/admin/take-order');
+            router.push(`/${slug}/take-order`);
         }
     };
 
@@ -263,7 +265,7 @@ export default function TakeOrderPage() {
             if (selectedTable?.id === tableId) {
                 setSelectedTable(null);
                 setStep('table');
-                router.push('/admin/take-order');
+                router.push(`/${slug}/take-order`);
             }
         } catch (error) {
             console.error("Failed to clear table", error);

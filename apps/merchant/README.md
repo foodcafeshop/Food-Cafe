@@ -173,7 +173,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 6.  **Open the app:**
     - Customer View: [http://localhost:3000](http://localhost:3000)
-    - Admin Dashboard: [http://localhost:3000/admin](http://localhost:3000/admin)
+    - Admin Dashboard: [http://localhost:3000/[shop-slug]](http://localhost:3000/[shop-slug])
 
 ## License
 

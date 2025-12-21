@@ -24,6 +24,8 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 export default function CategoryBuilderPage() {
     const { shopId } = useShopId();
     const { id } = useParams();
+    const params = useParams();
+    const slug = params?.slug as string;
     const router = useRouter();
     const [category, setCategory] = useState<Category | null>(null);
     const [categoryItems, setCategoryItems] = useState<MenuItem[]>([]);
@@ -166,7 +168,7 @@ export default function CategoryBuilderPage() {
     return (
         <div className="p-6 space-y-6 pb-24">
             <div className="flex items-center gap-4">
-                <Link href="/admin/categories">
+                <Link href={`/${slug}/categories`}>
                     <Button variant="ghost" size="icon">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>

@@ -457,7 +457,7 @@ export default function GeneralSettingsPage() {
 
                                                     toast.success("Shop deleted successfully");
                                                     await supabase.auth.signOut();
-                                                    window.location.href = '/admin/login';
+                                                    window.location.href = '/login';
                                                 } catch (error: any) {
                                                     console.error(error);
                                                     toast.error("Failed to delete shop: " + error.message);

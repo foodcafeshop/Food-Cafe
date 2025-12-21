@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { Switch } from "@/components/ui/switch";
 import Link from "next/link";
+import { useRouter, useParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DietaryType } from "@/lib/types";
 
@@ -29,6 +30,9 @@ const generateImageUrl = (term: string): string => {
 
 export default function MenusPage() {
     const { shopId } = useShopId();
+    const router = useRouter();
+    const params = useParams();
+    const slug = params.slug as string;
     const [menus, setMenus] = useState<Menu[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -264,7 +268,7 @@ export default function MenusPage() {
                     <Card
                         key={menu.id}
                         className={`flex flex-col p-4 gap-4 cursor-pointer hover:border-primary/50 transition-colors ${menu.is_active ? 'border-primary ring-1 ring-primary' : ''}`}
-                        onClick={() => window.location.href = `/admin/menus/${menu.id}`}
+                        onClick={() => router.push(`/${slug}/menus/${menu.id}`)}
                     >
                         <div className="flex justify-between items-start">
                             <div>
@@ -296,7 +300,7 @@ export default function MenusPage() {
 
                         <div className="flex items-center justify-between mt-auto pt-4 border-t">
                             <div className="flex gap-2">
-                                <Link href={`/admin/menus/${menu.id}`} onClick={(e) => e.stopPropagation()}>
+                                <Link href={`/${slug}/menus/${menu.id}`} onClick={(e) => e.stopPropagation()}>
                                     <Button variant="secondary" size="sm">
                                         Build Menu
                                     </Button>

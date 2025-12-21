@@ -12,58 +12,12 @@ import { toast } from "sonner";
 
 export default function CreateShopPage() {
     const [loading, setLoading] = useState(false);
-    const [checking, setChecking] = useState(true);
+
     const [name, setName] = useState("");
     const [slug, setSlug] = useState("");
     const router = useRouter();
 
-    useEffect(() => {
-        checkExistingShop();
-    }, []);
-
-    const checkExistingShop = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data: role } = await supabase
-                .from('user_roles')
-                .select('shop_id')
-                .eq('id', user.id)
-                .single();
-
-            if (role) {
-                toast.success("You already have a shop!");
-                router.push('/admin');
-                return;
-            }
-
-            // Repair Logic: Check if user owns a shop but has no role
-            const { data: ownedShop } = await supabase
-                .from('shops')
-                .select('id')
-                .eq('owner_id', user.id)
-                .single();
-
-            if (ownedShop) {
-                console.log("Found owned shop without role. Attempting repair...");
-                const { error: repairError } = await supabase.rpc('assign_shop_admin', {
-                    target_shop_id: ownedShop.id
-                });
-
-                if (!repairError) {
-                    toast.success("Restored admin access to your shop!");
-                    router.push('/admin');
-                } else {
-                    console.error("Repair failed:", repairError);
-                }
-            }
-        } catch (error) {
-            // Ignore error if no role found
-        } finally {
-            setChecking(false);
-        }
-    };
+    // Auto-check removed to support multiple shops creation
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -77,9 +31,7 @@ export default function CreateShopPage() {
         setSlug(newSlug);
     };
 
-    if (checking) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    }
+
 
     const handleCreateShop = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -154,7 +106,7 @@ export default function CreateShopPage() {
             }
 
             toast.success("Shop created successfully!");
-            router.push('/admin');
+            router.push(`/${slug}/orders`);
             router.refresh();
         } catch (error: any) {
             console.error("Error creating shop:", error);
@@ -166,12 +118,10 @@ export default function CreateShopPage() {
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
-        router.push('/admin/login');
+        router.push('/login');
     };
 
-    if (checking) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    }
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative">

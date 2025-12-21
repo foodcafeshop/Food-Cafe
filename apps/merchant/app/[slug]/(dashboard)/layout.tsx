@@ -1,14 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle, Package, FileText } from "lucide-react";
+import { LayoutDashboard, Menu, Grid, Settings, LogOut, UtensilsCrossed, ShoppingBag, Receipt, ChefHat, Users, List, Plus, Camera, PlusCircle, Package, FileText, Store } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useShopId } from "@/lib/hooks/use-shop-id";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { MenuDigitizationProvider } from "../context/MenuDigitizationContext";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,21 +18,23 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const params = useParams();
+    const slug = params.slug as string;
     const [open, setOpen] = useState(false);
     const [shopDetails, setShopDetails] = useState<{ name: string; slug: string } | null>(null);
-    const { shopId, role, user, loading } = useShopId();
+    const { shopId, role, user, loading, error } = useShopId();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading && role === 'staff') {
-            const allowedPaths = ['/admin/orders', '/admin/bills', '/admin/kds', '/admin/take-order'];
+            const allowedPaths = [`/${slug}/orders`, `/${slug}/bills`, `/${slug}/kds`, `/${slug}/take-order`];
             const isAllowed = allowedPaths.some(path => pathname.startsWith(path));
 
             if (!isAllowed) {
-                router.push('/admin/orders');
+                router.push(`/${slug}/orders`);
             }
         }
-    }, [loading, role, pathname, router]);
+    }, [loading, role, pathname, router, slug]);
 
     useEffect(() => {
         if (shopId) {
@@ -55,6 +56,28 @@ export default function AdminLayout({
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     }
 
+    // Access Control Errors
+    if (error === 'Unauthorized' || (error === 'Shop not found' && slug)) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
+                <div className="bg-destructive/10 p-4 rounded-full">
+                    <LogOut className="h-8 w-8 text-destructive" />
+                </div>
+                <div className="text-center space-y-2">
+                    <h1 className="text-2xl font-bold">Access Denied</h1>
+                    <p className="text-muted-foreground max-w-sm">
+                        {error === 'Shop not found'
+                            ? "The shop you are looking for does not exist."
+                            : "You do not have permission to access this shop."}
+                    </p>
+                </div>
+                <Button onClick={() => router.push('/shops')} variant="outline">
+                    Back to My Shops
+                </Button>
+            </div>
+        );
+    }
+
     if (!shopId) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
@@ -66,21 +89,19 @@ export default function AdminLayout({
                 <div className="text-center space-y-2 py-4">
                     <h2 className="text-lg font-semibold">No Shop Found</h2>
                     <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                        It looks like you don't have a shop associated with your account yet.
+                        Please select a shop to continue.
                     </p>
                 </div>
 
                 <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+                    <Button className="w-full gap-2" onClick={() => router.push('/shops')}>
+                        <Store className="h-4 w-4" /> Go to My Shops
+                    </Button>
                     <div className="flex flex-col gap-2 w-full">
-                        {role !== 'staff' && (
-                            <Button className="w-full gap-2" onClick={() => router.push('/admin/create-shop')}>
-                                <Plus className="h-4 w-4" /> Create Shop
-                            </Button>
-                        )}
                         <Button
                             variant="outline"
                             className="w-full gap-2 text-destructive hover:text-destructive"
-                            onClick={() => supabase.auth.signOut().then(() => router.push('/admin/login'))}
+                            onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}
                         >
                             <LogOut className="h-4 w-4" /> Logout
                         </Button>
@@ -126,8 +147,8 @@ export default function AdminLayout({
                         <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             Overview
                         </h4>
-                        <Link href="/admin" onClick={() => setOpen(false)}>
-                            <Button variant={pathname === "/admin" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                        <Link href={`/${slug}`} onClick={() => setOpen(false)}>
+                            <Button variant={pathname === `/${slug}` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                 <LayoutDashboard className="h-4 w-4" />
                                 Dashboard
                             </Button>
@@ -140,27 +161,27 @@ export default function AdminLayout({
                     <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Operations
                     </h4>
-                    <Link href="/admin/kds" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/kds" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                    <Link href={`/${slug}/kds`} onClick={() => setOpen(false)}>
+                        <Button variant={pathname === `/${slug}/kds` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <UtensilsCrossed className="h-4 w-4" />
                             Kitchen Display
                         </Button>
                     </Link>
 
-                    <Link href="/admin/orders" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/orders" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                    <Link href={`/${slug}/orders`} onClick={() => setOpen(false)}>
+                        <Button variant={pathname === `/${slug}/orders` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <List className="h-4 w-4" />
                             Orders
                         </Button>
                     </Link>
-                    <Link href="/admin/bills" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/bills" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                    <Link href={`/${slug}/bills`} onClick={() => setOpen(false)}>
+                        <Button variant={pathname === `/${slug}/bills` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <Receipt className="h-4 w-4" />
                             Bills
                         </Button>
                     </Link>
-                    <Link href="/admin/take-order" onClick={() => setOpen(false)}>
-                        <Button variant={pathname === "/admin/take-order" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                    <Link href={`/${slug}/take-order`} onClick={() => setOpen(false)}>
+                        <Button variant={pathname === `/${slug}/take-order` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                             <PlusCircle className="h-4 w-4" />
                             Take Order
                         </Button>
@@ -174,26 +195,26 @@ export default function AdminLayout({
                             <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Menu & Catalog
                             </h4>
-                            <Link href="/admin/menus" onClick={() => setOpen(false)}>
-                                <Button variant={pathname.startsWith("/admin/menus") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/menus`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname.startsWith(`/${slug}/menus`) ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Menu className="h-4 w-4" />
                                     Menus
                                 </Button>
                             </Link>
-                            <Link href="/admin/categories" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/categories" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/categories`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/categories` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <List className="h-4 w-4" />
                                     Categories
                                 </Button>
                             </Link>
-                            <Link href="/admin/menu" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/menu" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/menu`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/menu` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <UtensilsCrossed className="h-4 w-4" />
                                     Items
                                 </Button>
                             </Link>
-                            <Link href="/admin/menu-digitization" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/menu-digitization" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/menu-digitization`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/menu-digitization` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Camera className="h-4 w-4" />
                                     Menu Digitization
                                 </Button>
@@ -204,14 +225,14 @@ export default function AdminLayout({
                             <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Inventory
                             </h4>
-                            <Link href="/admin/inventory" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/inventory" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/inventory`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/inventory` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Package className="h-4 w-4" />
                                     Stock Levels
                                 </Button>
                             </Link>
-                            <Link href="/admin/inventory/recipes" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/inventory/recipes" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/inventory/recipes`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/inventory/recipes` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <FileText className="h-4 w-4" />
                                     Recipes
                                 </Button>
@@ -222,20 +243,20 @@ export default function AdminLayout({
                             <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Management
                             </h4>
-                            <Link href="/admin/tables" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/tables" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/tables`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/tables` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Grid className="h-4 w-4" />
                                     Tables
                                 </Button>
                             </Link>
-                            <Link href="/admin/reviews" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/reviews" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/reviews`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/reviews` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Users className="h-4 w-4" />
                                     Reviews
                                 </Button>
                             </Link>
-                            <Link href="/admin/settings/staff" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/settings/staff" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/settings/staff`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/settings/staff` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Users className="h-4 w-4" />
                                     Team
                                 </Button>
@@ -246,20 +267,20 @@ export default function AdminLayout({
                             <h4 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Configuration
                             </h4>
-                            <Link href="/admin/settings/profile" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/settings/profile" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/settings/profile`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/settings/profile` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <ChefHat className="h-4 w-4" />
                                     Shop Profile
                                 </Button>
                             </Link>
-                            <Link href="/admin/settings/general" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/settings/general" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/settings/general`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/settings/general` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Settings className="h-4 w-4" />
                                     General Settings
                                 </Button>
                             </Link>
-                            <Link href="/admin/settings/financials" onClick={() => setOpen(false)}>
-                                <Button variant={pathname === "/admin/settings/financials" ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                            <Link href={`/${slug}/settings/financials`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/settings/financials` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                                     <Receipt className="h-4 w-4" />
                                     Financials
                                 </Button>
@@ -283,7 +304,7 @@ export default function AdminLayout({
                             {user?.email}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => supabase.auth.signOut().then(() => router.push('/admin/login'))}>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
                         <LogOut className="h-4 w-4" />
                     </Button>
                 </div>

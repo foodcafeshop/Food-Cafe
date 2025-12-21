@@ -55,7 +55,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
               We are currently setting up our digital menu. Please check back later.
             </p>
           </div>
-          <Link href="/admin/login">
+          <Link href={`${process.env.NEXT_PUBLIC_MERCHANT_URL}/login`}>
             <Button variant="outline" className="w-full">Admin Login</Button>
           </Link>
         </div>

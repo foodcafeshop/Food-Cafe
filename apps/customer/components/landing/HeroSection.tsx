@@ -94,7 +94,7 @@ export default function HeroSection() {
                     transition={{ duration: 0.8, delay: 0.6 }}
                     className="flex flex-col sm:flex-row gap-4 justify-center"
                 >
-                    <Link href="https://merchant.foodcafeshop.in/admin/login?signup=true">
+                    <Link href={`${process.env.NEXT_PUBLIC_MERCHANT_URL}/login?signup=true`}>
                         <Button size="lg" className="h-14 px-8 text-lg font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-full transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(234,88,12,0.5)]">
                             Start for Free <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>

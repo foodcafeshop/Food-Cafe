@@ -55,6 +55,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Urgency Indicators**: Color-coded visualization helps prioritization during peak hours.
 
 ### 📊 3. Admin Command Center & Analytics
+
 *   **Interactive Dashboard**:
     *   **Revenue Overview**: Area chart tracking **Gross Revenue**, **Net Sales**, **Tax Collected**, and **Service Charge** over custom date ranges (Today, Week, Month, Custom).
     *   **Category Analytics**: Interactive Pie Chart with a **smart toggle** to view breakdown by **Sales Volume (Qty)** or **Sales Value (Revenue)**.

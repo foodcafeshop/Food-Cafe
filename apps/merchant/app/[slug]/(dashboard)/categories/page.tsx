@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { exportToCSV, parseCSV } from "@/lib/csv-utils";
+import { useParams, useRouter } from "next/navigation";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -25,6 +26,10 @@ const generateImageUrl = (term: string): string => {
 
 export default function CategoryManagementPage() {
     const { shopId } = useShopId();
+    const router = useRouter();
+    const params = useParams();
+    const slug = params?.slug as string;
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -249,7 +254,7 @@ export default function CategoryManagementPage() {
                     <Card
                         key={category.id}
                         className="flex items-center p-4 gap-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => window.location.href = `/admin/categories/${category.id}`}
+                        onClick={() => router.push(`/${slug}/categories/${category.id}`)}
                     >
                         <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden">
                             {category.image ? (

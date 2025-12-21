@@ -53,7 +53,7 @@ function LoginForm() {
 
                 if (data.session) {
                     toast.success("Account created!");
-                    window.location.href = '/admin';
+                    window.location.href = '/shops';
                 } else {
                     toast.success("Account created! Please check your email to confirm.");
                 }
@@ -64,7 +64,7 @@ function LoginForm() {
                 });
                 if (error) throw error;
                 toast.success("Welcome back!");
-                window.location.href = '/admin';
+                window.location.href = '/shops';
             }
         } catch (error: any) {
             console.error("Auth error:", error);
@@ -79,7 +79,7 @@ function LoginForm() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+                    redirectTo: `${window.location.origin}/auth/callback?next=/shops`,
                 },
             });
             if (error) throw error;

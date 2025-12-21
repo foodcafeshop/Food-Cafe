@@ -48,7 +48,7 @@ export function WelcomeDialog() {
         const init = async () => {
             // Extract slug from pathname (e.g. /food-cafe/...)
             const slug = pathname?.split('/')[1];
-            if (!slug || slug === 'admin') return;
+            if (!slug) return;
 
             // 1. Resolve Table Label from URL
             const tableLabel = searchParams?.get('table');
@@ -236,7 +236,7 @@ export function WelcomeDialog() {
 
     const segments = pathname?.split('/').filter(Boolean) ?? [];
     const firstSegment = segments[0];
-    const reservedRoutes = ['admin', 'auth', 'api'];
+    const reservedRoutes = ['auth', 'api'];
 
     // Shop slugs must contain a hyphen (e.g. 'food-cafe')
     if (!firstSegment || reservedRoutes.includes(firstSegment) || !firstSegment.includes('-')) return null;

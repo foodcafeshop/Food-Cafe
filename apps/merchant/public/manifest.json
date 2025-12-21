@@ -1,8 +1,8 @@
 {
-    "name": "Food Cafe",
-    "short_name": "FoodCafe",
+    "name": "Food Cafe Merchant",
+    "short_name": "FoodCafeMerchant",
     "description": "Seamless QR ordering for modern restaurants.",
-    "start_url": "/admin",
+    "start_url": "/shops",
     "display": "standalone",
     "background_color": "#ea580c",
     "theme_color": "#ea580c",

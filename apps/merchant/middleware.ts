@@ -55,43 +55,35 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { session } } = await supabase.auth.getSession()
+    const path = request.nextUrl.pathname
 
-    // Protect Admin Routes
-    if (request.nextUrl.pathname.startsWith('/admin')) {
-        // Allow access to login page
-        if (request.nextUrl.pathname === '/admin/login') {
-            if (session) {
-                return NextResponse.redirect(new URL('/admin', request.url))
-            }
-            return response
-        }
+    // Public paths that define unauthenticated access
+    const isPublicPath = path === '/' || path === '/login' || path === '/create-shop' || path.startsWith('/auth') || path.startsWith('/static')
 
-        // Require session for other admin routes
-        if (!session) {
-            return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
+    // If it's not a public path and user is not logged in, redirect to login
+    // We assume any path traversing [slug] (i.e. not public) requires auth
+    if (!isPublicPath && !session) {
+        // Avoid redirect loop if already on login (handled by isPublicPath)
+        return NextResponse.redirect(new URL('/login', request.url))
+    }
 
-        // Check if user has a shop (unless already on create-shop)
-        // Relaxed check: Let the client-side handle redirection if shop is missing
-        // This prevents infinite loops if middleware RLS context is flaky
-        /*
-        if (request.nextUrl.pathname !== '/admin/create-shop') {
-            const { data: userRole } = await supabase
-                .from('user_roles')
-                .select('shop_id')
-                .eq('id', session.user.id)
-                .single();
-
-            if (!userRole) {
-                return NextResponse.redirect(new URL('/admin/create-shop', request.url));
-            }
-        }
-        */
+    // If user is logged in and visits login, redirect them to shops
+    if (session && path === '/login') {
+        return NextResponse.redirect(new URL('/shops', request.url))
     }
 
     return response
 }
 
 export const config = {
-    matcher: ['/admin/:path*'],
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public folder
+         */
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 }
