@@ -10,6 +10,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useShopId } from "@/lib/hooks/use-shop-id";
 import { supabase } from "@/lib/supabase";
@@ -24,13 +28,21 @@ interface RecipeIngredient {
     inventory_item_id: string;
     quantity_required: number;
     inventory_item?: InventoryItem;
+    selected_unit?: string;
 }
+
+const UNIT_CONVERSIONS: Record<string, { unit: string; factor: number }> = {
+    'kg': { unit: 'g', factor: 1000 },
+    'L': { unit: 'ml', factor: 1000 },
+    'dozen': { unit: 'pcs', factor: 12 },
+};
 
 interface MenuItemWithRecipe extends MenuItem {
     menu_item_ingredients: {
         id: string;
         quantity_required: number;
         inventory_items: InventoryItem;
+        unit?: string;
     }[];
 }
 
@@ -71,11 +83,26 @@ export default function RecipesPage() {
     const openRecipeDialog = (item: MenuItemWithRecipe) => {
         setEditingItem(item);
         setIngredients(
-            item.menu_item_ingredients?.map(ing => ({
-                inventory_item_id: ing.inventory_items?.id || '',
-                quantity_required: ing.quantity_required,
-                inventory_item: ing.inventory_items
-            })) || []
+            item.menu_item_ingredients?.map(ing => {
+                const baseUnit = ing.inventory_items?.unit;
+                const persistedUnit = ing.unit;
+                let displayQty = ing.quantity_required;
+
+                // If persisted unit exists and differs from base, convert quantity for display
+                if (baseUnit && persistedUnit && persistedUnit !== baseUnit) {
+                    const conversion = UNIT_CONVERSIONS[baseUnit];
+                    if (conversion && persistedUnit === conversion.unit) {
+                        displayQty = displayQty * conversion.factor;
+                    }
+                }
+
+                return {
+                    inventory_item_id: ing.inventory_items?.id || '',
+                    quantity_required: parseFloat(displayQty.toFixed(3)),
+                    inventory_item: ing.inventory_items,
+                    selected_unit: persistedUnit || baseUnit
+                };
+            }) || []
         );
         setIsDialogOpen(true);
     };
@@ -92,10 +119,47 @@ export default function RecipesPage() {
         const updated = [...ingredients];
         if (field === 'inventory_item_id') {
             updated[index].inventory_item_id = value as string;
-            updated[index].inventory_item = inventoryItems.find(i => i.id === value);
+            const item = inventoryItems.find(i => i.id === value);
+            updated[index].inventory_item = item;
+
+            // Smart Unit Default: Check if smaller unit exists
+            let defaultUnit = item?.unit;
+            if (item?.unit && UNIT_CONVERSIONS[item.unit]) {
+                defaultUnit = UNIT_CONVERSIONS[item.unit].unit;
+            }
+
+            updated[index].selected_unit = defaultUnit;
+            updated[index].quantity_required = 0;
         } else {
             updated[index].quantity_required = value as number;
         }
+        setIngredients(updated);
+    };
+
+    const updateUnit = (index: number, newUnit: string) => {
+        const updated = [...ingredients];
+        const ing = updated[index];
+        const baseUnit = ing.inventory_item?.unit;
+
+        if (!baseUnit) return;
+
+        // 1. Convert current display value to BASE unit value
+        let baseValue = ing.quantity_required;
+        const currentConversion = UNIT_CONVERSIONS[baseUnit];
+        // If we are currently in the ALT unit (e.g. 'g'), divide by factor to get base (kg)
+        if (currentConversion && ing.selected_unit === currentConversion.unit) {
+            baseValue = ing.quantity_required / currentConversion.factor;
+        }
+
+        // 2. Convert BASE unit value to NEW unit value
+        let newValue = baseValue;
+        // If we are switching TO the ALT unit (e.g. 'g'), multiply base by factor
+        if (currentConversion && newUnit === currentConversion.unit) {
+            newValue = baseValue * currentConversion.factor;
+        }
+
+        updated[index].selected_unit = newUnit;
+        updated[index].quantity_required = parseFloat(newValue.toFixed(3));
         setIngredients(updated);
     };
 
@@ -103,7 +167,27 @@ export default function RecipesPage() {
         if (!editingItem) return;
 
         // Filter out empty ingredients
-        const validIngredients = ingredients.filter(ing => ing.inventory_item_id && ing.quantity_required > 0);
+        // Filter out empty ingredients and normalize units
+        const validIngredients = ingredients
+            .filter(ing => ing.inventory_item_id && ing.quantity_required > 0)
+            .map(ing => {
+                let qty = ing.quantity_required;
+                const baseUnit = ing.inventory_item?.unit;
+
+                // Convert back to base unit if necessary
+                if (baseUnit) {
+                    const conversion = UNIT_CONVERSIONS[baseUnit];
+                    if (conversion && ing.selected_unit === conversion.unit) {
+                        qty = qty / conversion.factor;
+                    }
+                }
+
+                return {
+                    inventory_item_id: ing.inventory_item_id,
+                    quantity_required: qty,
+                    unit: ing.selected_unit
+                };
+            });
 
         try {
             await setMenuItemIngredients(editingItem.id, validIngredients);
@@ -253,33 +337,92 @@ export default function RecipesPage() {
                                 <div className="space-y-3">
                                     {ingredients.map((ing, index) => (
                                         <div key={index} className="flex items-center gap-2 p-3 border rounded-lg">
-                                            <Select
-                                                value={ing.inventory_item_id}
-                                                onValueChange={(val) => updateIngredient(index, 'inventory_item_id', val)}
-                                            >
-                                                <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder="Select ingredient" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {inventoryItems.map(inv => (
-                                                        <SelectItem key={inv.id} value={inv.id}>
-                                                            {inv.name} ({inv.unit})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "flex-1 justify-between",
+                                                            !ing.inventory_item_id && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {ing.inventory_item_id
+                                                            ? inventoryItems.find((item) => item.id === ing.inventory_item_id)?.name
+                                                            : "Select ingredient"}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Search ingredient..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>No ingredient found.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {inventoryItems.map((item) => {
+                                                                    const isSelected = ingredients.some(
+                                                                        (i, iIndex) => i.inventory_item_id === item.id && iIndex !== index
+                                                                    );
+                                                                    if (isSelected) return null; // Hide already selected items
+
+                                                                    return (
+                                                                        <CommandItem
+                                                                            value={item.name}
+                                                                            key={item.id}
+                                                                            onSelect={() => {
+                                                                                updateIngredient(index, "inventory_item_id", item.id);
+                                                                            }}
+                                                                        >
+                                                                            <Check
+                                                                                className={cn(
+                                                                                    "mr-2 h-4 w-4",
+                                                                                    item.id === ing.inventory_item_id
+                                                                                        ? "opacity-100"
+                                                                                        : "opacity-0"
+                                                                                )}
+                                                                            />
+                                                                            {item.name} ({item.unit})
+                                                                        </CommandItem>
+                                                                    );
+                                                                })}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
                                             <Input
                                                 type="number"
-                                                step="1"
+                                                step="0.001"
                                                 min="0"
                                                 className="w-24"
                                                 placeholder="Qty"
                                                 value={ing.quantity_required || ''}
                                                 onChange={(e) => updateIngredient(index, 'quantity_required', parseFloat(e.target.value) || 0)}
                                             />
-                                            <span className="text-sm text-muted-foreground w-12">
-                                                {ing.inventory_item?.unit || ''}
-                                            </span>
+                                            <div className="w-24">
+                                                {ing.inventory_item && UNIT_CONVERSIONS[ing.inventory_item.unit] ? (
+                                                    <Select
+                                                        value={ing.selected_unit || ing.inventory_item.unit}
+                                                        onValueChange={(val) => updateUnit(index, val)}
+                                                    >
+                                                        <SelectTrigger className="h-9">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value={ing.inventory_item.unit}>
+                                                                {ing.inventory_item.unit}
+                                                            </SelectItem>
+                                                            <SelectItem value={UNIT_CONVERSIONS[ing.inventory_item.unit].unit}>
+                                                                {UNIT_CONVERSIONS[ing.inventory_item.unit].unit}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground pl-2">
+                                                        {ing.inventory_item?.unit || ''}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeIngredient(index)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>

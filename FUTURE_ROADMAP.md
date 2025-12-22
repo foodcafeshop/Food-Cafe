@@ -48,8 +48,10 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Stock Adjustments**: Manual adjustments with reason codes (wastage, damage, theft, restock).
 *   **Adjustment History**: Audit trail for all stock changes.
 *   **Recipes**: Link raw materials to menu items with quantity requirements.
+*   **Auto-Deduction**: Smart trigger deducts stock when order moves to 'preparing' and reverts on cancel/queue.
+*   **EOD Reconciliation (Live ✅)**: UI to compare actual vs system stock and correct variances.
 
-*   **🔮 Future**: Auto-deduct on order, supplier management, and purchase orders.
+*   **🔮 Future**: Supplier management and purchase orders.
 
 ### 💳 10. Billing & Payment Support
 *   **Payment Integration**: Support for payment processing.

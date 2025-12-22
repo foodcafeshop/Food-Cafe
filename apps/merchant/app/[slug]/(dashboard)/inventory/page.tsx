@@ -5,11 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { InventoryItem, AdjustmentReason } from "@/lib/types";
-import { Edit2, Plus, Search, Trash2, Package, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, Package, AlertTriangle, TrendingDown, TrendingUp, ClipboardCheck, Utensils } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useShopId } from "@/lib/hooks/use-shop-id";
 import {
@@ -45,11 +56,13 @@ type FilterType = 'all' | 'low' | 'out';
 // Generate image URL from item name (same as AI menu digitization)
 const generateImageUrl = (term: string): string => {
     if (!term) return '';
-    const keyword = encodeURIComponent(term.trim());
+    const keyword = encodeURIComponent(term.trim() + " raw food ingredient packaging");
     return `https://tse2.mm.bing.net/th?q=${keyword}&w=300&h=300&c=7&rs=1&p=0&dpr=3&pid=1.7&mkt=en-IN&adlt=moderate`;
 };
 
 export default function InventoryPage() {
+    const router = useRouter();
+    const params = useParams();
     const { shopId } = useShopId();
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -67,6 +80,9 @@ export default function InventoryPage() {
     const [isNegativeDirection, setIsNegativeDirection] = useState(false);
     const [adjustmentReason, setAdjustmentReason] = useState<AdjustmentReason>('restock');
     const [adjustmentNotes, setAdjustmentNotes] = useState<string>('');
+
+    // Delete Dialog
+    const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
     useEffect(() => {
         if (shopId) fetchItems();
@@ -142,17 +158,26 @@ export default function InventoryPage() {
             }
             setIsItemDialogOpen(false);
         } catch (error: any) {
-            toast.error(error.message || 'Failed to save item');
+            if (error.code === '23505' || error.message?.includes('unique')) {
+                toast.error('An item with this name already exists');
+            } else {
+                toast.error(error.message || 'Failed to save item');
+            }
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this inventory item?")) return;
+    const openDeleteDialog = (item: InventoryItem) => {
+        setItemToDelete(item);
+    };
+
+    const executeDelete = async () => {
+        if (!itemToDelete) return;
 
         try {
-            await deleteInventoryItem(id);
-            setItems(items.filter(i => i.id !== id));
+            await deleteInventoryItem(itemToDelete.id);
+            setItems(items.filter(i => i.id !== itemToDelete.id));
             toast.success('Item deleted');
+            setItemToDelete(null);
         } catch (error: any) {
             toast.error(error.message || 'Failed to delete item');
         }
@@ -214,9 +239,14 @@ export default function InventoryPage() {
                             Manage raw materials and stock levels
                         </p>
                     </div>
-                    <Button className="gap-2" onClick={handleAddNew}>
-                        <Plus className="h-4 w-4" /> Add Inventory Item
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="gap-2" onClick={() => router.push(`/${params.slug}/inventory/reconcile`)}>
+                            <ClipboardCheck className="h-4 w-4" /> Reconcile Stock
+                        </Button>
+                        <Button className="gap-2" onClick={handleAddNew}>
+                            <Plus className="h-4 w-4" /> Add Inventory Item
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
@@ -304,6 +334,11 @@ export default function InventoryPage() {
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <h3 className="font-semibold">{item.name}</h3>
                                                 <Badge variant="outline">{item.unit}</Badge>
+                                                {item.menu_item_ingredients?.[0]?.count ? (
+                                                    <Badge variant="secondary" className="gap-1">
+                                                        <Utensils className="h-3 w-3" /> {item.menu_item_ingredients[0].count} recipes
+                                                    </Badge>
+                                                ) : null}
                                                 {status === 'out' && (
                                                     <Badge variant="destructive">Out of Stock</Badge>
                                                 )}
@@ -325,7 +360,7 @@ export default function InventoryPage() {
                                             <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                                                 <Edit2 className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(item.id)}>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(item)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -529,6 +564,34 @@ export default function InventoryPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete {itemToDelete?.name}?</AlertDialogTitle>
+                            <AlertDialogDescription className="space-y-2">
+                                <p>This action cannot be undone. This will permanently delete the inventory item.</p>
+                                {itemToDelete?.menu_item_ingredients?.[0]?.count ? (
+                                    <div className="flex items-start gap-2 p-3 bg-red-50 text-red-800 rounded-md mt-2">
+                                        <AlertTriangle className="h-5 w-5 shrink-0" />
+                                        <div className="text-sm">
+                                            <strong>Warning: Used in {itemToDelete.menu_item_ingredients[0].count} recipes!</strong>
+                                            <p>Deleting this will remove it from all associated recipes.</p>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={executeDelete} className="bg-destructive hover:bg-destructive/90">
+                                Delete Item
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );

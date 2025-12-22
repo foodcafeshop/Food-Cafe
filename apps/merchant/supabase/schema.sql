@@ -134,10 +134,7 @@ create table public.orders (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   ready_at timestamp with time zone,
-  served_at timestamp with time zone,
-  is_staff_order boolean default false,
-  staff_name text,
-  staff_id uuid references auth.users(id)
+  served_at timestamp with time zone
 );
 
 -- 9. Order Items
@@ -759,6 +756,90 @@ CREATE INDEX IF NOT EXISTS idx_menu_categories_sort ON public.menu_categories(so
 CREATE INDEX IF NOT EXISTS idx_category_items_sort ON public.category_items(sort_order);
 CREATE INDEX IF NOT EXISTS idx_reviews_item_created ON public.reviews(menu_item_id, created_at DESC);
 
+-- ========================================
+-- Inventory Management
+-- ========================================
+
+-- 1. Inventory Items (Raw Materials)
+CREATE TABLE IF NOT EXISTS public.inventory_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  image_url TEXT,
+  unit TEXT NOT NULL, -- 'kg', 'g', 'L', 'ml', 'pcs', 'dozen'
+  stock_quantity DECIMAL(10, 3) NOT NULL DEFAULT 0,
+  low_stock_threshold DECIMAL(10, 3) DEFAULT 10,
+  cost_per_unit DECIMAL(10, 2), -- for COGS calculation (future)
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  UNIQUE(shop_id, name)
+);
+
+-- 2. Menu Item Ingredients (Recipes)
+CREATE TABLE IF NOT EXISTS public.menu_item_ingredients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  menu_item_id UUID REFERENCES public.menu_items(id) ON DELETE CASCADE,
+  inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  quantity_required DECIMAL(10, 3) NOT NULL, -- amount needed per menu item
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  UNIQUE(menu_item_id, inventory_item_id)
+);
+
+-- 3. Inventory Adjustments (Audit Trail)
+CREATE TABLE IF NOT EXISTS public.inventory_adjustments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  previous_quantity DECIMAL(10, 3),
+  new_quantity DECIMAL(10, 3),
+  adjustment DECIMAL(10, 3) NOT NULL,
+  reason TEXT CHECK (reason IN ('restock', 'usage', 'order', 'wastage', 'damage', 'theft', 'correction', 'other')),
+  notes TEXT,
+  reference_id UUID, -- link to order_id if reason='order'
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Inventory Indexes
+CREATE INDEX IF NOT EXISTS idx_inventory_items_shop ON public.inventory_items(shop_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_low_stock ON public.inventory_items(shop_id, stock_quantity, low_stock_threshold);
+CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_menu_item ON public.menu_item_ingredients(menu_item_id);
+CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_inventory_item ON public.menu_item_ingredients(inventory_item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_shop ON public.inventory_adjustments(shop_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_item ON public.inventory_adjustments(inventory_item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_adjustments_created ON public.inventory_adjustments(created_at DESC);
+
+-- Inventory RLS
+ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can read inventory_items" ON public.inventory_items FOR SELECT USING (public.is_staff_of(shop_id));
+CREATE POLICY "Admin can insert inventory_items" ON public.inventory_items FOR INSERT WITH CHECK (public.is_admin_of(shop_id));
+CREATE POLICY "Admin can update inventory_items" ON public.inventory_items FOR UPDATE USING (public.is_admin_of(shop_id));
+CREATE POLICY "Admin can delete inventory_items" ON public.inventory_items FOR DELETE USING (public.is_admin_of(shop_id));
+
+ALTER TABLE public.menu_item_ingredients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public can read menu_item_ingredients" ON public.menu_item_ingredients FOR SELECT USING (true);
+CREATE POLICY "Admin can insert menu_item_ingredients" ON public.menu_item_ingredients FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+CREATE POLICY "Admin can update menu_item_ingredients" ON public.menu_item_ingredients FOR UPDATE USING (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+CREATE POLICY "Admin can delete menu_item_ingredients" ON public.menu_item_ingredients FOR DELETE USING (EXISTS (SELECT 1 FROM public.menu_items WHERE id = menu_item_id AND public.is_admin_of(shop_id)));
+
+ALTER TABLE public.inventory_adjustments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can read inventory_adjustments" ON public.inventory_adjustments FOR SELECT USING (public.is_staff_of(shop_id));
+CREATE POLICY "Staff can insert inventory_adjustments" ON public.inventory_adjustments FOR INSERT WITH CHECK (public.is_staff_of(shop_id));
+
+-- Inventory updated_at Trigger
+CREATE OR REPLACE FUNCTION public.update_inventory_item_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = TIMEZONE('utc'::text, NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_inventory_items_updated_at
+BEFORE UPDATE ON public.inventory_items
+FOR EACH ROW
+EXECUTE FUNCTION public.update_inventory_item_timestamp();
+
 -- Realtime Configuration
 -- Note: 'supabase_realtime' publication is created by default in Supabase.
 -- We just need to add our tables to it.
@@ -766,3 +847,100 @@ alter publication supabase_realtime add table public.orders;
 alter publication supabase_realtime add table public.tables;
 alter publication supabase_realtime add table public.menu_items;
 alter publication supabase_realtime add table public.menus;
+-- Migration: Inventory Auto-Deduction Trigger on Order Prepare
+
+CREATE OR REPLACE FUNCTION public.deduct_inventory_on_order()
+RETURNS TRIGGER AS $$
+DECLARE
+  order_item RECORD;
+  recipe_item RECORD;
+  qty_change DECIMAL;
+  adjustment_note TEXT;
+  is_reversion BOOLEAN;
+BEGIN
+  -- Determine if we need to Deduct or Revert based on status transition
+  IF OLD.status = 'queued' AND NEW.status = 'preparing' THEN
+    -- Deduction: Kitchen started preparing
+    is_reversion := false;
+    adjustment_note := 'Order #' || COALESCE(NEW.order_number, 'N/A');
+  ELSIF OLD.status = 'preparing' AND (NEW.status = 'queued' OR NEW.status = 'cancelled') THEN
+    -- Reversion: Order sent back to queue or cancelled after prep started
+    is_reversion := true;
+    adjustment_note := 'Revert Order #' || COALESCE(NEW.order_number, 'N/A') || ' (' || NEW.status || ')';
+  ELSE
+    -- No inventory action for other transitions
+    RETURN NEW;
+  END IF;
+
+  -- Iterate through all items in the order
+  FOR order_item IN SELECT * FROM public.order_items WHERE order_id = NEW.id LOOP
+    
+    -- Iterate through all ingredients required for this menu item (Recipe)
+    FOR recipe_item IN SELECT * FROM public.menu_item_ingredients WHERE menu_item_id = order_item.menu_item_id LOOP
+      
+      -- Calculate quantity impact
+      -- If reversion, we ADD to stock. If deduction, we REMOVE (negative).
+      qty_change := recipe_item.quantity_required * order_item.quantity;
+      IF NOT is_reversion THEN
+        qty_change := -qty_change;
+      END IF;
+      
+      -- Update stock quantity and capture the new value
+      WITH updated_stock AS (
+        UPDATE public.inventory_items
+        SET stock_quantity = stock_quantity + qty_change,
+            updated_at = NOW()
+        WHERE id = recipe_item.inventory_item_id
+        RETURNING id, stock_quantity, shop_id
+      )
+      -- Log the adjustment
+      INSERT INTO public.inventory_adjustments (
+          shop_id,
+          inventory_item_id,
+          previous_quantity,
+          new_quantity,
+          adjustment,
+          reason,
+          reference_id,
+          notes
+      )
+      SELECT 
+          updated_stock.shop_id,
+          updated_stock.id,
+          updated_stock.stock_quantity - qty_change, -- Previous
+          updated_stock.stock_quantity,              -- New
+          qty_change,
+          'order',
+          NEW.id,
+          adjustment_note
+      FROM updated_stock;
+      
+    END LOOP;
+    
+  END LOOP;
+    
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create Trigger
+DROP TRIGGER IF EXISTS trg_deduct_inventory_on_prepare ON public.orders;
+CREATE TRIGGER trg_deduct_inventory_on_prepare
+AFTER UPDATE ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.deduct_inventory_on_order();
+
+-- Migration: Enforce Case-Insensitive Uniqueness on Inventory Item Names
+
+-- 1. Clean up potential existing duplicates (keep the one with latest update or creation)
+-- This is a safety step. In a real prod env, we might want manual intervention, but for now we'll keep the most recently updated one.
+-- (Skipping complex cleanup for now to avoid data loss, assuming table is mostly clean or user will handle conflicts)
+
+-- 2. Drop existing exact-match constraint if it exists (by name)
+-- Note: The constraint name is usually inventory_items_shop_id_name_key
+ALTER TABLE public.inventory_items 
+DROP CONSTRAINT IF EXISTS inventory_items_shop_id_name_key;
+
+-- 3. Create unique index on (shop_id, lower(name))
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_shop_name_unique 
+ON public.inventory_items (shop_id, lower(name));

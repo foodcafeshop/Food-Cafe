@@ -847,3 +847,104 @@ alter publication supabase_realtime add table public.orders;
 alter publication supabase_realtime add table public.tables;
 alter publication supabase_realtime add table public.menu_items;
 alter publication supabase_realtime add table public.menus;
+-- Migration: Inventory Auto-Deduction Trigger on Order Prepare
+
+CREATE OR REPLACE FUNCTION public.deduct_inventory_on_order()
+RETURNS TRIGGER AS $$
+DECLARE
+  order_item RECORD;
+  recipe_item RECORD;
+  qty_change DECIMAL;
+  adjustment_note TEXT;
+  is_reversion BOOLEAN;
+BEGIN
+  -- Determine if we need to Deduct or Revert based on status transition
+  IF OLD.status = 'queued' AND NEW.status = 'preparing' THEN
+    -- Deduction: Kitchen started preparing
+    is_reversion := false;
+    adjustment_note := 'Order #' || COALESCE(NEW.order_number, 'N/A');
+  ELSIF OLD.status = 'preparing' AND (NEW.status = 'queued' OR NEW.status = 'cancelled') THEN
+    -- Reversion: Order sent back to queue or cancelled after prep started
+    is_reversion := true;
+    adjustment_note := 'Revert Order #' || COALESCE(NEW.order_number, 'N/A') || ' (' || NEW.status || ')';
+  ELSE
+    -- No inventory action for other transitions
+    RETURN NEW;
+  END IF;
+
+  -- Iterate through all items in the order
+  FOR order_item IN SELECT * FROM public.order_items WHERE order_id = NEW.id LOOP
+    
+    -- Iterate through all ingredients required for this menu item (Recipe)
+    FOR recipe_item IN SELECT * FROM public.menu_item_ingredients WHERE menu_item_id = order_item.menu_item_id LOOP
+      
+      -- Calculate quantity impact
+      -- If reversion, we ADD to stock. If deduction, we REMOVE (negative).
+      qty_change := recipe_item.quantity_required * order_item.quantity;
+      IF NOT is_reversion THEN
+        qty_change := -qty_change;
+      END IF;
+      
+      -- Update stock quantity and capture the new value
+      WITH updated_stock AS (
+        UPDATE public.inventory_items
+        SET stock_quantity = stock_quantity + qty_change,
+            updated_at = NOW()
+        WHERE id = recipe_item.inventory_item_id
+        RETURNING id, stock_quantity, shop_id
+      )
+      -- Log the adjustment
+      INSERT INTO public.inventory_adjustments (
+          shop_id,
+          inventory_item_id,
+          previous_quantity,
+          new_quantity,
+          adjustment,
+          reason,
+          reference_id,
+          notes
+      )
+      SELECT 
+          updated_stock.shop_id,
+          updated_stock.id,
+          updated_stock.stock_quantity - qty_change, -- Previous
+          updated_stock.stock_quantity,              -- New
+          qty_change,
+          'order',
+          NEW.id,
+          adjustment_note
+      FROM updated_stock;
+      
+    END LOOP;
+    
+  END LOOP;
+    
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create Trigger
+DROP TRIGGER IF EXISTS trg_deduct_inventory_on_prepare ON public.orders;
+CREATE TRIGGER trg_deduct_inventory_on_prepare
+AFTER UPDATE ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.deduct_inventory_on_order();
+
+-- Migration: Enforce Case-Insensitive Uniqueness on Inventory Item Names
+
+-- 1. Clean up potential existing duplicates (keep the one with latest update or creation)
+-- This is a safety step. In a real prod env, we might want manual intervention, but for now we'll keep the most recently updated one.
+-- (Skipping complex cleanup for now to avoid data loss, assuming table is mostly clean or user will handle conflicts)
+
+-- 2. Drop existing exact-match constraint if it exists (by name)
+-- Note: The constraint name is usually inventory_items_shop_id_name_key
+ALTER TABLE public.inventory_items 
+DROP CONSTRAINT IF EXISTS inventory_items_shop_id_name_key;
+
+-- 3. Create unique index on (shop_id, lower(name))
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_shop_name_unique 
+ON public.inventory_items (shop_id, lower(name));
+-- Migration: Add unit column to menu_item_ingredients to persist display preference
+
+ALTER TABLE public.menu_item_ingredients 
+ADD COLUMN IF NOT EXISTS unit TEXT;

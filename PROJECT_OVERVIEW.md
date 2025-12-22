@@ -87,7 +87,25 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Relational Linking**: Advanced import logic connects Menus to Categories and Categories to Items by **Name**.
         *   **Data Integrity**: Database enforces `UNIQUE(shop_id, name)` constraints.
 
-### 🏢 4. Shop Management & Data Sovereignty
+### 📦 4. Inventory & Supply Chain
+*   **Raw Material Tracking**:
+    *   **Granular Control**: Track stock in precision units (g, ml, pcs, kg) with real-time level monitoring.
+    *   **Smart Alerts**: Set custom "Low Stock Thresholds" to receive instant warnings before running out of essential ingredients.
+    *   **Visual Inventory**: Auto-generated product images (via Bing Search) make identifying stock items instant and error-free.
+*   **Stock Operations**:
+    *   **Adjustment Logs**: Comprehensive audit trail for all stock changes with specific reasons (Restock, Wastage, Theft, Usage).
+    *   **Trending Insights**: Track stock movement direction with visual indicators for restocking vs. depletion.
+*   **Recipe Engine**:
+    *   **Ingredient Linking**: Map Menu Items to specific Inventory Items (e.g., "Chicken Burger" consumes "1 Chicken Breast" + "1 Bun").
+    *   **Cost Control**: (Ready for Future) Foundation laid for automatic COGS (Cost of Goods Sold) calculation based on recipe composition.
+    *   **Smart Unit Handling**: Intelligent dropdowns automatically select smaller units (e.g., 'g' instead of 'kg') for recipes to speed up data entry.
+    *   **Dependency Protection**: "Safe Delete" system prevents removing ingredients that are actively used in recipes, with clear impact warnings (e.g., "Used in 5 recipes").
+*   **End-Of-Day (EOD) Reconciliation**:
+    *   **Variance Analysis**: Dedicated interface for managers to physically count stock and input "Actual" values.
+    *   **Auto-Calculation**: System instantly highlights discrepancies (Variance) between theoretical usage and physical counts.
+    *   **Bulk Correction**: One-click submission to adjust all stock levels to match physical reality, categorizing differences as "Correction".
+
+### 🏢 5. Shop Management & Data Sovereignty
 *   **Staff Management**:
     *   **Role-Based Access Control (RBAC)**:
         *   **Shop Owner**: Complete control over shop, settings, financials, and deletion.
@@ -104,7 +122,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Full Data Export**: One-click "Export to ZIP" functionality generating portable CSVs for all shop data.
     *   **Cascade Shop Deletion**: "Danger Zone" feature allows complete removal of a shop and all associated data.
 
-### 🔒 5. Security & Infrastructure
+### 🔒 6. Security & Infrastructure
 *   **Row Level Security (RLS)**:
     *   Robust PostgreSQL policies ensure complete data isolation between tenants.
     *   Specific policies allow Public read access for menus/tables (for QR scanning) while restricting write access to authenticated users.
@@ -119,7 +137,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ## 🛠️ Technical Architecture & Stack
 
-*   **Frontend**: Next.js 14 (App Router) for Server-Side Rendering (SSR) and SEO.
+*   **Frontend Monorepo**: Split architecture separating `apps/customer` (SEO-optimized, lightweight) and `apps/merchant` (Admin Dashboard, feature-rich) for improved code isolation and build performance.
 *   **Database**: Supabase (PostgreSQL) for relational data integrity.
 *   **Real-Time Engine**: Supabase Realtime (WebSockets) for sub-50ms latency updates.
 *   **Authorization**: Supabase Auth with custom `user_roles` linking users to specific Shops.

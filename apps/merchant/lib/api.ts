@@ -1177,7 +1177,7 @@ import { InventoryItem, MenuItemIngredient, InventoryAdjustment, AdjustmentReaso
 export async function getInventoryItems(shopId: string) {
     const { data, error } = await supabase
         .from('inventory_items')
-        .select('*')
+        .select('*, menu_item_ingredients(count)')
         .eq('shop_id', shopId)
         .order('name');
 
@@ -1337,7 +1337,7 @@ export async function getMenuItemIngredients(menuItemId: string) {
 
 export async function setMenuItemIngredients(
     menuItemId: string,
-    ingredients: { inventory_item_id: string; quantity_required: number }[]
+    ingredients: { inventory_item_id: string; quantity_required: number; unit?: string }[]
 ) {
     // 1. Delete existing ingredients
     await supabase
@@ -1353,7 +1353,8 @@ export async function setMenuItemIngredients(
                 ingredients.map(ing => ({
                     menu_item_id: menuItemId,
                     inventory_item_id: ing.inventory_item_id,
-                    quantity_required: ing.quantity_required
+                    quantity_required: ing.quantity_required,
+                    unit: ing.unit
                 }))
             );
 
@@ -1374,6 +1375,7 @@ export async function getAllRecipes(shopId: string) {
             menu_item_ingredients (
                 id,
                 quantity_required,
+                unit,
                 inventory_items (
                     id,
                     name,
@@ -1388,6 +1390,31 @@ export async function getAllRecipes(shopId: string) {
     if (error) {
         console.error('Error fetching recipes:', error);
         return [];
+    }
+    return data;
+}
+
+
+export async function bulkAdjustInventory(shopId: string, adjustments: { inventoryItemId: string; adjustment: number; reason: AdjustmentReason; notes?: string }[]) {
+    try {
+        const results = await Promise.all(adjustments.map(adj => adjustStock(shopId, adj.inventoryItemId, adj.adjustment, adj.reason, adj.notes)));
+        return results.every(r => r);
+    } catch (error) {
+        console.error('Error in bulk adjustment:', error);
+        return false;
+    }
+}
+
+export async function getShopBySlug(slug: string) {
+    const { data, error } = await supabase
+        .from('shops')
+        .select('id, name')
+        .eq('slug', slug)
+        .single();
+
+    if (error) {
+        console.error('Error fetching shop by slug:', error);
+        return null;
     }
     return data;
 }

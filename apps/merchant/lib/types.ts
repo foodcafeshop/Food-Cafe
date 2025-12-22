@@ -104,6 +104,7 @@ export interface InventoryItem {
     cost_per_unit?: number | null;
     created_at: string;
     updated_at: string;
+    menu_item_ingredients?: { count: number }[];
 }
 
 export interface MenuItemIngredient {
