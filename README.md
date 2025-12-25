@@ -62,6 +62,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Live Status Indicators**: Tables change color in real-time: **Empty** (Green), **Occupied** (Blue), **Billed** (Red).
     *   **Staff Take Order**: Dedicated interface for waiters to place orders for tables, view OTPs, and add item notes directly.
     *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
+*   **SaaS Operations (Super Admin)**:
+    *   **Subscription Plans**: Create and manage recurring billing tiers.
+    *   **Platform Coupons**: Issue discount codes for merchant subscriptions.
+    *   **User Management**: Monitor shop owners and system access.
 *   **Financial & Billing Engine**:
     *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.
     *   **Payment Reconciliation**: Track payments via Cash, Card, or UPI.

@@ -2,7 +2,7 @@
 create extension if not exists "uuid-ossp";
 
 -- Create User Roles Enum
-create type public.app_role as enum ('admin', 'staff');
+create type public.app_role as enum ('admin', 'staff', 'superadmin');
 
 -- 0. Shops (Multi-Tenancy Root)
 create table public.shops (
@@ -1092,15 +1092,14 @@ alter table public.webhook_events enable row level security;
 -- ========================================
 
 -- Helper: Check if Super Admin (Global Context)
--- Returns true if user has 'admin' role and shop_id is NULL
+-- Returns true if user has 'superadmin' role
 create or replace function public.is_super_admin()
 returns boolean as $$
 begin
   return exists (
     select 1 from public.user_roles
     where id = auth.uid()
-    and role = 'admin'
-    and shop_id is null
+    and role = 'superadmin'
   );
 end;
 $$ language plpgsql security definer;

@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import Image from 'next/image';
 
+import { useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
+
 export const navGroups = [
     {
         title: "Main",
@@ -35,7 +38,7 @@ export const navGroups = [
             { name: 'Support', href: '/support', icon: MessageSquare },
             { name: 'Audit Logs', href: '/audit', icon: ShieldAlert },
         ]
-    }
+    },
 ];
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
@@ -44,6 +47,15 @@ export function Sidebar({ className }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
+    const [user, setUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+    }, [supabase.auth]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -119,7 +131,9 @@ export function Sidebar({ className }: SidebarProps) {
                         </div>
                         <div className="ml-3 overflow-hidden">
                             <p className="text-sm font-medium leading-none truncate">Super Admin</p>
-                            <p className="text-xs text-muted-foreground mt-1 truncate">super@food.cafe</p>
+                            <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {user?.email || 'Loading...'}
+                            </p>
                         </div>
                     </div>
                     <Button

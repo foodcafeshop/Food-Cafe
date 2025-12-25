@@ -139,6 +139,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Robust Webhooks**: Idempotent webhook handling ensures events (payments, cancellations) are never missed or processed twice.
 *   **Subscription Engine**:
     *   **Tiered Plans**: Flexible recurring billing cycles (Monthly/Yearly) for Merchant SaaS subscriptions.
+    *   **Visual Plan Manager**: Dedicated Admin UI to create, edit, and manage subscription tiers (`/saas/plans`).
     *   **Automated Invoicing**: System auto-generates compliant PDF invoices for every successful renewal.
     *   **Dunning Management**: Handles failed payments with grace periods and status updates (Active -> Past Due -> Cancelled).
 *   **Marketing & Growth**:
@@ -158,7 +159,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Authorization**: Supabase Auth with custom `user_roles` linking users to specific Shops.
 *   **UI/UX**: Tailwind CSS + Shadcn UI for a premium, accessible, and responsive design.
 *   **Mobile Optimization**: Dedicated mobile views (Cards vs Tables) for complex admin interfaces.
-*   **Progressive Web App (PWA)**: Fully installable app experience with offline capabilities, persistent assets caching, and "app-like" navigation (no full page reloads).
+*   **Progressive Web App (PWA)**: Fully installable app experience with offline capabilities, persistent assets caching, and "app-like" navigation (no full page reloads). Supported on iOS and Android.
 *   **Theme Support**: Built-in `next-themes` integration allowing dynamic switching between Light, Dark, and System modes.
 *   **Deploy**: Vercel for edge-network distribution and automatic scaling.
 

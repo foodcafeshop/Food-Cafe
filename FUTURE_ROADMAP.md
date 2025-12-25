@@ -18,11 +18,11 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Macros**: View Protein, Carbs, Fats per item.
 *   **Health Tags**: Auto-flag "High Protein", "Low Calorie", etc.
 
-### 🎟️ 4. Coupon System
-*   **Live Features ✅**:
-    *   **Dual-Scope Engine**:
-        *   **Platform Coupons**: Discounts on SaaS subscriptions for Merchants.
-        *   **Shop Coupons**: Discounts on Food Orders for Customers.
+### 🎟️ 4. Coupon System (Live ✅)
+*   **Dual-Scope Engine**:
+    *   **Platform Coupons**: Super Admins create coupons for SaaS subscriptions.
+    *   **Shop Coupons**: Merchants create coupons for customer food orders.
+*   **Advanced Logic**:
     *   **Promo Codes**: Manual entry of percentage/flat discount codes.
     *   **Smart Limits**:
         *   **Global Cap**: Total number of times a coupon can be used.
@@ -35,7 +35,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 
 ### 🌗 5. UI/UX Customization (Live ✅)
 *   **Theme Switch**: Toggle Dark/Light mode.
-*   **System Sync**: Auto-match device preference
+*   **System Sync**: Auto-match device preference.
 
 ### 👨‍🍳 6. Staff-Placed Orders (Live ✅)
 *   **Take Order Mode**: Admin/Staff button to open table view with `placed_by_staff` flag.
@@ -77,7 +77,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Smart Search (Live ✅)**: Offline-capable, tag-based search for instant menu filtering.
 
 ### 🏗️ 12. Architecture Split (Live ✅)
-*   **Monorepo Structure**: Split codebase into `apps/merchant` and `apps/customer`.
+*   **Monorepo Structure**: Split codebase into `apps/admin`, `apps/merchant` and `apps/customer`.
 *   **Performance**: Independent builds and deployments for smaller bundles.
 *   **Security**: Strict separation of admin logic from customer-facing code.
 

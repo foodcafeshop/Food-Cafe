@@ -2,7 +2,7 @@
 create extension if not exists "uuid-ossp";
 
 -- Create User Roles Enum
-create type public.app_role as enum ('admin', 'staff');
+create type public.app_role as enum ('admin', 'staff', 'superadmin');
 
 -- 0. Shops (Multi-Tenancy Root)
 create table public.shops (
