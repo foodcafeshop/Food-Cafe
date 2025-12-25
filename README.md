@@ -122,6 +122,17 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Database Indexing**: Optimized indexes on `shop_id`, `created_at`, `status`, and `is_featured` for blazing fast queries.
     *   **Parallel Fetching**: API endpoints optimized with `Promise.all` to reduce Time-to-First-Byte (TTFB).
 
+### 💳 7. SaaS Monetization & Revenue Operations
+*   **Provider-Agnostic Architecture**:
+    *   **Adapter Pattern**: System supports multiple gateways (Razorpay, Stripe) via a unified interface.
+*   **Subscription Engine**: 
+    *   **Platform Plans**: Merchants subscribe to tiered plans (Starter, Pro) to access features.
+    *   **Automated Billing**: Recurring billing and invoice generation.
+*   **Dual-Layer Coupon System**:
+    *   **Platform Scope**: Super Admins create coupons for Merchants (SaaS discounts).
+    *   **Shop Scope**: Merchants create coupons for Customers (Food discounts).
+    *   **Smart Rules**: Enforce per-user limits and target specific user groups (Whitelisting).
+
 ---
 
 ## 🛠️ Technical Architecture & Stack
@@ -174,6 +185,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
     SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+    # Payment (Razorpay)
+    RAZORPAY_KEY_ID=rzp_test_...
+    RAZORPAY_KEY_SECRET=your_razorpay_secret
+    RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
     ```
 
 4.  **Database Setup:**

@@ -133,6 +133,21 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Database Indexing**: Optimized indexes on `shop_id`, `created_at`, `status`, and `is_featured` for blazing fast queries.
     *   **Parallel Fetching**: API endpoints optimized with `Promise.all` to reduce Time-to-First-Byte (TTFB).
 
+### 💳 7. SaaS Monetization & Revenue Operations (Live ✅)
+*   **Provider-Agnostic Architecture**:
+    *   **Adapter Pattern**: Designed to switch between **Razorpay**, Stripe, or PhonePe without code rewrites. Currently fully integrated with Razorpay for India.
+    *   **Robust Webhooks**: Idempotent webhook handling ensures events (payments, cancellations) are never missed or processed twice.
+*   **Subscription Engine**:
+    *   **Tiered Plans**: Flexible recurring billing cycles (Monthly/Yearly) for Merchant SaaS subscriptions.
+    *   **Automated Invoicing**: System auto-generates compliant PDF invoices for every successful renewal.
+    *   **Dunning Management**: Handles failed payments with grace periods and status updates (Active -> Past Due -> Cancelled).
+*   **Marketing & Growth**:
+    *   **Universal Coupon System**: Powerful engine supporting two distinct scopes:
+        *   **Platform Coupons**: Created by Super Admin. Applied by **Merchants** during subscription checkout.
+        *   **Shop Coupons**: Created by Shop Owners. Applied by **Customers** during food checkout.
+        *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
+    *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
+
 ---
 
 ## 🛠️ Technical Architecture & Stack

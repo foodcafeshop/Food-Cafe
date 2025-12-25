@@ -19,9 +19,19 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Health Tags**: Auto-flag "High Protein", "Low Calorie", etc.
 
 ### 🎟️ 4. Coupon System
-*   **Promo Codes**: Support for percentage/flat discount codes.
-*   **Auto-Apply**: Automatically apply best available deal.
-*   **Usage Limits**: Cap usage per user or total redemptions.
+*   **Live Features ✅**:
+    *   **Dual-Scope Engine**:
+        *   **Platform Coupons**: Discounts on SaaS subscriptions for Merchants.
+        *   **Shop Coupons**: Discounts on Food Orders for Customers.
+    *   **Promo Codes**: Manual entry of percentage/flat discount codes.
+    *   **Smart Limits**:
+        *   **Global Cap**: Total number of times a coupon can be used.
+        *   **Per-User Cap**: Limit redemptions per specific user/shop.
+    *   **Targeting Rules**:
+        *   **Whitelist**: Restrict coupons to specific users (UUIDs).
+        *   **New User Only**: Restrict to first-time subscribers.
+*   **Planned Enhancements 🚧**:
+    *   **Auto-Apply**: Automatically apply best available deal.
 
 ### 🌗 5. UI/UX Customization (Live ✅)
 *   **Theme Switch**: Toggle Dark/Light mode.
@@ -53,7 +63,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 
 *   **🔮 Future**: Supplier management and purchase orders.
 
-### 💳 10. Billing & Payment Support
+### 💳 10. Billing & Payment Support (Live ✅)
 *   **Payment Integration**: Support for payment processing.
 *   **Action Restrictions**: Restrict actions based on billing/payment status.
 
@@ -77,7 +87,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Add feature to suggest menu items based on customer inputs, using AI"
 *   [ ] "View calories based on orders"
 *   [x] "dark/light theme switch"
-*   [ ] "Add option to add coupons"
+*   [x] "Add option to add coupons"
 *   [ ] "Add customization feature in menu item"
 *   [ ] "Suggest menu item based on order"
 *   [x] "Add feature to allow staff place order for a table"
@@ -86,7 +96,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Add photo gallery management"
 *   [x] "Add smart search for menu items"
 *   [x] "Split app into Customer and merchant apps"
-*   [ ] "add billing and payment support, accordingly add restrictions on various actions"
+*   [x] "add billing and payment support, accordingly add restrictions on various actions"
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 *   [x] "Add inventory management to merchant app"
 
