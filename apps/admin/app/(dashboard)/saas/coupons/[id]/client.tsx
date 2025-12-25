@@ -66,13 +66,13 @@ export default function EditCouponClient({ coupon }: { coupon: any }) {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Amount</label>
-                            <input name="discount_amount" type="number" step="0.01" defaultValue={coupon.discount_amount} required className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" placeholder="50" />
+                            <input name="discount_amount" type="number" min="0" step="1" defaultValue={coupon.discount_amount} required className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" placeholder="50" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Max Uses</label>
-                            <input name="max_uses" type="number" defaultValue={coupon.max_uses || ''} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" placeholder="Total global uses" />
+                            <input name="max_uses" type="number" min="0" step="1" defaultValue={coupon.max_uses || ''} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" placeholder="Total global uses" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Valid Until</label>

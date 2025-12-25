@@ -49,11 +49,11 @@ export default function EditPlanClient({ plan }: { plan: any }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Price (INR)</label>
-                            <input name="price" type="number" step="0.01" defaultValue={plan.price} required className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" />
+                            <input name="price" type="number" min="0" step="1" defaultValue={plan.price} required className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Offer Price (Optional)</label>
-                            <input name="offer_price" type="number" step="0.01" defaultValue={plan.offer_price || ''} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" />
+                            <input name="offer_price" type="number" min="0" step="1" defaultValue={plan.offer_price || ''} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" />
                         </div>
                     </div>
                     <div>

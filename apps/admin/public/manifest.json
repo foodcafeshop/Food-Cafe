@@ -1,0 +1,16 @@
+{
+    "name": "FoodCafe Super Admin",
+    "short_name": "FoodCafe Admin",
+    "description": "Global Platform Management for FoodCafe",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "icons": [
+        {
+            "src": "/fc_logo_orange.webp",
+            "sizes": "512x512",
+            "type": "image/webp"
+        }
+    ]
+}
