@@ -1,18 +1,24 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Store, Users, DollarSign, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Minimal Card Component since I don't have shadcn installed in admin
 function StatCard({ title, value, icon: Icon, subtext, color }: any) {
     return (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 text-slate-100 shadow p-6">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="tracking-tight text-sm font-medium text-slate-400">{title}</h3>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                    {title}
+                </CardTitle>
                 <Icon className={`h-4 w-4 ${color}`} />
-            </div>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-slate-500 mt-1">{subtext}</p>
-        </div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {subtext}
+                </p>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -54,9 +60,11 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                <p className="text-slate-400">Platform overview and health status.</p>
+            <div className="flex items-center justify-between space-y-2">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                    <p className="text-muted-foreground">Platform overview and health status.</p>
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -90,31 +98,31 @@ export default async function DashboardPage() {
                 />
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900">
-                <div className="p-6 border-b border-slate-800">
-                    <h3 className="text-lg font-medium leading-none tracking-tight">Recent Admin Activity</h3>
-                </div>
-                <div className="p-6">
+            <Card className="col-span-4">
+                <CardHeader>
+                    <CardTitle>Recent Admin Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
                     {stats.logs.length === 0 ? (
-                        <p className="text-sm text-slate-500">No activity recorded yet.</p>
+                        <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-8">
                             {/* Render logs list */}
                             {stats.logs.map((log: any) => (
-                                <div key={log.id} className="flex items-center justify-between border-b border-slate-800 pb-4 last:border-0 last:pb-0">
-                                    <div>
-                                        <p className="text-sm font-medium text-white">{log.action}</p>
-                                        <p className="text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</p>
+                                <div key={log.id} className="flex items-center">
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium leading-none">{log.action}</p>
+                                        <p className="text-sm text-muted-foreground">{new Date(log.created_at).toLocaleString()}</p>
                                     </div>
-                                    <div className="text-xs text-slate-400 font-mono">
+                                    <div className="ml-auto font-mono text-xs text-muted-foreground">
                                         {log.target_id || '-'}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     )
 }

@@ -3,22 +3,44 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Store, CreditCard, Radio, Flag, MessageSquare, ShieldAlert, LogOut } from 'lucide-react';
+import { LayoutDashboard, Store, CreditCard, Radio, Flag, MessageSquare, ShieldAlert, LogOut, Ticket } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import Image from 'next/image';
 
-const navItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Shops', href: '/shops', icon: Store },
-    { name: 'SaaS Ops', href: '/saas', icon: CreditCard },
-    { name: 'Broadcasts', href: '/broadcasts', icon: Radio },
-    { name: 'Feature Flags', href: '/flags', icon: Flag },
-    { name: 'Support', href: '/support', icon: MessageSquare },
-    { name: 'Audit Logs', href: '/audit', icon: ShieldAlert },
+export const navGroups = [
+    {
+        title: "Main",
+        items: [
+            { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+            { name: 'Shops', href: '/shops', icon: Store },
+        ]
+    },
+    {
+        title: "SaaS",
+        items: [
+            { name: 'Plans', href: '/saas/plans', icon: CreditCard },
+            { name: 'Platform Coupons', href: '/saas/coupons', icon: Ticket },
+        ]
+    },
+    {
+        title: "System",
+        items: [
+            { name: 'Broadcasts', href: '/broadcasts', icon: Radio },
+            { name: 'Feature Flags', href: '/flags', icon: Flag },
+            { name: 'Support', href: '/support', icon: MessageSquare },
+            { name: 'Audit Logs', href: '/audit', icon: ShieldAlert },
+        ]
+    }
 ];
 
-export function Sidebar() {
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
+
+export function Sidebar({ className }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -31,47 +53,84 @@ export function Sidebar() {
     };
 
     return (
-        <div className="flex h-screen w-64 flex-col bg-slate-900 border-r border-slate-800">
-            <div className="flex bg-orange-600 h-16 items-center justify-center border-b border-slate-800">
-                <h1 className="text-xl font-bold text-white">FoodCafe Admin</h1>
+        <div className={cn("pb-2 min-h-screen bg-card flex flex-col", className)}>
+            <div className="space-y-4 py-4">
+                <div className="px-6 py-4 flex items-center gap-3">
+                    <div className="relative h-8 w-8">
+                        <Image
+                            src="/fc_logo_orange.webp"
+                            alt="FoodCafe"
+                            fill
+                            className="object-contain rounded-md"
+                        />
+                    </div>
+                    <h1 className="text-xl font-bold tracking-tight text-primary">
+                        FoodCafe
+                    </h1>
+                </div>
+                <div className="px-3 py-2">
+                    <div className="space-y-6">
+                        {navGroups.map((group) => (
+                            <div key={group.title}>
+                                <h3 className="mb-2 px-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                                    {group.title}
+                                </h3>
+                                <div className="space-y-1">
+                                    {group.items.map((item) => {
+                                        const isActive = pathname === item.href;
+                                        return (
+                                            <Link
+                                                key={item.name}
+                                                href={item.href}
+                                                className={cn(
+                                                    "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                                                    isActive ? "bg-accent/50 text-accent-foreground" : "text-muted-foreground"
+                                                )}
+                                            >
+                                                <item.icon
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4 transition-colors",
+                                                        isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                                                    )}
+                                                />
+                                                {item.name}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
-            <nav className="flex-1 space-y-1 px-2 py-4">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
-                                    ? 'bg-slate-800 text-white'
-                                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                                }`}
-                        >
-                            <item.icon
-                                className={`mr-3 h-6 w-6 flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-slate-400 group-hover:text-orange-500'
-                                    }`}
-                            />
-                            {item.name}
-                        </Link>
-                    );
-                })}
-            </nav>
-            <div className="p-4 border-t border-slate-800">
-                <button
-                    onClick={handleLogout}
-                    className="flex w-full items-center px-2 py-2 text-sm font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-md"
-                >
-                    <LogOut className="mr-3 h-6 w-6" />
-                    Logout
-                </button>
-                <div className="mt-4 flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs text-white">
-                        SA
+
+            <div className="px-3 py-2 mt-auto mb-2">
+                <div className="px-2 flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Settings
+                    </p>
+                    <ThemeToggle />
+                </div>
+
+                <div className="border-t pt-2 px-2 flex items-center justify-between group">
+                    <div className="flex items-center min-w-0 mr-2">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            SA
+                        </div>
+                        <div className="ml-3 overflow-hidden">
+                            <p className="text-sm font-medium leading-none truncate">Super Admin</p>
+                            <p className="text-xs text-muted-foreground mt-1 truncate">super@food.cafe</p>
+                        </div>
                     </div>
-                    <div className="ml-3">
-                        <p className="text-sm font-medium text-white">Super Admin</p>
-                        <p className="text-xs text-slate-500">Only you can see this.</p>
-                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleLogout}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Logout"
+                    >
+                        <LogOut className="h-4 w-4" />
+                    </Button>
                 </div>
             </div>
         </div>

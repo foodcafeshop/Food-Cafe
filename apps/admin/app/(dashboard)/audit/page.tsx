@@ -1,6 +1,8 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ShieldAlert } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default async function AuditPage() {
     const { data: logs } = await supabaseAdmin
@@ -12,34 +14,54 @@ export default async function AuditPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight text-white">Audit Logs</h2>
-                <p className="text-slate-400">Security trail of administrative actions.</p>
+                <h2 className="text-3xl font-bold tracking-tight">Audit Logs</h2>
+                <p className="text-muted-foreground">Security trail of administrative actions.</p>
             </div>
 
-            <div className="space-y-4">
-                {logs?.map((log) => (
-                    <div key={log.id} className="flex flex-col gap-1 p-4 border-b border-slate-800 hover:bg-slate-900/40">
-                        <div className="flex justify-between items-center">
-                            <h4 className="font-bold text-white flex items-center gap-2">
-                                <ShieldAlert className="h-4 w-4 text-slate-600" />
-                                {log.action}
-                            </h4>
-                            <span className="text-xs text-slate-500 font-mono">{new Date(log.created_at).toLocaleString()}</span>
-                        </div>
-                        <p className="text-sm text-slate-400">
-                            By Admin: <span className="text-slate-300">{log.admin_id}</span> • Target: <span className="text-slate-300">{log.target_id || 'N/A'}</span>
-                        </p>
-                        {log.details && (
-                            <pre className="mt-2 bg-slate-950 p-2 rounded text-xs text-slate-500 overflow-x-auto">
-                                {JSON.stringify(log.details, null, 2)}
-                            </pre>
+            <Card>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[200px]">Action</TableHead>
+                            <TableHead>Admin</TableHead>
+                            <TableHead>Target</TableHead>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead className="w-[300px]">Details</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {(!logs || logs.length === 0) && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    No audit logs found.
+                                </TableCell>
+                            </TableRow>
                         )}
-                    </div>
-                ))}
-                {(!logs || logs.length === 0) && (
-                    <div className="text-center text-slate-500 py-8">No audit logs found.</div>
-                )}
-            </div>
+                        {logs?.map((log) => (
+                            <TableRow key={log.id}>
+                                <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                                        {log.action}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{log.admin_id}</TableCell>
+                                <TableCell className="text-muted-foreground font-mono text-xs">{log.target_id || 'N/A'}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                    {new Date(log.created_at).toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                    {log.details && (
+                                        <pre className="bg-muted p-2 rounded text-[10px] text-muted-foreground overflow-x-auto max-w-[300px]">
+                                            {JSON.stringify(log.details, null, 2)}
+                                        </pre>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </Card>
         </div>
     )
 }
