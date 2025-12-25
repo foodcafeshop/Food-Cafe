@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev:merchant": "npm run dev -w apps/merchant",
+    "dev:admin": "npm run dev -w apps/admin",
     "dev:customer": "npm run dev -w apps/customer",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces"
