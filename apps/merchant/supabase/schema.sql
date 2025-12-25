@@ -771,9 +771,11 @@ CREATE TABLE IF NOT EXISTS public.inventory_items (
   low_stock_threshold DECIMAL(10, 3) DEFAULT 10,
   cost_per_unit DECIMAL(10, 2), -- for COGS calculation (future)
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  UNIQUE(shop_id, name)
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Case-insensitive uniqueness for inventory items
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_shop_name_unique ON public.inventory_items (shop_id, lower(name));
 
 -- 2. Menu Item Ingredients (Recipes)
 CREATE TABLE IF NOT EXISTS public.menu_item_ingredients (
@@ -781,6 +783,7 @@ CREATE TABLE IF NOT EXISTS public.menu_item_ingredients (
   menu_item_id UUID REFERENCES public.menu_items(id) ON DELETE CASCADE,
   inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
   quantity_required DECIMAL(10, 3) NOT NULL, -- amount needed per menu item
+  unit TEXT, -- persisting display unit preference
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   UNIQUE(menu_item_id, inventory_item_id)
 );
@@ -847,8 +850,8 @@ alter publication supabase_realtime add table public.orders;
 alter publication supabase_realtime add table public.tables;
 alter publication supabase_realtime add table public.menu_items;
 alter publication supabase_realtime add table public.menus;
--- Migration: Inventory Auto-Deduction Trigger on Order Prepare
 
+-- Inventory Auto-Deduction Trigger on Order Prepare
 CREATE OR REPLACE FUNCTION public.deduct_inventory_on_order()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -930,17 +933,3 @@ AFTER UPDATE ON public.orders
 FOR EACH ROW
 EXECUTE FUNCTION public.deduct_inventory_on_order();
 
--- Migration: Enforce Case-Insensitive Uniqueness on Inventory Item Names
-
--- 1. Clean up potential existing duplicates (keep the one with latest update or creation)
--- This is a safety step. In a real prod env, we might want manual intervention, but for now we'll keep the most recently updated one.
--- (Skipping complex cleanup for now to avoid data loss, assuming table is mostly clean or user will handle conflicts)
-
--- 2. Drop existing exact-match constraint if it exists (by name)
--- Note: The constraint name is usually inventory_items_shop_id_name_key
-ALTER TABLE public.inventory_items 
-DROP CONSTRAINT IF EXISTS inventory_items_shop_id_name_key;
-
--- 3. Create unique index on (shop_id, lower(name))
-CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_shop_name_unique 
-ON public.inventory_items (shop_id, lower(name));

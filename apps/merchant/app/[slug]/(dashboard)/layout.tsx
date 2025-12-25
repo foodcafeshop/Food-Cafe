@@ -327,7 +327,7 @@ export default function AdminLayout({
                         <div className="flex items-center">
                             <div className="relative h-8 w-8 mr-2">
                                 <Image
-                                    src="/fc_logo_v2.webp"
+                                    src="/fc_logo_orange.webp"
                                     alt="Logo"
                                     fill
                                     priority
