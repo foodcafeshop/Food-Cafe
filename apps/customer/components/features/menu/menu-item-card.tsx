@@ -11,9 +11,10 @@ import { VegIcon, NonVegIcon } from "@/components/ui/icons";
 interface MenuItemCardProps {
     item: MenuItem;
     currencySymbol?: string;
+    isOpen?: boolean;
 }
 
-export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) {
+export function MenuItemCard({ item, currencySymbol = '$', isOpen = true }: MenuItemCardProps) {
     const { items, addItem, updateQuantity } = useCartStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const cartItem = items.find((i) => i.id === item.id);
@@ -73,6 +74,10 @@ export function MenuItemCard({ item, currencySymbol = '$' }: MenuItemCardProps) 
                         {!item.is_available ? (
                             <Button disabled className="w-full bg-gray-100 text-gray-400 border-gray-200 font-bold shadow-none h-9 uppercase text-xs z-10 relative cursor-not-allowed">
                                 Sold Out
+                            </Button>
+                        ) : !isOpen ? (
+                            <Button disabled className="w-full bg-gray-100 text-red-400 border-red-100 font-bold shadow-none h-9 uppercase text-xs z-10 relative cursor-not-allowed">
+                                Closed
                             </Button>
                         ) : quantity === 0 ? (
                             <Button variant="outline" className="w-full bg-white text-green-600 border-gray-300 hover:bg-green-50 font-bold shadow-md h-9 uppercase text-sm z-10 relative" onClick={() => setIsModalOpen(true)}>ADD</Button>

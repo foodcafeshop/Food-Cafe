@@ -26,6 +26,7 @@ create table public.shops (
   average_rating numeric(3, 1) default 0,
   rating_count integer default 0,
   is_live boolean not null default false,
+  is_open boolean not null default true,
   owner_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   is_banned boolean default false

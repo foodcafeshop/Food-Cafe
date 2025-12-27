@@ -12,9 +12,10 @@ import Link from "next/link";
 interface CartFooterProps {
     currencySymbol?: string;
     slug: string;
+    isOpen?: boolean;
 }
 
-export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
+export function CartFooter({ currencySymbol = "$", slug, isOpen }: CartFooterProps) {
     const { items, totalItems } = useCartStore(); // Use items instead of totalPrice directly to re-calc
     const [mounted, setMounted] = useState(false);
 
@@ -56,7 +57,10 @@ export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
                 <Link href={`/${slug}/cart`}>
                     <Button
                         size="lg"
-                        className="w-full flex items-center justify-between shadow-xl animate-in slide-in-from-bottom-10 bg-orange-500 hover:bg-orange-600 text-white h-14 rounded-2xl"
+                        className={`w-full flex items-center justify-between shadow-xl animate-in slide-in-from-bottom-10 h-14 rounded-2xl ${isOpen === false
+                            ? 'bg-gray-800 text-white hover:bg-gray-700'
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                            }`}
                     >
                         <div className="flex items-center gap-3">
                             <div className="flex flex-col items-start leading-tight">
@@ -67,7 +71,7 @@ export function CartFooter({ currencySymbol = "$", slug }: CartFooterProps) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 font-bold">
-                            <span>View Cart</span>
+                            <span>{isOpen === false ? 'View Cart (Closed)' : 'View Cart'}</span>
                             <ShoppingBag className="h-5 w-5" />
                         </div>
                     </Button>

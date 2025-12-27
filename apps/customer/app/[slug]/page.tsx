@@ -104,6 +104,16 @@ export default async function Home({ params }: { params: { slug: string } }) {
       {/* Header */}
       <ShopHeader shop={shop} slug={slug} showMenuLink={true} showCartLink={true} showSearch={false} />
 
+      {/* Shop Closed Banner */}
+      {!shop.is_open && (
+        <div className="bg-red-600 text-white px-4 py-3 text-center font-bold sticky top-[60px] z-30 shadow-md">
+          <div className="flex items-center justify-center gap-2">
+            <Clock className="h-5 w-5" />
+            <span>This shop is currently not accepting orders. You can still browse the menu.</span>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section - Enhanced */}
       <div className="relative h-[350px] md:h-[400px] w-full overflow-hidden">
         {/* Background */}
@@ -144,10 +154,15 @@ export default async function Home({ params }: { params: { slug: string } }) {
 
               {/* Badges */}
               <div className="flex flex-wrap gap-3 pt-2">
-                {shop.opening_hours && (
+                {shop.is_open ? (
                   <span className="bg-green-500/60 px-4 py-1.5 rounded-full border border-green-400/40 text-green-100 font-medium flex items-center gap-2 pulse-glow">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                     Open Now
+                  </span>
+                ) : (
+                  <span className="bg-red-500/60 px-4 py-1.5 rounded-full border border-red-400/40 text-red-100 font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                    Closed
                   </span>
                 )}
                 {/* Dietary Badges */}

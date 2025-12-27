@@ -84,17 +84,29 @@ export default function ProfileSettingsPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Visibility</CardTitle>
-                        <CardDescription>Control if your shop is visible to the public.</CardDescription>
+                        <CardDescription>Control your shop's public availability.</CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="isLive" className={shop.is_live ? "text-green-600 font-bold" : "text-muted-foreground"}>
-                            {shop.is_live ? "Live" : "Offline"}
-                        </Label>
-                        <Switch
-                            id="isLive"
-                            checked={shop.is_live || false}
-                            onCheckedChange={(checked) => setShop({ ...shop, is_live: checked })}
-                        />
+                    <div className="flex flex-col gap-4 items-end">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="isLive" className={shop.is_live ? "text-green-600 font-bold" : "text-muted-foreground"}>
+                                {shop.is_live ? "Live" : "Draft Mode"}
+                            </Label>
+                            <Switch
+                                id="isLive"
+                                checked={shop.is_live || false}
+                                onCheckedChange={(checked) => setShop({ ...shop, is_live: checked })}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="isOpen" className={shop.is_open ? "text-green-600 font-bold" : "text-red-500 font-bold"}>
+                                {shop.is_open ? "Accepting Orders" : "Closed"}
+                            </Label>
+                            <Switch
+                                id="isOpen"
+                                checked={shop.is_open !== false} // Default to true if undefined
+                                onCheckedChange={(checked) => setShop({ ...shop, is_open: checked })}
+                            />
+                        </div>
                     </div>
                 </CardHeader>
             </Card>

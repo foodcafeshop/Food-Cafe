@@ -21,6 +21,7 @@ export interface Shop {
     average_rating: number;
     rating_count: number;
     is_live?: boolean;
+    is_open?: boolean;
     owner_id?: string;
     created_at: string;
 }

@@ -158,6 +158,8 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
             // Display specific error message if available (e.g. "Table is currently billed")
             if (error instanceof Error || (error && error.message)) {
                 toast.error(error.message || "Failed to place order.");
+                // Refresh the page to update shop status (is_open/is_live flags)
+                router.refresh();
             } else {
                 toast.error("Failed to place order. Please try again.");
             }
@@ -315,31 +317,51 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                         </div>
 
                         {/* Desktop Checkout Button */}
-                        <Button size="lg" className="w-full text-lg font-bold h-14 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 hidden md:flex justify-between px-6" onClick={handlePlaceOrder}>
+                        <Button
+                            size="lg"
+                            className={`w-full text-lg font-bold h-14 text-white shadow-lg hidden md:flex justify-between px-6 ${(!shop.is_open || !shop.is_live) ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-green-600 hover:bg-green-700 shadow-green-200'}`}
+                            onClick={handlePlaceOrder}
+                            disabled={!shop.is_open || !shop.is_live}
+                        >
                             <div className="flex flex-col items-start leading-none">
                                 <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
                                 <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span>Place Order</span>
-                                <ChevronLeft className="h-5 w-5 rotate-180" />
+                                <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
+                                {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
                             </div>
                         </Button>
+                        {(!shop.is_open || !shop.is_live) && (
+                            <p className="text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                                This shop is currently not accepting orders.
+                            </p>
+                        )}
                     </div>
                 </div>
             </main>
 
             {/* Mobile Checkout Footer - floating button above navigation */}
             <div className="md:hidden fixed bottom-20 left-0 right-0 px-4 z-40">
-                <div className="container max-w-md mx-auto">
-                    <Button size="lg" className="w-full text-lg font-bold h-14 bg-green-600 hover:bg-green-700 text-white shadow-xl flex justify-between px-6 rounded-2xl" onClick={handlePlaceOrder}>
+                <div className="container max-w-md mx-auto space-y-2">
+                    {(!shop.is_open || !shop.is_live) && (
+                        <div className="bg-red-600 text-white text-xs font-bold py-2 px-4 rounded-xl text-center shadow-lg animate-in slide-in-from-bottom-5">
+                            Shop is currently closed for orders
+                        </div>
+                    )}
+                    <Button
+                        size="lg"
+                        className={`w-full text-lg font-bold h-14 text-white shadow-xl flex justify-between px-6 rounded-2xl ${(!shop.is_open || !shop.is_live) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                        onClick={handlePlaceOrder}
+                        disabled={!shop.is_open || !shop.is_live}
+                    >
                         <div className="flex flex-col items-start leading-none">
                             <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
                             <span className="font-extrabold">{currencySymbol}{totalAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2 font-bold">
-                            <span>Place Order</span>
-                            <ChevronLeft className="h-5 w-5 rotate-180" />
+                            <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
+                            {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
                         </div>
                     </Button>
                 </div>

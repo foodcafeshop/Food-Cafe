@@ -149,52 +149,66 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
         <div className="min-h-screen bg-gray-50 pb-24">
             <ShopHeader shop={shop} slug={shop.slug} showHomeLink={true} />
 
-            {/* Mobile Category Nav - Hide when searching to give more space */}
-            {!isSearchOpen && (
-                <div className="bg-white sticky top-20 z-40 shadow-sm">
-                    <div className="md:hidden border-t border-gray-100">
-                        <CategoryNav categories={categories} />
-                    </div>
+            {/* Unified Sticky Header: Category Nav (Mobile) + Filters + Closed Banner */}
+            {(!isSearchOpen || !shop?.is_open) && (
+                <div className="bg-white sticky top-20 z-40 shadow-sm border-b border-gray-100 transition-all duration-200">
+                    {!isSearchOpen && (
+                        <>
+                            <div className="md:hidden border-t border-gray-100">
+                                <CategoryNav categories={categories} />
+                            </div>
 
-                    {/* Filters Bar */}
-                    <div className="container max-w-7xl mx-auto px-4 py-3 flex gap-3 overflow-x-auto no-scrollbar items-center border-t border-gray-100">
-                        {/* Dietary Filters */}
-                        <div className="flex gap-2 shrink-0">
-                            <button
-                                onClick={() => setDietaryFilter("all")}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${dietaryFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}
-                            >
-                                All
-                            </button>
-                            <button
-                                onClick={() => setDietaryFilter("veg")}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "veg" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}
-                            >
-                                <div className="w-2 h-2 rounded-full bg-green-500 border border-white"></div> Veg
-                            </button>
-                            <button
-                                onClick={() => setDietaryFilter("non_veg")}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "non_veg" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-600 border-gray-200 hover:border-red-400"}`}
-                            >
-                                <div className="w-2 h-2 rounded-full bg-red-500 border border-white"></div> Non-Veg
-                            </button>
+                            {/* Filters Bar */}
+                            <div className="container max-w-7xl mx-auto px-4 py-3 flex gap-3 overflow-x-auto no-scrollbar items-center">
+                                {/* Dietary Filters */}
+                                <div className="flex gap-2 shrink-0">
+                                    <button
+                                        onClick={() => setDietaryFilter("all")}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${dietaryFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        onClick={() => setDietaryFilter("veg")}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "veg" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-green-500 border border-white"></div> Veg
+                                    </button>
+                                    <button
+                                        onClick={() => setDietaryFilter("non_veg")}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "non_veg" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-600 border-gray-200 hover:border-red-400"}`}
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-red-500 border border-white"></div> Non-Veg
+                                    </button>
+                                </div>
+
+                                <div className="w-[1px] h-6 bg-gray-200 shrink-0"></div>
+
+                                {/* Sort Options */}
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="bg-transparent text-xs font-bold text-gray-600 focus:outline-none cursor-pointer"
+                                >
+                                    <option value="recommended">Sort: Recommended</option>
+                                    <option value="price_asc">Price: Low to High</option>
+                                    <option value="price_desc">Price: High to Low</option>
+                                    <option value="rating">Top Rated</option>
+                                    <option value="popular">Bestsellers</option>
+                                </select>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Shop Closed Banner */}
+                    {!shop?.is_open && (
+                        <div className="bg-red-600 text-white px-4 py-3 text-center font-bold">
+                            <div className="flex items-center justify-center gap-2">
+                                <Clock className="h-5 w-5" />
+                                <span>This shop is currently not accepting orders. You can still browse the menu.</span>
+                            </div>
                         </div>
-
-                        <div className="w-[1px] h-6 bg-gray-200 shrink-0"></div>
-
-                        {/* Sort Options */}
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="bg-transparent text-xs font-bold text-gray-600 focus:outline-none cursor-pointer"
-                        >
-                            <option value="recommended">Sort: Recommended</option>
-                            <option value="price_asc">Price: Low to High</option>
-                            <option value="price_desc">Price: High to Low</option>
-                            <option value="rating">Top Rated</option>
-                            <option value="popular">Bestsellers</option>
-                        </select>
-                    </div>
+                    )}
                 </div>
             )}
 
@@ -251,7 +265,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
 
                                     <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 px-4">
                                         {category.items.map((item: any) => (
-                                            <MenuItemCard key={item.id} item={item} currencySymbol={currencySymbol} />
+                                            <MenuItemCard key={item.id} item={item} currencySymbol={currencySymbol} isOpen={shop?.is_open} />
                                         ))}
                                     </div>
                                 </section>
@@ -260,7 +274,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                     </div>
                 </div>
             </main>
-            <CartFooter currencySymbol={currencySymbol} slug={shop.slug} />
+            <CartFooter currencySymbol={currencySymbol} slug={shop.slug} isOpen={shop?.is_open} />
             <QuickActionsBar slug={shop.slug} activePage="menu" />
         </div>
     );

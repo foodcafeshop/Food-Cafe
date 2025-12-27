@@ -62,7 +62,7 @@ export async function getFullMenuData(slug: string) {
     // 1. Get Shop Details (Blocking)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, is_live, average_rating, rating_count, slug, logo_url, address, currency:settings(currency)') // Try to fetch currency with shop if possible, but settings is separate table.
+        .select('id, name, is_live, is_open, average_rating, rating_count, slug, logo_url, address, currency:settings(currency)') // Try to fetch currency with shop if possible, but settings is separate table.
         .eq('slug', slug)
         .single();
 
@@ -137,7 +137,7 @@ export async function getLandingPageData(slug: string) {
     // 1. Fetch Shop Details (Blocking, needed for ID)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, description, address, location_url, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, shop_type, social_links')
+        .select('id, name, description, address, location_url, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, is_open, shop_type, social_links')
         .eq('slug', slug)
         .single();
 
@@ -257,6 +257,21 @@ export async function createOrder(order: any) {
             let customerId = null;
             if (order.customer_phone) {
                 customerId = await upsertCustomer(shopId, order.customer_name, order.customer_phone);
+            }
+
+            // 0. Validate Shop Status
+            const { data: shopStatus, error: shopError } = await supabase
+                .from('shops')
+                .select('is_open, is_live')
+                .eq('id', order.shop_id)
+                .single();
+
+            if (shopError || !shopStatus) {
+                throw new Error("Could not verify shop status");
+            }
+
+            if (!shopStatus.is_open || !shopStatus.is_live) {
+                throw new Error("Shop is currently closed or offline. Order cannot be placed.");
             }
 
             // Perform validations

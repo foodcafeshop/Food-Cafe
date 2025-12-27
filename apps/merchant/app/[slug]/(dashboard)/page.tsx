@@ -54,18 +54,18 @@ export default function AdminDashboard() {
                 customRangeArg = { from: customDate.from, to: customDate.to || customDate.from };
             }
 
-            const [settings, dashboardStats, peakHours, { data: shopLive }] = await Promise.all([
+            const [settings, dashboardStats, peakHours, { data: shopStatus }] = await Promise.all([
                 getSettings(shopId),
                 getDashboardStats(shopId, dateRange, customRangeArg),
                 getPeakHoursStats(shopId),
-                supabase.from('shops').select('is_live').eq('id', shopId).single()
+                supabase.from('shops').select('is_live, is_open').eq('id', shopId).single()
             ]);
 
             if (settings?.currency) {
                 setCurrencySymbol(getCurrencySymbol(settings.currency));
             }
             if (dashboardStats) {
-                setStats({ ...dashboardStats, peakHours, isLive: shopLive?.is_live });
+                setStats({ ...dashboardStats, peakHours, isLive: shopStatus?.is_live, isOpen: shopStatus?.is_open });
             }
             setLoading(false);
         };
@@ -190,10 +190,21 @@ export default function AdminDashboard() {
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={cn("text-2xl font-bold", stats?.isLive ? "text-green-600" : "text-destructive")}>
-                            {stats?.isLive ? 'Online' : 'Offline'}
+                        <div className={cn(
+                            "text-2xl font-bold",
+                            !stats?.isLive ? "text-destructive" :
+                                !stats?.isOpen ? "text-orange-600" :
+                                    "text-green-600"
+                        )}>
+                            {!stats?.isLive ? 'Offline' :
+                                !stats?.isOpen ? 'Closed' :
+                                    'Online'}
                         </div>
-                        <p className="text-xs text-muted-foreground">{stats?.isLive ? 'Shop is live and accepting orders' : 'Shop is currently offline'}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {!stats?.isLive ? 'Shop is currently offline' :
+                                !stats?.isOpen ? 'Shop is visible but not accepting orders' :
+                                    'Shop is live and accepting orders'}
+                        </p>
                     </CardContent>
                 </Card>
             </div>
