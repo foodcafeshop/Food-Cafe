@@ -28,6 +28,7 @@ export default function GeneralSettingsPage() {
         language: 'en',
         dark_mode: false,
         sound_notifications: true,
+        is_customer_phone_mandatory: false,
         auto_print: false
     });
     const [shopId, setShopId] = useState<string | null>(null);
@@ -325,7 +326,15 @@ export default function GeneralSettingsPage() {
                                 onCheckedChange={(checked) => setSettings({ ...settings, sound_notifications: checked })}
                             />
                         </div>
+                    </CardContent>
+                </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Customer Experience</CardTitle>
+                        <CardDescription>Configure how customers interact with your shop.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Table OTP</Label>
@@ -334,6 +343,17 @@ export default function GeneralSettingsPage() {
                             <Switch
                                 checked={settings.enable_otp}
                                 onCheckedChange={(checked) => setSettings({ ...settings, enable_otp: checked })}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Mandatory Customer Phone</Label>
+                                <p className="text-sm text-muted-foreground">Require customers to enter their phone number before ordering.</p>
+                            </div>
+                            <Switch
+                                checked={settings.is_customer_phone_mandatory}
+                                onCheckedChange={(checked) => setSettings({ ...settings, is_customer_phone_mandatory: checked })}
                             />
                         </div>
                         <div className="flex items-center justify-between">

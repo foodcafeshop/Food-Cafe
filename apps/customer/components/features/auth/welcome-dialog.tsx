@@ -41,6 +41,7 @@ export function WelcomeDialog() {
     const [shopLogo, setShopLogo] = useState("");
     const [currentShopId, setCurrentShopId] = useState("");
     const [manualTableLabel, setManualTableLabel] = useState("");
+    const [isPhoneMandatory, setIsPhoneMandatory] = useState(false);
 
 
 
@@ -66,6 +67,7 @@ export function WelcomeDialog() {
                 // 2. Fetch Settings
                 const settings = await getSettings(shop.id);
                 setOtpEnabled(settings?.enable_otp ?? false);
+                setIsPhoneMandatory(settings?.is_customer_phone_mandatory ?? false);
 
                 // 3. Resolve Label if needed
                 if (tableLabel && !tableIdParam) {
@@ -154,6 +156,16 @@ export function WelcomeDialog() {
 
         if (!name.trim()) return;
 
+        if (isPhoneMandatory && !phone.trim()) {
+            setError("Please enter your Phone Number.");
+            return;
+        }
+
+        if (isPhoneMandatory && !/^\d{10}$/.test(phone.trim())) {
+            setError("Please enter a valid 10-digit Phone Number.");
+            return;
+        }
+
         // Resolve Table ID if manual
         let targetTableId = tableId;
 
@@ -212,6 +224,7 @@ export function WelcomeDialog() {
             const customerInfo = {
                 sessionId: newSessionId,
                 name: name.trim(),
+                phone: phone.trim(),
                 joinedAt: new Date().toISOString()
             };
 
@@ -223,6 +236,7 @@ export function WelcomeDialog() {
 
         if (name.trim()) {
             setCustomerName(name.trim());
+            if (phone.trim()) setCustomerPhone(phone.trim());
 
             setWelcomeOpen(false);
         }
@@ -294,6 +308,24 @@ export function WelcomeDialog() {
                             className="h-11"
                         />
                     </div>
+
+                    {isPhoneMandatory && (
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="phone"
+                                type="tel"
+                                placeholder="9876543210"
+                                value={phone}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    setPhone(val);
+                                }}
+                                required
+                                className="h-11"
+                            />
+                        </div>
+                    )}
 
 
                     {/* Manual Table Entry if no tableId from URL */}

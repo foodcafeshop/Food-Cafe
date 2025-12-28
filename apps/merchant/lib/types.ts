@@ -91,6 +91,7 @@ export interface Settings {
     auto_print: boolean;
     enable_otp: boolean;
     tax_included_in_price: boolean;
+    is_customer_phone_mandatory: boolean;
     max_item_quantity: number;
     printer_header_text?: string;
     printer_footer_text?: string;

@@ -164,6 +164,7 @@ create table public.settings (
   sound_notifications boolean default true,
   enable_otp boolean default false,
   tax_included_in_price boolean default false,
+  is_customer_phone_mandatory boolean default false,
   max_item_quantity integer default 10,
   auto_print boolean default false,
   printer_header_text text,

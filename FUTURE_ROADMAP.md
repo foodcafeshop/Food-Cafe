@@ -81,64 +81,78 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Performance**: Independent builds and deployments for smaller bundles.
 *   **Security**: Strict separation of admin logic from customer-facing code.
 
-### 🌐 13. Multi-Language Support
-*   **Merchant App Localization**: Full translation support for the admin dashboard (Hindi, Tamil, Telugu, Kannada, Marathi, Bengali, etc.).
-*   **Customer App Localization**: Translated menus, order tracking, and UI for customers in their preferred language.
-*   **Dynamic Language Selection**: Shop owners set available languages; customers choose their preference.
-*   **Regional Focus**: Priority support for major Indian languages to serve the domestic market.
-
-### 🖨️ 14. Thermal Printer Integration (Live ✅)
+### 🖨️ 13. Thermal Printer Integration (Live ✅)
 *   **Kitchen Tickets**: Automatic printing of order tickets to kitchen printers when orders are placed. (🚧 Manual trigger only)
 *   **Customer Receipts**: Print itemized bills with QR code for payment. (🚧 QR code Pending)
 *   **Bluetooth & Network**: Support for Bluetooth-connected and network printers. (🚧 Browser Print only)
 *   **Template Customization**: Configurable receipt layouts with shop branding.
 
-### 🔔 15. Push Notifications
+### 🏙️ 14. Enhanced Customer Landing Page
+*   **Shop Search**: Search for restaurants/cafes by name, cuisine, or dish.
+*   **Advanced Filters**: Filter by city, distance, rating, price range, and dietary options.
+*   **Sorting**: Sort results by relevance, distance, rating, or popularity.
+*   **Featured Shops**: Highlight premium or boosted restaurants on the homepage.
+*   **Location-Based**: Auto-detect user location to show nearby options.
+
+### 📱 15. Mandatory Customer Contact Info
+*   **Merchant Config**: Toggle option for merchants to make customer mobile number mandatory.
+*   **Scope**:
+    *   **Self-Ordering**: Customers must enter phone number before placing an order.
+    *   **Staff-Placed**: Staff must enter customer phone number when taking an order on their behalf.
+*   **Verification**: clear validation and potential OTP requirement (optional).
+
+### 🔔 16. Push Notifications
 *   **Order Status Updates**: "Your order is being prepared", "Your food is ready for pickup".
 *   **Marketing Alerts**: New menu items, flash deals, and promotions.
 *   **Staff Alerts**: Notify waiters when orders are ready for serving.
 *   **PWA Native**: Leverage service workers for browser-based notifications.
 
-### 💬 16. Messaging Integrations
+### 💬 17. Messaging Integrations
 *   **WhatsApp Business API**: Send order confirmations, digital receipts, and promotional messages.
 *   **Telegram Bot**: Order status updates and customer support via Telegram.
 *   **SMS Fallback**: Transactional SMS for customers without internet access.
 
-### 📱 17. Social Sharing
+### 📱 18. Social Sharing
 *   **Dish Sharing**: "Share this dish" to Instagram Stories, WhatsApp Status, or Facebook.
 *   **Order Celebrations**: Shareable cards for birthdays, anniversaries, or group celebrations.
 *   **Referral Program**: Share referral links with friends for rewards.
 
-### 📅 18. Table Reservations
+### 📅 19. Table Reservations
 *   **Booking Engine**: Customers can reserve tables for specific dates and times.
 *   **Time Slot Management**: Configure available slots, table capacity, and blackout dates.
 *   **Confirmation & Reminders**: Automated confirmation emails/SMS with calendar integration.
 *   **Walk-in Queue**: Waitlist management for peak hours with estimated wait times.
 
-### 🛵 19. Takeaway & Delivery Mode
+### 🛵 20. Takeaway & Delivery Mode
 *   **Order Type Selection**: Dine-in, Takeaway, or Delivery at checkout.
 *   **Pickup Scheduling**: Customers can schedule pickups for later.
 *   **Delivery Partner Integration**: Connect with Swiggy, Zomato, or custom delivery fleet.
 *   **Packaging Instructions**: Special notes for takeaway packaging.
 
-### 💸 20. Split Bill
+### 💸 21. Split Bill
 *   **Equal Split**: Divide total bill equally among N guests.
 *   **Pay for What You Ordered**: Each guest pays only for their items (tracked via collaborative cart).
 *   **Custom Split**: Manually assign portions to different payment methods.
 *   **Group Payment Links**: Generate individual payment links for each guest.
 
-### ⏱️ 21. Wait Time Estimation
+### ⏱️ 22. Wait Time Estimation
 *   **AI-Predicted Wait Times**: Estimate based on current kitchen load and order complexity.
 *   **Live Queue Display**: Show customers their position in the queue.
 *   **Kitchen Capacity Alerts**: Notify staff when kitchen is overloaded.
 
-### 🎁 22. Loyalty & Rewards Program (Shop level, merchant can set)
+### 🌐 23. Multi-Language Support
+*   **Merchant App Localization**: Full translation support for the admin dashboard (Hindi, Tamil, Telugu, Kannada, Marathi, Bengali, etc.).
+*   **Customer App Localization**: Translated menus, order tracking, and UI for customers in their preferred language.
+*   **Dynamic Language Selection**: Shop owners set available languages; customers choose their preference.
+*   **Regional Focus**: Priority support for major Indian languages to serve the domestic market.
+
+### 🎁 24. Loyalty & Rewards Program (Shop level, merchant can set)
 *   **Points System**: Earn points on every order, redeem for discounts or free items.
 *   **Tiered Memberships**: Bronze, Silver, Gold levels with increasing benefits.
 *   **Birthday Rewards**: Automatic discounts or freebies on customer birthdays.
 *   **Repeat Customer Tracking**: Identify and reward frequent diners.
 
-### 📊 23. Advanced Analytics & Insights
+### 📊 25. Advanced Analytics & Insights
 *   **Customer Analytics**: Repeat visit frequency, average spend, favorite items per customer.
 *   **Menu Performance**: Profit margin analysis, slow-selling item alerts, pricing optimization suggestions.
 *   **Staff Performance**: Orders served, tips collected, efficiency during peak hours.
@@ -162,8 +176,9 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "add billing and payment support, accordingly add restrictions on various actions"
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 *   [x] "Add inventory management to merchant app"
-*   [ ] "Add multi-language support for Indian languages"
 *   [x] "Thermal printer integration for kitchen tickets and receipts"
+*   [ ] "Customer landing page with shop search, filters (city, distance), sorting, and featured shops"
+*   [ ] "Option for merchant to make customer mobile number required for ordering"
 *   [ ] "Push notifications for order status updates"
 *   [ ] "WhatsApp and Telegram integration for order confirmations"
 *   [ ] "Social sharing for dishes and orders"
@@ -172,4 +187,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Takeaway and delivery mode with Swiggy/Zomato integration"
 *   [ ] "Loyalty and rewards program for customers"
 *   [ ] "Wait time estimation using AI"
+*   [ ] "Add multi-language support for Indian languages"
 *   [ ] "Advanced analytics for customer, menu, and staff performance"

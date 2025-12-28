@@ -33,6 +33,9 @@ export default function TakeOrderPage() {
     const [billingTableLabel, setBillingTableLabel] = useState<string>('');
     const [settings, setSettings] = useState<any>(null);
 
+    // Customer Details State
+    const [customerDetails, setCustomerDetails] = useState({ name: '', phone: '' });
+
     useEffect(() => {
         if (shopId) {
             import("@/lib/api").then(({ getSettings }) => getSettings(shopId).then(setSettings));
@@ -54,8 +57,26 @@ export default function TakeOrderPage() {
                     );
 
                     if (data) {
-                        setSelectedTable(data);
-                        setStep('order');
+                        // Fetch existing orders to check for customer details
+                        import("@/lib/api").then(async ({ getTableOrders }) => {
+                            const orders = await getTableOrders(data.id);
+                            const activeOrder = orders.find((o: any) =>
+                                ['queued', 'preparing', 'ready', 'served'].includes(o.status) &&
+                                (o.customer_name || o.customer_phone)
+                            );
+
+                            if (activeOrder) {
+                                setCustomerDetails({
+                                    name: activeOrder.customer_name || '',
+                                    phone: activeOrder.customer_phone || ''
+                                });
+                            } else {
+                                setCustomerDetails({ name: '', phone: '' });
+                            }
+                            // Only set step after details are potentially loaded
+                            setSelectedTable(data);
+                            setStep('order');
+                        });
                     }
                 } catch (e) {
                     console.error("Failed to load table from hash", e);
@@ -76,9 +97,28 @@ export default function TakeOrderPage() {
     }, [shopId]);
 
     const handleTableSelect = (id: string, label: string) => {
-        setSelectedTable({ id, label });
-        setStep('order');
-        router.push(`/${slug}/take-order#${label}`);
+        // Reset details first to avoid stale data while fetching
+        setCustomerDetails({ name: '', phone: '' });
+
+        // Fetch existing orders
+        import("@/lib/api").then(async ({ getTableOrders }) => {
+            const orders = await getTableOrders(id);
+            const activeOrder = orders.find((o: any) =>
+                ['queued', 'preparing', 'ready', 'served'].includes(o.status) &&
+                (o.customer_name || o.customer_phone)
+            );
+
+            if (activeOrder) {
+                setCustomerDetails({
+                    name: activeOrder.customer_name || '',
+                    phone: activeOrder.customer_phone || ''
+                });
+            }
+            // Move step and router push here
+            setSelectedTable({ id, label });
+            setStep('order');
+            router.push(`/${slug}/take-order#${label}`);
+        });
     };
 
     const handleBackToTables = () => {
@@ -131,6 +171,16 @@ export default function TakeOrderPage() {
 
         setIsPlacingOrder(true);
         try {
+            // Validate Mandatory Phone
+            if (settings?.is_customer_phone_mandatory) {
+                if (!customerDetails.phone) {
+                    throw new Error("Customer Phone Number is mandatory.");
+                }
+                if (customerDetails.phone.length !== 10) {
+                    throw new Error("Please enter a valid 10-digit Phone Number.");
+                }
+            }
+
             // Standard import handling or assuming supabase is available via import in a separate module if needed.
             // But since this is client side, let's use the standard import pattern if possible, 
             // or just ensure we await correctly.
@@ -177,8 +227,8 @@ export default function TakeOrderPage() {
                 status: 'queued',
                 total_amount: totalAmount,
                 payment_status: 'pending',
-                customer_name: 'Staff Order',
-                // customer_phone: ... // Optional
+                customer_name: customerDetails.name || 'Walk-in Customer',
+                customer_phone: customerDetails.phone || null,
                 is_staff_order: true,
                 staff_name: user?.user_metadata?.full_name || 'Staff',
                 staff_id: user?.id,
@@ -219,6 +269,8 @@ export default function TakeOrderPage() {
 
             toast.success("Order placed successfully");
             setCartItems([]);
+            // Don't clear customer details so staff can place another order immediately if needed
+            // setCustomerDetails({ name: '', phone: '' }); 
             setStep('table');
             setSelectedTable(null);
 
@@ -274,8 +326,8 @@ export default function TakeOrderPage() {
     };
 
     return (
-        <div className="h-full flex flex-col p-6">
-            <div className="flex items-center gap-4 mb-6">
+        <div className="h-full flex flex-col p-0 md:p-6">
+            <div className={`flex items-center gap-4 mb-6 ${step === 'order' ? 'hidden md:flex' : ''}`}>
                 {step === 'order' && (
                     <Button variant="ghost" size="icon" onClick={handleBackToTables}>
                         <ArrowLeft className="h-5 w-5" />
@@ -296,12 +348,17 @@ export default function TakeOrderPage() {
                         selectedTableId={null}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 h-full gap-6">
-                        <div className="lg:col-span-2 h-full flex flex-col min-h-0">
-                            <MenuBrowser onAddToCart={addToCart} />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 lg:h-full gap-6">
+                        <div className="lg:col-span-2 lg:h-full flex flex-col min-h-0">
+                            <MenuBrowser
+                                onAddToCart={addToCart}
+                                onBack={handleBackToTables}
+                                tableLabel={selectedTable?.label}
+                            />
                         </div>
-                        <div className="lg:col-span-1 h-full min-h-0 bg-background border rounded-lg shadow-sm overflow-hidden">
+                        <div className="lg:col-span-1 lg:h-full min-h-0 bg-background border rounded-lg shadow-sm overflow-hidden sticky bottom-0 lg:static">
                             <OrderCart
+                                key={selectedTable?.id}
                                 items={cartItems}
                                 onUpdateQuantity={updateQuantity}
                                 onRemove={removeItem}
@@ -309,6 +366,10 @@ export default function TakeOrderPage() {
                                 onPlaceOrder={handlePlaceOrder}
                                 loading={isPlacingOrder}
                                 tableLabel={selectedTable?.label}
+                                customerName={customerDetails.name}
+                                customerPhone={customerDetails.phone}
+                                onCustomerDetailsChange={(updates) => setCustomerDetails(prev => ({ ...prev, ...updates }))}
+                                isPhoneMandatory={settings?.is_customer_phone_mandatory}
                             />
                         </div>
                     </div>

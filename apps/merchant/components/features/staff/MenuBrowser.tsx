@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ChevronLeft } from "lucide-react";
 import { getFullMenuData } from "@/lib/api";
 import { MenuItem, Category } from "@/lib/types";
 import { useShopId } from "@/lib/hooks/use-shop-id";
@@ -13,9 +13,11 @@ import Image from "next/image";
 
 interface MenuBrowserProps {
     onAddToCart: (item: MenuItem) => void;
+    onBack?: () => void;
+    tableLabel?: string;
 }
 
-export function MenuBrowser({ onAddToCart }: MenuBrowserProps) {
+export function MenuBrowser({ onAddToCart, onBack, tableLabel }: MenuBrowserProps) {
     const { shopId } = useShopId();
     const [categories, setCategories] = useState<Category[]>([]);
     const [items, setItems] = useState<MenuItem[]>([]); // All items
@@ -113,44 +115,59 @@ export function MenuBrowser({ onAddToCart }: MenuBrowserProps) {
     if (loading) return <div>Loading Menu...</div>;
 
     return (
-        <div className="flex flex-col h-full gap-4">
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search items..."
-                    className="pl-9"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
+        <div className="flex flex-col h-full gap-2">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-10 pb-2 border-b md:border-none md:pb-0">
+                <div className="absolute inset-0 bg-background md:hidden" />
+                <div className="absolute inset-0 bg-muted/20 md:hidden" />
 
-            {/* Categories */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <Button
-                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory('all')}
-                    className="whitespace-nowrap"
-                >
-                    All
-                </Button>
-                {categories.map(cat => (
-                    <Button
-                        key={cat.id}
-                        variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className="whitespace-nowrap"
-                    >
-                        {cat.name}
-                    </Button>
-                ))}
+                <div className="relative">
+                    {/* Row 1: Back + Search */}
+                    <div className="flex items-center gap-2 mb-2 pt-2 px-2 md:px-0">
+                        {onBack && (
+                            <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 md:hidden">
+                                <ChevronLeft className="h-5 w-5" />
+                            </Button>
+                        )}
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder={`Search for ${tableLabel || 'table'}...`}
+                                className="pl-9 h-10"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Row 2: Categories */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-2 md:px-1">
+                        <Button
+                            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setSelectedCategory('all')}
+                            className="whitespace-nowrap h-7 text-xs rounded-full px-3"
+                        >
+                            All
+                        </Button>
+                        {categories.map(cat => (
+                            <Button
+                                key={cat.id}
+                                variant={selectedCategory === cat.id ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setSelectedCategory(cat.id)}
+                                className="whitespace-nowrap h-7 text-xs rounded-full px-3"
+                            >
+                                {cat.name}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Items Grid */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {filteredItems.map(item => (
                         <Card key={item.id} className={cn(
                             "p-3 flex gap-3 hover:shadow-md transition-shadow group relative",
