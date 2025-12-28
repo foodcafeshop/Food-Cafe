@@ -8,15 +8,16 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Context-Aware**: Recommend dishes based on vague inputs (e.g., "spicy", "Italian").
 *   **Order-Based Suggestions**: Analyze current order to suggest pairings (e.g., "Fries with Burger").
 *   **Dietary Matching**: Filter items by complex dietary needs.
+*   **Group Ordering**: Smart suggestions for groups with mixed preferences (e.g., "6 people: 2 veg, 3 non-veg, 1 can eat egg" → recommends a balanced order for everyone).
 
-### 🛠️ 2. Advanced Customization
-*   **Modifiers**: Support for add-ons (Extra Cheese), removals (No Onions), and variants (Size).
-*   **Dynamic Pricing**: Update total cost in real-time based on selected modifiers.
-
-### 🥗 3. Nutritional Insights
+### 🥗 2. Nutritional Insights
 *   **Calorie Counter**: Real-time total for current order.
 *   **Macros**: View Protein, Carbs, Fats per item.
 *   **Health Tags**: Auto-flag "High Protein", "Low Calorie", etc.
+
+### 🛠️ 3. Advanced Customization
+*   **Modifiers**: Support for add-ons (Extra Cheese), removals (No Onions), and variants (Size).
+*   **Dynamic Pricing**: Update total cost in real-time based on selected modifiers.
 
 ### 🎟️ 4. Coupon System (Live ✅)
 *   **Dual-Scope Engine**:
@@ -68,7 +69,6 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Action Restrictions**: Restrict actions based on billing/payment status.
 
 
-
 ### 🍽️ 11. Advanced Restaurant Landing Page Features
 *   **Table Reservations**: Booking engine for future dates and times (currently unsupported by schema).
 *   **Events & Blog**: Dynamic content management for "What's On" or news updates.
@@ -80,6 +80,69 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Monorepo Structure**: Split codebase into `apps/admin`, `apps/merchant` and `apps/customer`.
 *   **Performance**: Independent builds and deployments for smaller bundles.
 *   **Security**: Strict separation of admin logic from customer-facing code.
+
+### 🌐 13. Multi-Language Support
+*   **Merchant App Localization**: Full translation support for the admin dashboard (Hindi, Tamil, Telugu, Kannada, Marathi, Bengali, etc.).
+*   **Customer App Localization**: Translated menus, order tracking, and UI for customers in their preferred language.
+*   **Dynamic Language Selection**: Shop owners set available languages; customers choose their preference.
+*   **Regional Focus**: Priority support for major Indian languages to serve the domestic market.
+
+### 🖨️ 14. Thermal Printer Integration
+*   **Kitchen Tickets**: Automatic printing of order tickets to kitchen printers when orders are placed.
+*   **Customer Receipts**: Print itemized bills with QR code for payment.
+*   **Bluetooth & Network**: Support for Bluetooth-connected and network printers.
+*   **Template Customization**: Configurable receipt layouts with shop branding.
+
+### 🔔 15. Push Notifications
+*   **Order Status Updates**: "Your order is being prepared", "Your food is ready for pickup".
+*   **Marketing Alerts**: New menu items, flash deals, and promotions.
+*   **Staff Alerts**: Notify waiters when orders are ready for serving.
+*   **PWA Native**: Leverage service workers for browser-based notifications.
+
+### 💬 16. Messaging Integrations
+*   **WhatsApp Business API**: Send order confirmations, digital receipts, and promotional messages.
+*   **Telegram Bot**: Order status updates and customer support via Telegram.
+*   **SMS Fallback**: Transactional SMS for customers without internet access.
+
+### 📱 17. Social Sharing
+*   **Dish Sharing**: "Share this dish" to Instagram Stories, WhatsApp Status, or Facebook.
+*   **Order Celebrations**: Shareable cards for birthdays, anniversaries, or group celebrations.
+*   **Referral Program**: Share referral links with friends for rewards.
+
+### 📅 18. Table Reservations
+*   **Booking Engine**: Customers can reserve tables for specific dates and times.
+*   **Time Slot Management**: Configure available slots, table capacity, and blackout dates.
+*   **Confirmation & Reminders**: Automated confirmation emails/SMS with calendar integration.
+*   **Walk-in Queue**: Waitlist management for peak hours with estimated wait times.
+
+### 🛵 19. Takeaway & Delivery Mode
+*   **Order Type Selection**: Dine-in, Takeaway, or Delivery at checkout.
+*   **Pickup Scheduling**: Customers can schedule pickups for later.
+*   **Delivery Partner Integration**: Connect with Swiggy, Zomato, or custom delivery fleet.
+*   **Packaging Instructions**: Special notes for takeaway packaging.
+
+### 💸 20. Split Bill
+*   **Equal Split**: Divide total bill equally among N guests.
+*   **Pay for What You Ordered**: Each guest pays only for their items (tracked via collaborative cart).
+*   **Custom Split**: Manually assign portions to different payment methods.
+*   **Group Payment Links**: Generate individual payment links for each guest.
+
+### ⏱️ 21. Wait Time Estimation
+*   **AI-Predicted Wait Times**: Estimate based on current kitchen load and order complexity.
+*   **Live Queue Display**: Show customers their position in the queue.
+*   **Kitchen Capacity Alerts**: Notify staff when kitchen is overloaded.
+
+### 🎁 22. Loyalty & Rewards Program (Shop level, merchant can set)
+*   **Points System**: Earn points on every order, redeem for discounts or free items.
+*   **Tiered Memberships**: Bronze, Silver, Gold levels with increasing benefits.
+*   **Birthday Rewards**: Automatic discounts or freebies on customer birthdays.
+*   **Repeat Customer Tracking**: Identify and reward frequent diners.
+
+### 📊 23. Advanced Analytics & Insights
+*   **Customer Analytics**: Repeat visit frequency, average spend, favorite items per customer.
+*   **Menu Performance**: Profit margin analysis, slow-selling item alerts, pricing optimization suggestions.
+*   **Staff Performance**: Orders served, tips collected, efficiency during peak hours.
+*   **Demand Forecasting**: AI predictions for busy days to optimize staffing and inventory.
 
 ---
 
@@ -99,4 +162,14 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "add billing and payment support, accordingly add restrictions on various actions"
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 *   [x] "Add inventory management to merchant app"
-
+*   [ ] "Add multi-language support for Indian languages"
+*   [ ] "Thermal printer integration for kitchen tickets and receipts"
+*   [ ] "Push notifications for order status updates"
+*   [ ] "WhatsApp and Telegram integration for order confirmations"
+*   [ ] "Social sharing for dishes and orders"
+*   [ ] "Table reservation system with booking engine"
+*   [ ] "Split bill feature (equal or pay for what you ordered)"
+*   [ ] "Takeaway and delivery mode with Swiggy/Zomato integration"
+*   [ ] "Loyalty and rewards program for customers"
+*   [ ] "Wait time estimation using AI"
+*   [ ] "Advanced analytics for customer, menu, and staff performance"

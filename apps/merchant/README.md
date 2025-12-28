@@ -34,9 +34,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Collaborative Cart**: Using **Supabase Realtime**, multiple devices sync instantaneously. Guest A adds a burger, Guest B sees it immediately on their phone.
 *   **Dynamic Digital Menu**:
     *   **Rich Media**: High-quality images for every item.
-    *   **Live Dietary Filters**: Instant toggles for **Veg**, **Non-Veg**, and **Vegan**.
+    *   **Live Dietary Filters**: Instant toggles for **Veg**, **Non-Veg**, **Vegan**, **Jain Veg**, and **Contains Egg**.
     *   **Smart Instant Search**: Offline-capable, deep search across names, descriptions, and **Tags**.
     *   **Real-Time Availability**: Out-of-stock items disappear instantly from all active menus to prevent disappointment.
+    *   **Max Quantity Limits**: Global or per-item quantity limits for orders, configurable in Settings.
     *   **Performance Optimized**: Pre-fetching and database indexing ensure sub-100ms menu loads.
     *   **Immersive Photo Gallery**: High-quality "Ambiance" section with lightbox viewer and smart pagination.
 *   **Live Order Tracking**: An "Uber-like" status tracker shows the food journey: *Queued -> Preparing -> Ready -> Served*.
