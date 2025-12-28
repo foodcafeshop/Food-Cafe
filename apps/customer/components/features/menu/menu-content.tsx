@@ -265,7 +265,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
 
                                     <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 px-4">
                                         {category.items.map((item: any) => (
-                                            <MenuItemCard key={item.id} item={item} currencySymbol={currencySymbol} isOpen={shop?.is_open} />
+                                            <MenuItemCard key={item.id} item={item} currencySymbol={currencySymbol} isOpen={shop?.is_open} maxQuantity={settings?.max_item_quantity || 10} />
                                         ))}
                                     </div>
                                 </section>

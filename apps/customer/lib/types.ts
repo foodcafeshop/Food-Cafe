@@ -1,4 +1,4 @@
-export type DietaryType = 'veg' | 'non_veg' | 'vegan';
+export type DietaryType = 'veg' | 'non_veg' | 'vegan' | 'jain_veg' | 'contains_egg';
 
 export interface Shop {
     id: string;
@@ -68,6 +68,7 @@ export interface MenuItem {
     created_at: string;
     average_rating: number;
     rating_count: number;
+    max_quantity?: number | null;
     // Joined fields
     category_id?: string; // From join
 }
@@ -90,5 +91,6 @@ export interface Settings {
     auto_print: boolean;
     enable_otp: boolean;
     tax_included_in_price: boolean;
+    max_item_quantity: number;
     updated_at: string;
 }

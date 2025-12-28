@@ -243,22 +243,27 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                         </div>
                                         <div className="flex flex-col items-end justify-between gap-2">
                                             {/* Allow removing even if out of stock */}
-                                            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md shadow-sm h-8 w-20 px-2">
-                                                <button
-                                                    className="text-gray-400 hover:text-green-600"
-                                                    onClick={() => updateQuantity(item.id, -1)}
-                                                >
-                                                    <Minus className="w-3 h-3" />
-                                                </button>
-                                                <span className={`font-bold text-sm ${isUnavailable ? 'text-gray-400' : 'text-green-600'}`}>{item.quantity}</span>
-                                                <button
-                                                    className="text-green-600 hover:text-green-700"
-                                                    disabled={isUnavailable}
-                                                    onClick={() => updateQuantity(item.id, 1)}
-                                                >
-                                                    <Plus className={`w-3 h-3 ${isUnavailable ? 'text-gray-300' : ''}`} />
-                                                </button>
-                                            </div>
+                                            {(() => {
+                                                const maxQty = item.max_quantity || initialSettings?.max_item_quantity || 10;
+                                                return (
+                                                    <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md shadow-sm h-8 w-20 px-2">
+                                                        <button
+                                                            className="text-gray-400 hover:text-green-600"
+                                                            onClick={() => updateQuantity(item.id, -1)}
+                                                        >
+                                                            <Minus className="w-3 h-3" />
+                                                        </button>
+                                                        <span className={`font-bold text-sm ${isUnavailable ? 'text-gray-400' : 'text-green-600'}`}>{item.quantity}</span>
+                                                        <button
+                                                            className={isUnavailable || item.quantity >= maxQty ? "text-gray-300 cursor-not-allowed" : "text-green-600 hover:text-green-700"}
+                                                            disabled={isUnavailable || item.quantity >= maxQty}
+                                                            onClick={() => item.quantity < maxQty && updateQuantity(item.id, 1)}
+                                                        >
+                                                            <Plus className={`w-3 h-3 ${isUnavailable || item.quantity >= maxQty ? 'text-gray-300' : ''}`} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })()}
                                             <span className="text-xs text-gray-400 font-medium">
                                                 {currencySymbol}{item.offer_price ?? item.price} x {item.quantity}
                                             </span>

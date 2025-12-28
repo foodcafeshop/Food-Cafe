@@ -345,6 +345,20 @@ export default function GeneralSettingsPage() {
                                 onCheckedChange={(checked) => setSettings({ ...settings, enable_otp: checked })}
                             />
                         </div>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Max Quantity per Item</Label>
+                                <p className="text-sm text-muted-foreground">Maximum quantity allowed per item in a single order.</p>
+                            </div>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={99}
+                                className="w-20 text-center"
+                                value={settings.max_item_quantity || 10}
+                                onChange={(e) => setSettings({ ...settings, max_item_quantity: Math.max(1, Math.min(99, parseInt(e.target.value) || 10)) })}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 

@@ -12,9 +12,11 @@ interface MenuItemCardProps {
     item: MenuItem;
     currencySymbol?: string;
     isOpen?: boolean;
+    maxQuantity?: number;
 }
 
-export function MenuItemCard({ item, currencySymbol = '$', isOpen = true }: MenuItemCardProps) {
+export function MenuItemCard({ item, currencySymbol = '$', isOpen = true, maxQuantity = 10 }: MenuItemCardProps) {
+    const effectiveMaxQty = item.max_quantity || maxQuantity;
     const { items, addItem, updateQuantity } = useCartStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const cartItem = items.find((i) => i.id === item.id);
@@ -85,7 +87,11 @@ export function MenuItemCard({ item, currencySymbol = '$', isOpen = true }: Menu
                             <div className="flex items-center justify-between bg-white border border-gray-300 rounded-md shadow-sm h-9 px-2">
                                 <button className="text-gray-500 hover:text-green-600" onClick={() => updateQuantity(item.id, -1)}><Minus className="w-3 h-3" /></button>
                                 <span className="text-green-600 font-bold text-sm">{quantity}</span>
-                                <button className="text-green-600 hover:text-green-700" onClick={() => updateQuantity(item.id, 1)}><Plus className="w-3 h-3" /></button>
+                                <button
+                                    className={quantity >= effectiveMaxQty ? "text-gray-300 cursor-not-allowed" : "text-green-600 hover:text-green-700"}
+                                    onClick={() => quantity < effectiveMaxQty && updateQuantity(item.id, 1)}
+                                    disabled={quantity >= effectiveMaxQty}
+                                ><Plus className="w-3 h-3" /></button>
                             </div>
                         )}
                     </div>
@@ -100,6 +106,7 @@ export function MenuItemCard({ item, currencySymbol = '$', isOpen = true }: Menu
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 currencySymbol={currencySymbol}
+                maxQuantity={maxQuantity}
             />
         </>
     );
