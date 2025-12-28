@@ -162,10 +162,14 @@ create table public.settings (
   service_charge decimal(5, 2) default 5.00,
   dark_mode boolean default false,
   sound_notifications boolean default true,
-  auto_print boolean default false,
   enable_otp boolean default false,
   tax_included_in_price boolean default false,
   max_item_quantity integer default 10,
+  auto_print boolean default false,
+  printer_header_text text,
+  printer_footer_text text,
+  printer_show_logo boolean default true,
+  printer_paper_width text default '80mm',
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(shop_id)
 );

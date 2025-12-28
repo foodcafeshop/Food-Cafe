@@ -150,6 +150,15 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
     *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
 
+### 🖨️ 8. Thermal Printer Integration (Live ✅)
+*   **Universal Browser Support**:
+    *   **Driverless Printing**: Works with any standard 80mm/58mm thermal printer recognized by the OS (USB/Bluetooth/Network).
+    *   **Customizable Templates**: Dedicated layouts for **Kitchen Order Tickets (KOT)** (Large fonts, high contrast) and **Customer Bills** (Branded, detailed).
+*   **Smart Receipt Engine**:
+    *   **Dynamic Layouts**: Auto-adjusts for 80mm vs 58mm paper widths.
+    *   **Configurable Branding**: Option to show/hide Shop Logo, custom Header/Footer messages.
+    *   **Historical Accuracy**: Reprints past bills with the exact tax/price breakdown from the moment of sale.
+
 ---
 
 ## 🛠️ Technical Architecture & Stack

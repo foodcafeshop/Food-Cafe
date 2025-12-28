@@ -11,6 +11,8 @@ import { Receipt, Printer, CheckSquare } from "lucide-react";
 import { getTableOrders, settleTableBill, getSettings, updateOrderStatus } from "@/lib/api";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { toast } from "sonner";
+import { generateReceiptHtml } from "@/lib/print-utils";
+import { supabase } from "@/lib/supabase";
 
 interface BillingDialogProps {
     open: boolean;
@@ -29,6 +31,16 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const [serviceChargeRate, setServiceChargeRate] = useState(0);
     const [includeServiceCharge, setIncludeServiceCharge] = useState(true);
     const [restaurantName, setRestaurantName] = useState('Food Cafe');
+    const [taxRate, setTaxRate] = useState(0);
+    const [taxIncluded, setTaxIncluded] = useState(false);
+    const [billNumber, setBillNumber] = useState<string | null>(null);
+
+    // Printer Settings State
+    const [printerWidth, setPrinterWidth] = useState('80mm');
+    const [showLogo, setShowLogo] = useState(true);
+    const [printerHeader, setPrinterHeader] = useState('');
+    const [printerFooter, setPrinterFooter] = useState('');
+    const [shopLogo, setShopLogo] = useState<string | null>(null);
 
     useEffect(() => {
         if (open && tableId && shopId) {
@@ -39,14 +51,40 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const loadData = async () => {
         setLoading(true);
         try {
-            const [ordersData, settings] = await Promise.all([
+            // Fetch Settings, Shop Logo and Bill Info in parallel
+            const [ordersData, settings, shopDataResult, billResult] = await Promise.all([
                 getTableOrders(tableId!),
-                getSettings(shopId!)
+                getSettings(shopId!),
+                supabase.from('shops').select('logo_url').eq('id', shopId!).single(),
+                supabase.from('bills').select('bill_number').eq('table_id', tableId!).order('created_at', { ascending: false }).limit(1).maybeSingle()
             ]);
+
             setOrders(ordersData || []);
-            if (settings?.currency) setCurrency(settings.currency);
-            if (settings?.service_charge) setServiceChargeRate(settings.service_charge);
-            if (settings?.restaurant_name) setRestaurantName(settings.restaurant_name);
+
+            if (billResult.data) {
+                setBillNumber(billResult.data.bill_number);
+            } else {
+                setBillNumber(null);
+            }
+
+            if (settings) {
+                if (settings.currency) setCurrency(settings.currency);
+                if (settings.service_charge !== undefined) setServiceChargeRate(settings.service_charge);
+                if (settings.restaurant_name) setRestaurantName(settings.restaurant_name);
+                if (settings.tax_rate !== undefined) setTaxRate(settings.tax_rate);
+                if (settings.tax_included_in_price !== undefined) setTaxIncluded(settings.tax_included_in_price);
+
+                // Printer Settings
+                if (settings.printer_paper_width) setPrinterWidth(settings.printer_paper_width);
+                if (settings.printer_show_logo !== undefined) setShowLogo(settings.printer_show_logo);
+                if (settings.printer_header_text) setPrinterHeader(settings.printer_header_text);
+                if (settings.printer_footer_text) setPrinterFooter(settings.printer_footer_text);
+            }
+
+            if (shopDataResult.data?.logo_url) {
+                setShopLogo(shopDataResult.data.logo_url);
+            }
+
         } catch (error) {
             console.error("Failed to load billing data", error);
             toast.error("Failed to load billing details");
@@ -56,30 +94,57 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     };
 
     const calculateBilling = () => {
+        // Ensure we only calculate based on non-cancelled orders
         const activeOrders = orders.filter(o => o.status !== 'cancelled');
-        const subtotal = activeOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0); // Assuming tax included in total_amount for calculation backwards? or matching tables page logic
-        // Original logic: 
-        // rawSubtotal = validOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-        // rawTax = validOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
-        // This implies orders total_amount is inclusive of 10% tax? 
-        // Let's rely on standard logic. If API returns total_amount, usually that's the final price.
-        // Tables page logic:
-        // const rawSubtotal = validOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-        // const rawTax = validOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
+        // Calculate raw sum of item prices * quantity
+        // Assuming order_items contains price and quantity, sum them up.
+        // Wait, orders object has 'total_amount'.
+        // If tax is included, 'total_amount' is the inclusive sum.
+        // If tax is excluded, 'total_amount' is the exclusive sum (typically).
+        // Let's rely on summing items to be safe if 'total_amount' handling is ambiguous in DB.
 
-        // I will copy exact logic for consistency.
-        const rawSubtotal = activeOrders.reduce((sum, order) => sum + (order.total_amount / 1.1), 0);
-        const rawTax = activeOrders.reduce((sum, order) => sum + order.total_amount, 0) - rawSubtotal;
+        let itemTotal = 0;
+        activeOrders.forEach(order => {
+            // If order_items is joined, use it for accuracy
+            if (order.order_items && order.order_items.length > 0) {
+                itemTotal += order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+            } else {
+                // Fallback to order total if items missing
+                itemTotal += order.total_amount;
+            }
+        });
 
-        const serviceCharge = includeServiceCharge ? (rawSubtotal * (serviceChargeRate / 100)) : 0;
+        let subtotalVal = 0;
+        let taxVal = 0;
 
-        // Calculations
-        const subtotalVal = roundToThree(rawSubtotal);
-        const taxVal = roundToThree(rawTax);
-        const serviceChargeVal = roundToThree(serviceCharge);
+        if (taxIncluded) {
+            // Prices are inclusive
+            subtotalVal = itemTotal / (1 + (taxRate / 100)); // Exclusive amount
+            taxVal = itemTotal - subtotalVal;
+        } else {
+            // Prices are exclusive
+            subtotalVal = itemTotal;
+            taxVal = subtotalVal * (taxRate / 100);
+        }
+
+        // Service charge is usually on the exclusive subtotal
+        const serviceCharge = includeServiceCharge ? (subtotalVal * (serviceChargeRate / 100)) : 0;
+        const serviceChargeVal = serviceCharge;
+
+        // Grand Total
+        // If included: ItemTotal (which is Sub+Tax) + ServiceCharge
+        // If excluded: Subtotal + Tax + ServiceCharge
+        // Mathematically equivalent: (ExclusiveSubtotal + Tax) + ServiceCharge
         const grandTotal = subtotalVal + taxVal + serviceChargeVal;
 
-        return { subtotal: subtotalVal, tax: taxVal, serviceCharge: serviceChargeVal, grandTotal: roundToThree(grandTotal) };
+        return {
+            subtotal: roundToThree(subtotalVal),
+            tax: roundToThree(taxVal),
+            taxRate,
+            taxIncluded,
+            serviceCharge: roundToThree(serviceChargeVal),
+            grandTotal: roundToThree(grandTotal)
+        };
     };
 
     const billing = calculateBilling();
@@ -87,10 +152,17 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const handleSettleBill = async () => {
         if (!tableId) return;
         try {
-            await settleTableBill(tableId, paymentMethod, billing);
+            const result = await settleTableBill(tableId, paymentMethod, billing);
+            if (result && result.bill_number) {
+                setBillNumber(result.bill_number);
+            }
             toast.success("Bill settled successfully");
             onSuccess();
-            onOpenChange(false);
+            // Don't close immediately so they can print?
+            // Usually we might want to close or refresh.
+            // onOpenChange(false); 
+            // Refresh orders to see status change
+            loadData();
         } catch (error) {
             console.error(error);
             toast.error("Failed to settle bill");
@@ -121,89 +193,46 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
         const { subtotal, tax, serviceCharge, grandTotal } = calculateBilling();
         const date = new Date().toLocaleString();
 
-        const html = `
-            <html>
-                <head>
-                    <title>Bill - ${tableLabel}</title>
-                    <style>
-                        body { font-family: 'Courier New', monospace; padding: 20px; max-width: 300px; margin: 0 auto; }
-                        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-                        .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
-                        .header p { margin: 5px 0 0; font-size: 12px; }
-                        .info { margin-bottom: 15px; font-size: 12px; }
-                        .items { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
-                        .items th { text-align: left; border-bottom: 1px solid #000; padding-bottom: 5px; }
-                        .items td { padding: 5px 0; }
-                        .items .price { text-align: right; }
-                        .totals { margin-top: 15px; border-top: 1px dashed #000; padding-top: 10px; font-size: 12px; }
-                        .totals .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-                        .totals .grand-total { font-weight: bold; font-size: 16px; margin-top: 10px; border-top: 1px solid #000; padding-top: 10px; }
-                        .footer { text-align: center; margin-top: 30px; font-size: 12px; border-top: 1px dashed #000; padding-top: 10px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>${restaurantName}</h1>
-                        <p>Thank you for dining with us!</p>
-                    </div>
-                    
-                    <div class="info">
-                        <div>Table: ${tableLabel}</div>
-                        <div>Date: ${date}</div>
-                    </div>
+        const orderNumbers = orders
+            .filter(o => o.status !== 'cancelled')
+            .map(o => o.order_number || o.id.slice(0, 4))
+            .join(', ');
 
-                    <table class="items">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th class="price">Qty</th>
-                                <th class="price">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${orders
+        // Use Bill Number if available, otherwise Order Numbers
+        const displayBillNumber = billNumber ? billNumber : orderNumbers;
+        const billLabel = billNumber ? "Bill #" : "Orders #";
+
+        const receiptData = {
+            restaurantName,
+            shopLogo: showLogo ? shopLogo : null,
+            printerHeader,
+            printerFooter,
+            tableLabel: tableLabel || 'Unknown Table',
+            date,
+            billNumber: displayBillNumber,
+            billLabel,
+            currency,
+            items: orders
                 .filter(o => o.status !== 'cancelled')
-                .flatMap(o => o.order_items).map((item: any) => `
-                                <tr>
-                                    <td>${item.name}</td>
-                                    <td class="price">${item.quantity}</td>
-                                    <td class="price">${currency}${(item.price * item.quantity).toFixed(2)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                .flatMap(o => o.order_items || [])
+                .map((item: any) => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    notes: item.notes
+                })),
+            subtotal: billing.subtotal,
+            tax: billing.tax,
+            taxRate,
+            taxIncluded,
+            serviceCharge: billing.serviceCharge,
+            serviceChargeRate,
+            includeServiceCharge,
+            grandTotal: billing.grandTotal,
+            printerWidth
+        };
 
-                    <div class="totals">
-                        <div class="row">
-                            <span>Subtotal</span>
-                            <span>${currency}${subtotal.toFixed(2)}</span>
-                        </div>
-                        <div class="row">
-                            <span>Tax (10%)</span>
-                            <span>${currency}${tax.toFixed(2)}</span>
-                        </div>
-                        ${includeServiceCharge ? `
-                        <div class="row">
-                            <span>Service Charge (${serviceChargeRate}%)</span>
-                            <span>${currency}${serviceCharge.toFixed(2)}</span>
-                        </div>
-                        ` : ''}
-                        <div class="row grand-total">
-                            <span>Grand Total</span>
-                            <span>${currency}${grandTotal.toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div class="footer">
-                        <p>Please visit again!</p>
-                    </div>
-
-                    <script>
-                        window.onload = () => { window.print(); }
-                    </script>
-                </body>
-            </html>
-        `;
+        const html = generateReceiptHtml(receiptData);
 
         printWindow.document.write(html);
         printWindow.document.close();
@@ -274,14 +303,26 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                         </div>
 
                         <div className="space-y-2 border-t pt-4">
-                            <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                <span>Subtotal</span>
-                                <span>{currency}{billing.subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                <span>Tax (10%)</span>
-                                <span>{currency}{billing.tax.toFixed(2)}</span>
-                            </div>
+                            {taxIncluded ? (
+                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                    <span>Subtotal (incl. taxes)</span>
+                                    {/* Subtotal is exclusive, tax is tax. Sum is inclusive total or separate */}
+                                    {/* billing.subtotal is exclusive. billing.tax is tax. So sum is inclusive */}
+                                    <span>{currency}{(billing.subtotal + billing.tax).toFixed(2)}</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                        <span>Subtotal</span>
+                                        <span>{currency}{billing.subtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                        <span>Tax ({taxRate}%)</span>
+                                        <span>{currency}{billing.tax.toFixed(2)}</span>
+                                    </div>
+                                </>
+                            )}
+
                             <div className="flex justify-between items-center text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
                                     <Checkbox

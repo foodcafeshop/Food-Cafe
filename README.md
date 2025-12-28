@@ -138,6 +138,13 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Shop Scope**: Merchants create coupons for Customers (Food discounts).
     *   **Smart Rules**: Enforce per-user limits and target specific user groups (Whitelisting).
 
+### 🖨️ 8. Thermal Printer Integration
+*   **Universal Compatibility**: Works with any OS-recognized thermal printer (58mm/80mm) via standard browser print dialogs.
+*   **Dual-Template System**:
+    *   **Kitchen Order Tickets (KOT)**: High-contrast, large-font layout for kitchen staff.
+    *   **Customer Receipts**: Professional, branded bills with detailed tax and charge breakdowns.
+*   **Customization**: Configure headers, footers, and shop logo visibility per shop.
+
 ---
 
 ## 🛠️ Technical Architecture & Stack

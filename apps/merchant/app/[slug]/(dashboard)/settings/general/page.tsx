@@ -325,16 +325,7 @@ export default function GeneralSettingsPage() {
                                 onCheckedChange={(checked) => setSettings({ ...settings, sound_notifications: checked })}
                             />
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Auto Print</Label>
-                                <p className="text-sm text-muted-foreground">Automatically print receipts when order is completed.</p>
-                            </div>
-                            <Switch
-                                checked={settings.auto_print}
-                                onCheckedChange={(checked) => setSettings({ ...settings, auto_print: checked })}
-                            />
-                        </div>
+
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Table OTP</Label>

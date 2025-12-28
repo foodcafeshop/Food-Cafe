@@ -92,6 +92,10 @@ export interface Settings {
     enable_otp: boolean;
     tax_included_in_price: boolean;
     max_item_quantity: number;
+    printer_header_text?: string;
+    printer_footer_text?: string;
+    printer_show_logo?: boolean;
+    printer_paper_width?: string;
     updated_at: string;
 }
 

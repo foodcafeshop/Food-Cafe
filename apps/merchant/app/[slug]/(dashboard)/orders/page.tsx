@@ -11,6 +11,9 @@ import { Search, Filter, Eye, Edit2, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn, getCurrencySymbol } from "@/lib/utils";
 import { toast } from "sonner";
+import { ReceiptPrintView } from "@/components/features/orders/receipt-print-view";
+import { supabase } from "@/lib/supabase";
+import { Printer } from "lucide-react";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -24,6 +27,42 @@ export default function OrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editItems, setEditItems] = useState<any[]>([]);
+
+    // Print State
+    const [shopDetails, setShopDetails] = useState<any>(null);
+    const [printMode, setPrintMode] = useState<"bill" | "kot" | null>(null);
+    const [printOrder, setPrintOrder] = useState<any>(null);
+
+    useEffect(() => {
+        if (shopId) {
+            const fetchShop = async () => {
+                const { data } = await supabase.from('shops').select('*').eq('id', shopId).single();
+                setShopDetails(data);
+            }
+            fetchShop();
+        }
+    }, [shopId]);
+
+    const handlePrint = (order: any, mode: "bill" | "kot") => {
+        setPrintOrder(order);
+        setPrintMode(mode);
+        // Wait for render then print
+        setTimeout(() => {
+            window.print();
+            // Optional: clear after print to remove styles, but keep for now to avoid flicker if user cancels
+            // setPrintMode(null); 
+        }, 100);
+    };
+
+    // Close print mode when dialog closes or user acknowledges
+    useEffect(() => {
+        const handleAfterPrint = () => {
+            setPrintMode(null);
+            setPrintOrder(null);
+        };
+        window.addEventListener("afterprint", handleAfterPrint);
+        return () => window.removeEventListener("afterprint", handleAfterPrint);
+    }, []);
 
     useEffect(() => {
         if (shopId) {
@@ -154,6 +193,13 @@ export default function OrdersPage() {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
+                                        {!isEditing && (
+                                            <>
+                                                <Button size="sm" variant="outline" onClick={() => handlePrint(selectedOrder, 'kot')} title="Print KOT">
+                                                    <Printer className="h-4 w-4 mr-1" /> KOT
+                                                </Button>
+                                            </>
+                                        )}
                                         {!isEditing && selectedOrder.status !== 'billed' && selectedOrder.status !== 'cancelled' && (
                                             <Button size="sm" variant="outline" onClick={() => { setEditItems(JSON.parse(JSON.stringify(selectedOrder.order_items))); setIsEditing(true); }}>
                                                 <Edit2 className="h-4 w-4 mr-2" /> Edit
@@ -261,6 +307,15 @@ export default function OrdersPage() {
                     )}
                 </DialogContent>
             </Dialog>
+            {/* Hidden Print Component - Only renders when printMode is active */}
+            {printOrder && printMode && (
+                <ReceiptPrintView
+                    order={printOrder}
+                    settings={settings}
+                    mode={printMode}
+                    shopDetails={shopDetails}
+                />
+            )}
         </div>
     );
 }

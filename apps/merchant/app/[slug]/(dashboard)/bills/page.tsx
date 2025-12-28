@@ -11,6 +11,8 @@ import { Receipt, Search, Filter, Calendar } from "lucide-react";
 import { getBills, getSettings } from "@/lib/api";
 import { toast } from "sonner";
 import { cn, getCurrencySymbol } from "@/lib/utils";
+import { generateReceiptHtml } from "@/lib/print-utils";
+import { supabase } from "@/lib/supabase";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -24,6 +26,20 @@ export default function BillsPage() {
     const [sortOrder, setSortOrder] = useState<string>('newest');
     const [paymentFilter, setPaymentFilter] = useState<string>('all');
     const [selectedBill, setSelectedBill] = useState<any | null>(null);
+    const [billOrders, setBillOrders] = useState<any[]>([]);
+
+    // Printer & Shop Settings State
+    const [restaurantName, setRestaurantName] = useState('Food Cafe');
+    const [shopLogo, setShopLogo] = useState<string | null>(null);
+    const [printerWidth, setPrinterWidth] = useState('80mm');
+    const [showLogo, setShowLogo] = useState(true);
+    const [printerHeader, setPrinterHeader] = useState('');
+    const [printerFooter, setPrinterFooter] = useState('');
+
+    // Tax defaults for fallback
+    const [defaultTaxRate, setDefaultTaxRate] = useState(0);
+    const [defaultTaxIncluded, setDefaultTaxIncluded] = useState(false);
+    const [defaultServiceChargeRate, setDefaultServiceChargeRate] = useState(0);
 
     useEffect(() => {
         if (shopId) {
@@ -31,16 +47,52 @@ export default function BillsPage() {
         }
     }, [shopId]);
 
+    useEffect(() => {
+        const fetchBillOrders = async () => {
+            if (selectedBill && selectedBill.order_ids && selectedBill.order_ids.length > 0) {
+                const { data } = await supabase
+                    .from('orders')
+                    .select('order_number, id')
+                    .in('id', selectedBill.order_ids);
+                setBillOrders(data || []);
+            } else {
+                setBillOrders([]);
+            }
+        };
+        fetchBillOrders();
+    }, [selectedBill]);
+
     const fetchData = async () => {
         if (!shopId) return;
         setLoading(true);
-        const [billsData, settingsData] = await Promise.all([
+        const [billsData, settingsData, shopDataResult] = await Promise.all([
             getBills(shopId),
-            getSettings(shopId)
+            getSettings(shopId),
+            supabase.from('shops').select('logo_url').eq('id', shopId!).single()
         ]);
 
         if (billsData) setBills(billsData);
-        if (settingsData?.currency) setCurrency(getCurrencySymbol(settingsData.currency));
+
+        if (settingsData) {
+            if (settingsData.currency) setCurrency(getCurrencySymbol(settingsData.currency));
+            if (settingsData.restaurant_name) setRestaurantName(settingsData.restaurant_name);
+
+            // Tax/SC Defaults
+            if (settingsData.tax_rate !== undefined) setDefaultTaxRate(settingsData.tax_rate);
+            if (settingsData.tax_included_in_price !== undefined) setDefaultTaxIncluded(settingsData.tax_included_in_price);
+            if (settingsData.service_charge !== undefined) setDefaultServiceChargeRate(settingsData.service_charge);
+
+            // Printer Settings
+            if (settingsData.printer_paper_width) setPrinterWidth(settingsData.printer_paper_width);
+            if (settingsData.printer_show_logo !== undefined) setShowLogo(settingsData.printer_show_logo);
+            if (settingsData.printer_header_text) setPrinterHeader(settingsData.printer_header_text);
+            if (settingsData.printer_footer_text) setPrinterFooter(settingsData.printer_footer_text);
+        }
+
+        if (shopDataResult.data?.logo_url) {
+            setShopLogo(shopDataResult.data.logo_url);
+        }
+
         setLoading(false);
     };
 
@@ -90,6 +142,78 @@ export default function BillsPage() {
             case 'upi': return 'bg-purple-100 text-purple-800 border-purple-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
+    };
+
+    const handlePrintReceipt = () => {
+        if (!selectedBill) return;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast.error('Please allow popups to print');
+            return;
+        }
+
+        // Determine breakdown values
+        let subtotal = 0;
+        let tax = 0;
+        let serviceCharge = 0;
+        let finalTaxRate = 0;
+        let finalTaxIncluded = false;
+
+        if (selectedBill.breakdown) {
+            subtotal = Number(selectedBill.breakdown.subtotal);
+            tax = Number(selectedBill.breakdown.tax);
+            serviceCharge = Number(selectedBill.breakdown.serviceCharge || 0);
+            finalTaxRate = Number(selectedBill.breakdown.taxRate || 0);
+            finalTaxIncluded = !!selectedBill.breakdown.taxIncluded;
+        } else {
+            // Fallback logic for old bills
+            const itemsTotal = Array.isArray(selectedBill.items_snapshot)
+                ? selectedBill.items_snapshot.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
+                : 0;
+
+            // Assume difference is Tax (Exclusive) or SC.
+            const diff = selectedBill.total_amount - itemsTotal;
+            subtotal = itemsTotal; // Assume Exclusive Base
+            tax = diff > 0 ? diff : 0;
+            serviceCharge = 0;
+
+            // For old bills, we force Exclusive display to show the "Tax" amount found
+            finalTaxRate = 0;
+            finalTaxIncluded = false;
+        }
+
+        const receiptData = {
+            restaurantName,
+            shopLogo: showLogo ? shopLogo : null,
+            printerHeader,
+            printerFooter,
+            tableLabel: selectedBill.tables?.label || 'Unknown',
+            date: new Date(selectedBill.created_at).toLocaleString(),
+            billNumber: selectedBill.bill_number,
+            billLabel: "Bill #",
+            orderNumber: billOrders.map(o => o.order_number || o.id.slice(0, 4)).join(', '),
+            currency,
+            items: Array.isArray(selectedBill.items_snapshot) ? selectedBill.items_snapshot.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                notes: item.notes
+            })) : [],
+            subtotal,
+            tax,
+            taxRate: finalTaxRate,
+            taxIncluded: finalTaxIncluded,
+            serviceCharge,
+            serviceChargeRate: 0, // We don't store SC rate in breakdown yet, so hiding %
+            includeServiceCharge: serviceCharge > 0.01,
+            grandTotal: selectedBill.total_amount,
+            printerWidth
+        };
+
+        const html = generateReceiptHtml(receiptData);
+        printWindow.document.write(html);
+        printWindow.document.close();
     };
 
     return (
@@ -268,7 +392,10 @@ export default function BillsPage() {
                                 <div>
                                     <h3 className="font-bold text-lg">Food Cafe</h3>
                                     <p className="text-sm text-muted-foreground">Bill #{selectedBill.bill_number || selectedBill.id}</p>
-                                    <p className="text-sm text-muted-foreground">{new Date(selectedBill.created_at).toLocaleString()}</p>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Orders: {billOrders.map(o => `#${o.order_number || o.id.slice(0, 4)}`).join(', ')}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-1">{new Date(selectedBill.created_at).toLocaleString()}</p>
                                 </div>
                                 <div className="text-right">
                                     <Badge variant="outline" className="mb-1">{selectedBill.tables?.label}</Badge>
@@ -294,57 +421,57 @@ export default function BillsPage() {
 
                             <div className="border-t pt-4 space-y-2">
                                 {(() => {
-                                    // Use stored breakdown if available
+                                    // Use stored breakdown if available, else fallback
+                                    let subtotal = 0;
+                                    let tax = 0;
+                                    let serviceCharge = 0;
+                                    let finalTaxRate = 0;
+                                    let finalTaxIncluded = false;
+
                                     if (selectedBill.breakdown) {
-                                        const { subtotal, tax, serviceCharge } = selectedBill.breakdown;
-                                        return (
-                                            <>
-                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                                    <span>Subtotal</span>
-                                                    <span>{currency}{Number(subtotal).toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                                    <span>Tax (10%)</span>
-                                                    <span>{currency}{Number(tax).toFixed(2)}</span>
-                                                </div>
-                                                {Number(serviceCharge) > 0.01 && (
-                                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                                        <span>Service Charge</span>
-                                                        <span>{currency}{Number(serviceCharge).toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
-                                                    <span>Total Paid</span>
-                                                    <span>{currency}{selectedBill.total_amount.toFixed(2)}</span>
-                                                </div>
-                                            </>
-                                        );
+                                        subtotal = Number(selectedBill.breakdown.subtotal);
+                                        tax = Number(selectedBill.breakdown.tax);
+                                        serviceCharge = Number(selectedBill.breakdown.serviceCharge || 0);
+                                        finalTaxRate = Number(selectedBill.breakdown.taxRate || 0);
+                                        finalTaxIncluded = !!selectedBill.breakdown.taxIncluded;
+                                    } else { // Fallback for old bills
+                                        const itemsTotal = Array.isArray(selectedBill.items_snapshot)
+                                            ? selectedBill.items_snapshot.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
+                                            : 0;
+
+                                        // Assume difference is Tax, not Service Charge for safety on old bills
+                                        const diff = selectedBill.total_amount - itemsTotal;
+                                        subtotal = itemsTotal;
+                                        tax = diff > 0 ? diff : 0;
+                                        serviceCharge = 0; // Don't assume SC for old bills without breakdown
+
+                                        finalTaxRate = 0;
+                                        finalTaxIncluded = false;
                                     }
 
-                                    // Fallback for old bills
-                                    const itemsTotal = Array.isArray(selectedBill.items_snapshot)
-                                        ? selectedBill.items_snapshot.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
-                                        : 0;
-                                    const subtotal = itemsTotal / 1.1;
-                                    const tax = itemsTotal - subtotal;
-                                    const serviceCharge = selectedBill.total_amount - itemsTotal;
+                                    const displaySubtotal = finalTaxIncluded ? (subtotal + tax) : subtotal;
 
                                     return (
                                         <>
                                             <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                                <span>Subtotal</span>
-                                                <span>{currency}{subtotal.toFixed(2)}</span>
+                                                <span>{finalTaxIncluded ? "Subtotal (incl. taxes)" : "Subtotal"}</span>
+                                                <span>{currency}{displaySubtotal.toFixed(2)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                                <span>Tax (10%)</span>
-                                                <span>{currency}{tax.toFixed(2)}</span>
-                                            </div>
+
+                                            {!finalTaxIncluded && tax > 0 && (
+                                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                                    <span>Tax{finalTaxRate > 0 ? ` (${finalTaxRate}%)` : ''}</span>
+                                                    <span>{currency}{tax.toFixed(2)}</span>
+                                                </div>
+                                            )}
+
                                             {serviceCharge > 0.01 && (
                                                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                                                     <span>Service Charge</span>
                                                     <span>{currency}{serviceCharge.toFixed(2)}</span>
                                                 </div>
                                             )}
+
                                             <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
                                                 <span>Total Paid</span>
                                                 <span>{currency}{selectedBill.total_amount.toFixed(2)}</span>
@@ -355,7 +482,7 @@ export default function BillsPage() {
                             </div>
 
                             <DialogFooter>
-                                <Button className="w-full" onClick={() => window.print()}>
+                                <Button className="w-full" onClick={handlePrintReceipt}>
                                     <Receipt className="mr-2 h-4 w-4" /> Print Receipt
                                 </Button>
                             </DialogFooter>

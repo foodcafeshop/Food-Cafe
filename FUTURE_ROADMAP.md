@@ -87,10 +87,10 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Dynamic Language Selection**: Shop owners set available languages; customers choose their preference.
 *   **Regional Focus**: Priority support for major Indian languages to serve the domestic market.
 
-### 🖨️ 14. Thermal Printer Integration
-*   **Kitchen Tickets**: Automatic printing of order tickets to kitchen printers when orders are placed.
-*   **Customer Receipts**: Print itemized bills with QR code for payment.
-*   **Bluetooth & Network**: Support for Bluetooth-connected and network printers.
+### 🖨️ 14. Thermal Printer Integration (Live ✅)
+*   **Kitchen Tickets**: Automatic printing of order tickets to kitchen printers when orders are placed. (🚧 Manual trigger only)
+*   **Customer Receipts**: Print itemized bills with QR code for payment. (🚧 QR code Pending)
+*   **Bluetooth & Network**: Support for Bluetooth-connected and network printers. (🚧 Browser Print only)
 *   **Template Customization**: Configurable receipt layouts with shop branding.
 
 ### 🔔 15. Push Notifications
@@ -163,7 +163,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 *   [x] "Add inventory management to merchant app"
 *   [ ] "Add multi-language support for Indian languages"
-*   [ ] "Thermal printer integration for kitchen tickets and receipts"
+*   [x] "Thermal printer integration for kitchen tickets and receipts"
 *   [ ] "Push notifications for order status updates"
 *   [ ] "WhatsApp and Telegram integration for order confirmations"
 *   [ ] "Social sharing for dishes and orders"

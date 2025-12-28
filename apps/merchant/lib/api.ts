@@ -503,7 +503,6 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
 
     if (!validOrders || validOrders.length === 0) throw new Error("No pending orders to settle");
 
-    const totalAmount = validOrders.reduce((sum, order) => sum + order.total_amount, 0);
     const orderIds = validOrders.map(o => o.id);
     const shopId = validOrders[0].shop_id; // Assume all orders for a table belong to the same shop
 
@@ -536,7 +535,7 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
                 .insert({
                     shop_id: shopId,
                     table_id: tableId,
-                    total_amount: roundToThree(totalAmount),
+                    total_amount: roundToThree(breakdown?.grandTotal),
                     payment_method: paymentMethod,
                     order_ids: orderIds,
                     items_snapshot: itemsSnapshot, // Store the snapshot
