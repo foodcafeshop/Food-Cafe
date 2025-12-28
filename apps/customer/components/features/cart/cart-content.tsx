@@ -34,26 +34,39 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
     const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
+    // Sync settings from server to store
+    useEffect(() => {
+        if (initialSettings) {
+            updateSettings({
+                taxRate: initialSettings.tax_rate,
+                taxIncludedInPrice: initialSettings.tax_included_in_price,
+                currency: initialSettings.currency,
+            });
+        }
+    }, [initialSettings, updateSettings]);
+
     // Use custom hook for availability
     const { unavailableItemIds } = useCartAvailability(items, shopId);
 
     // Calculate total only for available items
     const availableItems = items.filter(i => !unavailableItemIds.has(i.id));
     const subtotal = availableItems.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0);
-    // Calculate tax based on setting using the store taxRate
-    const currentTaxRate = taxRate ?? 10; // Fallback to 10 if not set
+
+    // Priority: Props (Server) -> Store (Client) -> Default
+    const activeTaxRate = initialSettings?.tax_rate ?? taxRate ?? 5;
+    const activeTaxIncluded = initialSettings?.tax_included_in_price ?? taxIncludedInPrice ?? false;
 
     let taxAmount = 0;
     let totalAmount = 0;
 
-    if (taxIncludedInPrice) {
+    if (activeTaxIncluded) {
         // If tax is included, the subtotal IS the total amount the user pays
         totalAmount = subtotal;
         // Back-calculate tax: Price = Cost * (1 + TaxRate/100) -> Cost = Price / (1 + TaxRate/100) -> Tax = Price - Cost
-        taxAmount = subtotal - (subtotal / (1 + currentTaxRate / 100));
+        taxAmount = subtotal - (subtotal / (1 + activeTaxRate / 100));
     } else {
         // If tax is excluded, add tax on top
-        taxAmount = subtotal * (currentTaxRate / 100);
+        taxAmount = subtotal * (activeTaxRate / 100);
         totalAmount = subtotal + taxAmount;
     }
 
@@ -74,14 +87,19 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
         }
 
         // Re-calculate totals inside handler to ensure freshness
+        // useSettingsStore state should be updated by useEffect, but we use fallback just in case
         const { taxRate, taxIncludedInPrice } = useSettingsStore.getState();
-        const currentRate = taxRate ?? 10;
+
+        // Prefer store value if set (by effect), otherwise fallback to props/defaults
+        // Note: initialSettings is available in closure
+        const currentRate = taxRate ?? initialSettings?.tax_rate ?? 5;
+        const isTaxIncluded = taxIncludedInPrice ?? initialSettings?.tax_included_in_price ?? false;
 
         const currentSubtotal = currentItems.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0);
         let currentTax = 0;
         let currentTotal = 0;
 
-        if (taxIncludedInPrice) {
+        if (isTaxIncluded) {
             currentTotal = currentSubtotal;
             currentTax = currentSubtotal - (currentSubtotal / (1 + currentRate / 100));
         } else {
