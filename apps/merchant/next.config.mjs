@@ -9,6 +9,36 @@ const withPWA = withPWAInit({
     disable: process.env.NODE_ENV === "development",
     workboxOptions: {
         disableDevLogs: true,
+        runtimeCaching: [
+            {
+                urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*$/,
+                handler: "StaleWhileRevalidate",
+                options: {
+                    cacheName: "supabase-api-cache",
+                    expiration: {
+                        maxEntries: 50,
+                        maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                    },
+                    cacheableResponse: {
+                        statuses: [0, 200],
+                    },
+                },
+            },
+            {
+                urlPattern: /^https:\/\/images\.unsplash\.com\/.*$/,
+                handler: "CacheFirst",
+                options: {
+                    cacheName: "unsplash-image-cache",
+                    expiration: {
+                        maxEntries: 100,
+                        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                    },
+                    cacheableResponse: {
+                        statuses: [0, 200],
+                    },
+                },
+            },
+        ],
     },
 });
 

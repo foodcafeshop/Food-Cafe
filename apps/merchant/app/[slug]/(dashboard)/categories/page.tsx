@@ -8,6 +8,7 @@ import { Category, DietaryType } from "@/lib/types";
 import { Edit2, Plus, Search, Trash2, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
@@ -35,6 +36,7 @@ export default function CategoryManagementPage() {
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         if (shopId) {
@@ -88,16 +90,20 @@ export default function CategoryManagementPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this category?")) {
-            const { error } = await supabase.from('categories').delete().eq('id', id);
-            if (error) {
-                toast.error('Failed to delete category');
-            } else {
-                setCategories(categories.filter(c => c.id !== id));
-                toast.success('Category deleted');
-            }
+    const initiateDelete = (id: string) => {
+        setCategoryToDelete(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!categoryToDelete) return;
+        const { error } = await supabase.from('categories').delete().eq('id', categoryToDelete);
+        if (error) {
+            toast.error('Failed to delete category');
+        } else {
+            setCategories(categories.filter(c => c.id !== categoryToDelete));
+            toast.success('Category deleted');
         }
+        setCategoryToDelete(null);
     };
 
     const handleExport = () => {
@@ -283,7 +289,7 @@ export default function CategoryManagementPage() {
                             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setCurrentCategory(category); setIsDialogOpen(true); }}>
                                 <Edit2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(category.id); }}>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); initiateDelete(category.id); }}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
@@ -342,6 +348,22 @@ export default function CategoryManagementPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this category? Items in this category will not be deleted but will be unlinked.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
+
     );
 }

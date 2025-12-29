@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { toast } from "sonner";
 import { getSettings, updateMenuItem } from "@/lib/api";
@@ -34,6 +35,7 @@ export default function CategoryBuilderPage() {
     const [isAddItemOpen, setIsAddItemOpen] = useState(false);
     const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
     const [currency, setCurrency] = useState("$");
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         if (id && shopId) {
@@ -100,20 +102,25 @@ export default function CategoryBuilderPage() {
         }
     };
 
-    const handleRemoveItem = async (itemId: string) => {
-        if (confirm("Remove this item from the category?")) {
-            const { error } = await supabase
-                .from('category_items')
-                .delete()
-                .match({ category_id: id, menu_item_id: itemId });
+    const initiateRemoveItem = (itemId: string) => {
+        setItemToDelete(itemId);
+    };
 
-            if (error) {
-                toast.error("Failed to remove item");
-            } else {
-                fetchData();
-                toast.success("Item removed");
-            }
+    const confirmRemoveItem = async () => {
+        if (!itemToDelete) return;
+
+        const { error } = await supabase
+            .from('category_items')
+            .delete()
+            .match({ category_id: id, menu_item_id: itemToDelete });
+
+        if (error) {
+            toast.error("Failed to remove item");
+        } else {
+            fetchData();
+            toast.success("Item removed");
         }
+        setItemToDelete(null);
     };
 
     const handleToggleStock = async (item: MenuItem) => {
@@ -211,11 +218,11 @@ export default function CategoryBuilderPage() {
                 ) : (
                     <div className="grid gap-2">
                         {categoryItems.map((item) => (
-                            <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 group transition-colors">
-                                <div className="h-12 w-12 rounded-md bg-muted overflow-hidden">
+                            <div key={item.id} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-lg hover:bg-muted/50 group transition-colors">
+                                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-md bg-muted overflow-hidden shrink-0">
                                     {item.images?.[0] && <img src={item.images[0]} className="h-full w-full object-cover" />}
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <div className="font-medium flex items-center gap-1.5">
                                         <span className="shrink-0">
                                             {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
@@ -224,22 +231,23 @@ export default function CategoryBuilderPage() {
                                             {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
                                             {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
                                         </span>
-                                        {item.name}
+                                        <span className="truncate">{item.name}</span>
                                     </div>
-                                    <div className="text-sm text-muted-foreground line-clamp-1">{item.description}</div>
+                                    <div className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{item.description}</div>
                                 </div>
-                                <div className="font-bold">{currency}{item.price}</div>
-                                <div className="flex items-center gap-2 mr-2">
-                                    <Label htmlFor={`stock-${item.id}`} className="text-xs text-muted-foreground">
+                                <div className="font-bold text-sm sm:text-base">{currency}{item.price}</div>
+                                <div className="flex items-center gap-2 mr-0 sm:mr-2">
+                                    <Label htmlFor={`stock-${item.id}`} className="text-xs text-muted-foreground hidden sm:block">
                                         {item.is_available ? 'In Stock' : 'Out of Stock'}
                                     </Label>
                                     <Switch
                                         id={`stock-${item.id}`}
                                         checked={item.is_available}
                                         onCheckedChange={() => handleToggleStock(item)}
+                                        className="scale-90 sm:scale-100"
                                     />
                                 </div>
-                                <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10" onClick={() => handleRemoveItem(item.id)}>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-9 sm:w-9 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-destructive hover:bg-destructive/10 shrink-0" onClick={() => initiateRemoveItem(item.id)}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -266,11 +274,11 @@ export default function CategoryBuilderPage() {
                             if (category.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') return null;
 
                             return (
-                                <div key={item.id} className="flex items-center gap-4 p-2 border rounded-lg hover:bg-muted cursor-pointer transition-colors" onClick={() => handleAddItem(item.id)}>
-                                    <div className="h-10 w-10 rounded bg-muted overflow-hidden">
+                                <div key={item.id} className="flex items-center gap-2 sm:gap-4 p-2 border rounded-lg hover:bg-muted cursor-pointer transition-colors" onClick={() => handleAddItem(item.id)}>
+                                    <div className="h-10 w-10 sm:h-10 sm:w-10 rounded bg-muted overflow-hidden shrink-0">
                                         {item.images?.[0] && <img src={item.images[0]} className="h-full w-full object-cover" />}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <div className="font-medium flex items-center gap-1.5">
                                             <span className="shrink-0">
                                                 {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
@@ -279,12 +287,12 @@ export default function CategoryBuilderPage() {
                                                 {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
                                                 {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
                                             </span>
-                                            {item.name}
+                                            <span className="truncate">{item.name}</span>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                                        <div className="text-xs text-muted-foreground truncate">{item.description}</div>
                                     </div>
-                                    <div className="font-bold">{currency}{item.price}</div>
-                                    <Plus className="h-4 w-4" />
+                                    <div className="font-bold text-sm sm:text-base">{currency}{item.price}</div>
+                                    <Plus className="h-4 w-4 shrink-0" />
                                 </div>
                             );
                         })}
@@ -345,6 +353,21 @@ export default function CategoryBuilderPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Item?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove this item from the category? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRemoveItem} className="bg-destructive hover:bg-destructive/90">Remove</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

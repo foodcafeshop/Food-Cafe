@@ -8,6 +8,7 @@ import { Menu } from "@/lib/types";
 import { Edit2, Plus, Search, Trash2, CheckCircle2, Circle, FileUp, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { Switch } from "@/components/ui/switch";
@@ -38,6 +39,7 @@ export default function MenusPage() {
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentMenu, setCurrentMenu] = useState<Partial<Menu>>({});
+    const [menuToDelete, setMenuToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         if (shopId) {
@@ -94,16 +96,20 @@ export default function MenusPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this menu?")) {
-            const { error } = await supabase.from('menus').delete().eq('id', id);
-            if (error) {
-                toast.error('Failed to delete menu');
-            } else {
-                setMenus(menus.filter(m => m.id !== id));
-                toast.success('Menu deleted');
-            }
+    const initiateDelete = (id: string) => {
+        setMenuToDelete(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!menuToDelete) return;
+        const { error } = await supabase.from('menus').delete().eq('id', menuToDelete);
+        if (error) {
+            toast.error('Failed to delete menu');
+        } else {
+            setMenus(menus.filter(m => m.id !== menuToDelete));
+            toast.success('Menu deleted');
         }
+        setMenuToDelete(null);
     };
 
     const handleActivate = async (menu: Menu) => {
@@ -293,7 +299,10 @@ export default function MenusPage() {
                             ))}
                             {menu.dietary_type && menu.dietary_type !== 'all' && (
                                 <Badge variant="outline" className="text-xs border-primary text-primary">
-                                    {menu.dietary_type === 'veg' ? 'VEG ONLY' : menu.dietary_type === 'non_veg' ? 'NON-VEG ONLY' : 'VEGAN ONLY'}
+                                    {menu.dietary_type === 'veg' ? 'VEG ONLY' :
+                                        menu.dietary_type === 'non_veg' ? 'NON-VEG ONLY' :
+                                            menu.dietary_type === 'vegan' ? 'VEGAN ONLY' :
+                                                menu.dietary_type === 'jain_veg' ? 'JAIN ONLY' : 'EGG + VEG'}
                                 </Badge>
                             )}
                         </div>
@@ -310,7 +319,7 @@ export default function MenusPage() {
                                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setCurrentMenu(menu); setIsDialogOpen(true); }}>
                                     <Edit2 className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(menu.id); }}>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); initiateDelete(menu.id); }}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -356,8 +365,10 @@ export default function MenusPage() {
                                     <SelectContent>
                                         <SelectItem value="all">All Items Allowed</SelectItem>
                                         <SelectItem value="veg">Vegetarian Only</SelectItem>
+                                        <SelectItem value="contains_egg">Egg + Veg</SelectItem>
                                         <SelectItem value="non_veg">Non-Veg Only</SelectItem>
                                         <SelectItem value="vegan">Vegan Only</SelectItem>
+                                        <SelectItem value="jain_veg">Jain Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -368,6 +379,21 @@ export default function MenusPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+
+            <AlertDialog open={!!menuToDelete} onOpenChange={(open) => !open && setMenuToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Menu?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this menu? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div >
     );
 }

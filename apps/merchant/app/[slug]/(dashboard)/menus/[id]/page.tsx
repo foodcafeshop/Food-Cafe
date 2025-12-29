@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -197,6 +198,8 @@ export default function MenuBuilderPage() {
     const [isAddItemOpen, setIsAddItemOpen] = useState(false);
     const [isEditDetailsOpen, setIsEditDetailsOpen] = useState(false);
     const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+    const [sectionToDelete, setSectionToDelete] = useState<string | null>(null);
+    const [itemToHide, setItemToHide] = useState<{ sectionId: string, itemId: string } | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -295,11 +298,15 @@ export default function MenuBuilderPage() {
         }
     };
 
-    const handleRemoveSection = async (categoryId: string) => {
-        if (confirm("Remove this section from the menu?")) {
-            await supabase.from('menu_categories').delete().match({ menu_id: id, category_id: categoryId });
-            fetchMenuData();
-        }
+    const initiateRemoveSection = (categoryId: string) => {
+        setSectionToDelete(categoryId);
+    };
+
+    const confirmRemoveSection = async () => {
+        if (!sectionToDelete) return;
+        await supabase.from('menu_categories').delete().match({ menu_id: id, category_id: sectionToDelete });
+        fetchMenuData();
+        setSectionToDelete(null);
     };
 
     const handleAddItem = async (itemId: string) => {
@@ -318,11 +325,15 @@ export default function MenuBuilderPage() {
         }
     };
 
-    const handleRemoveItem = async (categoryId: string, itemId: string) => {
-        if (!menu) return;
+    const initiateRemoveItem = (categoryId: string, itemId: string) => {
+        setItemToHide({ sectionId: categoryId, itemId });
+    };
+
+    const confirmRemoveItem = async () => {
+        if (!menu || !itemToHide) return;
 
         // Hide item from this menu (add to hidden_items)
-        const newHiddenItems = [...(menu.hidden_items || []), itemId];
+        const newHiddenItems = [...(menu.hidden_items || []), itemToHide.itemId];
 
         const { error } = await supabase.from('menus').update({
             hidden_items: newHiddenItems
@@ -335,6 +346,7 @@ export default function MenuBuilderPage() {
             setMenu({ ...menu, hidden_items: newHiddenItems });
             toast.success("Item hidden from menu");
         }
+        setItemToHide(null);
     };
 
     const handleRestoreItem = async (item: MenuItem) => {
@@ -466,8 +478,8 @@ export default function MenuBuilderPage() {
                                 currency={currency}
                                 onAddItem={() => setIsAddItemOpen(true)}
                                 onSelectSection={setSelectedSectionId}
-                                onRemoveSection={handleRemoveSection}
-                                onRemoveItem={handleRemoveItem}
+                                onRemoveSection={initiateRemoveSection}
+                                onRemoveItem={initiateRemoveItem}
                                 onRestoreItem={handleRestoreItem}
                                 onToggleStock={handleToggleStock}
                             />
@@ -599,6 +611,36 @@ export default function MenuBuilderPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!sectionToDelete} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Section?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove this category section from the menu? Items in it will no longer be visible in this menu.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRemoveSection} className="bg-destructive hover:bg-destructive/90">Remove</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={!!itemToHide} onOpenChange={(open) => !open && setItemToHide(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hide Item?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to hide this item from this menu? You can restore it later from the hidden items list at the bottom.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRemoveItem} className="bg-destructive hover:bg-destructive/90">Hide Item</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
