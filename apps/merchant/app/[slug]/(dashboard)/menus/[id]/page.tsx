@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Menu, Category, MenuItem, DietaryType } from "@/lib/types";
 import { ArrowLeft, GripVertical, Plus, Trash2, X, Edit2, Eye, EyeOff } from "lucide-react";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
@@ -80,15 +81,26 @@ function SortableSection({ section, sectionItems, menu, currency, onAddItem, onR
                                 const isHidden = menu?.hidden_items?.includes(item.id);
                                 if (isHidden) return null;
 
-                                if (menu.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') return null;
+                                if (menu.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) return null;
+                                if (menu.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') return null;
                                 if (menu.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') return null;
                                 if (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan') return null;
+                                if (menu.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') return null;
 
                                 return (
                                     <div key={item.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50 group">
                                         <img src={item.images[0]} className="h-10 w-10 rounded object-cover bg-muted" />
                                         <div className="flex-1">
-                                            <div className="font-medium">{item.name}</div>
+                                            <div className="font-medium flex items-center gap-1.5">
+                                                <span className="shrink-0">
+                                                    {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
+                                                    {item.dietary_type === 'veg' && <VegIcon className="h-3 w-3" />}
+                                                    {item.dietary_type === 'vegan' && <VeganIcon className="h-3 w-3" />}
+                                                    {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
+                                                    {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
+                                                </span>
+                                                {item.name}
+                                            </div>
                                             <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
                                         </div>
                                         <div className="font-medium text-sm">{currency}{item.price}</div>
@@ -109,9 +121,11 @@ function SortableSection({ section, sectionItems, menu, currency, onAddItem, onR
                             {sectionItems?.some((item: any) => {
                                 const isExplicitlyHidden = menu?.hidden_items?.includes(item.id);
                                 const isIncompatible =
-                                    (menu.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') ||
+                                    (menu.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) ||
+                                    (menu.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') ||
                                     (menu.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') ||
-                                    (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan');
+                                    (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan') ||
+                                    (menu.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg');
                                 return isExplicitlyHidden || isIncompatible;
                             }) && (
                                     <div className="mt-4 pt-4 border-t">
@@ -119,16 +133,20 @@ function SortableSection({ section, sectionItems, menu, currency, onAddItem, onR
                                         {sectionItems?.filter((item: any) => {
                                             const isExplicitlyHidden = menu?.hidden_items?.includes(item.id);
                                             const isIncompatible =
-                                                (menu.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') ||
+                                                (menu.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) ||
+                                                (menu.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') ||
                                                 (menu.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') ||
-                                                (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan');
+                                                (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan') ||
+                                                (menu.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg');
                                             return isExplicitlyHidden || isIncompatible;
                                         }).map((item: any) => {
                                             const isCompatible =
                                                 (menu.dietary_type === 'all') ||
-                                                (menu.dietary_type === 'veg' && (item.dietary_type === 'veg' || item.dietary_type === 'vegan')) ||
+                                                (menu.dietary_type === 'veg' && ['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) ||
+                                                (menu.dietary_type === 'contains_egg' && item.dietary_type !== 'non_veg') ||
                                                 (menu.dietary_type === 'non_veg' && item.dietary_type === 'non_veg') ||
-                                                (menu.dietary_type === 'vegan' && item.dietary_type === 'vegan');
+                                                (menu.dietary_type === 'vegan' && item.dietary_type === 'vegan') ||
+                                                (menu.dietary_type === 'jain_veg' && item.dietary_type === 'jain_veg');
 
                                             return (
                                                 <div key={item.id} className="flex items-center gap-4 p-2 rounded-md opacity-60 hover:opacity-100 bg-muted/30">
@@ -323,16 +341,24 @@ export default function MenuBuilderPage() {
         if (!menu) return;
 
         // Validation: Check dietary compatibility
-        if (menu.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') {
-            toast.error("Cannot restore non-veg item to a veg menu");
+        if (menu.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) {
+            toast.error("Cannot restore non-veg/egg item to a veg menu");
+            return;
+        }
+        if (menu.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') {
+            toast.error("Cannot restore non-veg item to an egg+veg menu");
             return;
         }
         if (menu.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') {
-            toast.error("Cannot restore item to non-veg menu");
+            toast.error("Cannot restore item to non-veg only menu");
             return;
         }
         if (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan') {
             toast.error("Cannot restore non-vegan item to a vegan menu");
+            return;
+        }
+        if (menu.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') {
+            toast.error("Cannot restore non-jain item to a jain menu");
             return;
         }
 
@@ -408,7 +434,10 @@ export default function MenuBuilderPage() {
                         ))}
                         {menu.dietary_type && menu.dietary_type !== 'all' && (
                             <Badge variant="outline" className="text-xs border-primary text-primary">
-                                {menu.dietary_type === 'veg' ? 'VEG ONLY' : menu.dietary_type === 'non_veg' ? 'NON-VEG ONLY' : 'VEGAN ONLY'}
+                                {menu.dietary_type === 'veg' ? 'VEG ONLY' :
+                                    menu.dietary_type === 'non_veg' ? 'NON-VEG ONLY' :
+                                        menu.dietary_type === 'vegan' ? 'VEGAN ONLY' :
+                                            menu.dietary_type === 'jain_veg' ? 'JAIN ONLY' : 'EGG + VEG'}
                             </Badge>
                         )}
                     </div>
@@ -456,7 +485,17 @@ export default function MenuBuilderPage() {
                     <div className="grid gap-4 py-4">
                         {sections.filter(s => !menuSections.find(ms => ms.id === s.id)).map(section => (
                             <div key={section.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer" onClick={() => handleAddSection(section.id)}>
-                                <span className="font-medium">{section.name}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">{section.name}</span>
+                                    {section.dietary_type && section.dietary_type !== 'all' && (
+                                        <Badge variant="outline" className="text-[10px] h-5 border-primary text-primary px-1">
+                                            {section.dietary_type === 'veg' ? 'VEG' :
+                                                section.dietary_type === 'non_veg' ? 'NON-VEG' :
+                                                    section.dietary_type === 'vegan' ? 'VEGAN' :
+                                                        section.dietary_type === 'jain_veg' ? 'JAIN' : 'EGG'}
+                                        </Badge>
+                                    )}
+                                </div>
                                 <Plus className="h-4 w-4" />
                             </div>
                         ))}
@@ -477,15 +516,26 @@ export default function MenuBuilderPage() {
                             if (isAdded) return null;
 
                             // Filter based on dietary type
-                            if (menu.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') return null;
+                            if (menu.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) return null;
+                            if (menu.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') return null;
                             if (menu.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') return null;
                             if (menu.dietary_type === 'vegan' && item.dietary_type !== 'vegan') return null;
+                            if (menu.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') return null;
 
                             return (
                                 <div key={item.id} className="flex items-center gap-4 p-2 border rounded-lg hover:bg-muted cursor-pointer" onClick={() => handleAddItem(item.id)}>
                                     <img src={item.images[0]} className="h-12 w-12 rounded object-cover bg-muted" />
                                     <div className="flex-1">
-                                        <div className="font-medium">{item.name}</div>
+                                        <div className="font-medium flex items-center gap-1.5">
+                                            <span className="shrink-0">
+                                                {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'veg' && <VegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'vegan' && <VeganIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
+                                            </span>
+                                            {item.name}
+                                        </div>
                                         <div className="text-xs text-muted-foreground">{item.description}</div>
                                     </div>
                                     <div className="font-bold">{currency}{item.price}</div>
@@ -535,8 +585,10 @@ export default function MenuBuilderPage() {
                                     <SelectContent>
                                         <SelectItem value="all">All Items Allowed</SelectItem>
                                         <SelectItem value="veg">Vegetarian Only</SelectItem>
+                                        <SelectItem value="contains_egg">Egg + Veg</SelectItem>
                                         <SelectItem value="non_veg">Non-Veg Only</SelectItem>
                                         <SelectItem value="vegan">Vegan Only</SelectItem>
+                                        <SelectItem value="jain_veg">Jain Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -7,7 +7,7 @@ import { CategoryNav } from "@/components/features/menu/category-nav";
 import { CartFooter } from "@/components/features/cart/cart-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Star, Clock, MapPin, X, ShoppingBag } from "lucide-react";
+import { ChevronLeft, Search, Star, Clock, MapPin, X, ShoppingBag, Leaf, Diamond, Egg, Flame } from "lucide-react";
 import Link from "next/link";
 import { getCurrencySymbol } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
@@ -99,6 +99,17 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
     const [dietaryFilter, setDietaryFilter] = useState<string>("all");
     const [sortBy, setSortBy] = useState<string>("recommended");
 
+    // Calculate available dietary types
+    const availableDietaryTypes = new Set<string>();
+    categories.forEach(cat => {
+        cat.items.forEach((item: any) => {
+            if (item.dietary_type) availableDietaryTypes.add(item.dietary_type);
+        });
+    });
+
+    // Veg filter should be available if there are any veg, vegan, or jain items
+    const hasVegOptions = availableDietaryTypes.has('veg') || availableDietaryTypes.has('vegan') || availableDietaryTypes.has('jain_veg');
+
     // Filter categories based on search query and filters
     const filteredCategories = categories.map(cat => ({
         ...cat,
@@ -110,7 +121,9 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                 item.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower));
 
             // Dietary Filter
-            const matchesDietary = dietaryFilter === "all" || item.dietary_type === dietaryFilter;
+            const matchesDietary = dietaryFilter === "all" ||
+                item.dietary_type === dietaryFilter ||
+                (dietaryFilter === 'veg' && ['vegan', 'jain_veg'].includes(item.dietary_type));
 
             return matchesSearch && matchesDietary;
         }).sort((a: any, b: any) => {
@@ -168,18 +181,51 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
                                     >
                                         All
                                     </button>
-                                    <button
-                                        onClick={() => setDietaryFilter("veg")}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "veg" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}
-                                    >
-                                        <div className="w-2 h-2 rounded-full bg-green-500 border border-white"></div> Veg
-                                    </button>
-                                    <button
-                                        onClick={() => setDietaryFilter("non_veg")}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 ${dietaryFilter === "non_veg" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-600 border-gray-200 hover:border-red-400"}`}
-                                    >
-                                        <div className="w-2 h-2 rounded-full bg-red-500 border border-white"></div> Non-Veg
-                                    </button>
+
+                                    {hasVegOptions && (
+                                        <button
+                                            onClick={() => setDietaryFilter("veg")}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${dietaryFilter === "veg" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}
+                                        >
+                                            <div className="w-2 h-2 rounded-full bg-green-500 border border-white"></div> Veg
+                                        </button>
+                                    )}
+
+                                    {availableDietaryTypes.has('contains_egg') && (
+                                        <button
+                                            onClick={() => setDietaryFilter("contains_egg")}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${dietaryFilter === "contains_egg" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600 border-gray-200 hover:border-amber-400"}`}
+                                        >
+                                            <Egg className="w-3 h-3" /> Egg
+                                        </button>
+                                    )}
+
+                                    {availableDietaryTypes.has('non_veg') && (
+                                        <button
+                                            onClick={() => setDietaryFilter("non_veg")}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${dietaryFilter === "non_veg" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-600 border-gray-200 hover:border-red-400"}`}
+                                        >
+                                            <div className="w-2 h-2 rounded-full bg-red-500 border border-white"></div> Non-Veg
+                                        </button>
+                                    )}
+
+                                    {availableDietaryTypes.has('vegan') && (
+                                        <button
+                                            onClick={() => setDietaryFilter("vegan")}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${dietaryFilter === "vegan" ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400"}`}
+                                        >
+                                            <Leaf className="w-3 h-3" /> Vegan
+                                        </button>
+                                    )}
+
+                                    {availableDietaryTypes.has('jain_veg') && (
+                                        <button
+                                            onClick={() => setDietaryFilter("jain_veg")}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${dietaryFilter === "jain_veg" ? "bg-teal-600 text-white border-teal-600" : "bg-white text-gray-600 border-gray-200 hover:border-teal-400"}`}
+                                        >
+                                            <Diamond className="w-3 h-3" /> Jain
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="w-[1px] h-6 bg-gray-200 shrink-0"></div>

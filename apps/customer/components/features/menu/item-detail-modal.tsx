@@ -4,7 +4,7 @@ import { MenuItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
-import { Minus, Plus, Star, X, Flame, Leaf } from "lucide-react";
+import { Minus, Plus, Star, X, Flame, Leaf, Egg, Diamond } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -40,9 +40,9 @@ export function ItemDetailModal({ item, isOpen, onClose, currencySymbol, maxQuan
             case 'vegan':
                 return { bg: 'bg-emerald-600/90', icon: <Leaf className="h-3.5 w-3.5" />, label: 'Vegan' };
             case 'jain_veg':
-                return { bg: 'bg-teal-500/90', icon: <Leaf className="h-3.5 w-3.5" />, label: 'Jain' };
+                return { bg: 'bg-teal-500/90', icon: <Diamond className="h-3.5 w-3.5" />, label: 'Jain' };
             case 'contains_egg':
-                return { bg: 'bg-amber-500/90', icon: <Flame className="h-3.5 w-3.5" />, label: 'Egg' };
+                return { bg: 'bg-amber-500/90', icon: <Egg className="h-3.5 w-3.5" />, label: 'Egg' };
             case 'non_veg':
             default:
                 return { bg: 'bg-red-500/90', icon: <Flame className="h-3.5 w-3.5" />, label: 'Non-Veg' };

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingBag, ChefHat, Utensils, ArrowRight, LayoutDashboard, MapPin, ChevronDown, Star, Phone, Mail, Clock, FileText, Sparkles, Quote, Instagram, Facebook, Globe, Leaf, Navigation, ExternalLink, Youtube } from "lucide-react";
+import { Search, ShoppingBag, ChefHat, Utensils, ArrowRight, LayoutDashboard, MapPin, ChevronDown, Star, Phone, Mail, Clock, FileText, Sparkles, Quote, Instagram, Facebook, Globe, Leaf, Navigation, ExternalLink, Youtube, Egg, Diamond, Flame } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getLandingPageData } from "@/lib/api";
@@ -10,6 +10,7 @@ import { getCurrencySymbol, cn } from "@/lib/utils";
 
 import { CartBadge } from "@/components/features/cart/cart-badge";
 import { ShopHeader } from "@/components/features/landing/shop-header";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { GallerySection } from "@/components/features/landing/gallery-section";
@@ -74,7 +75,9 @@ export default async function Home({ params }: { params: { slug: string } }) {
   const dietaryTypes = {
     veg: allItems.some((item: any) => item.dietary_type === 'veg'),
     nonVeg: allItems.some((item: any) => item.dietary_type === 'non_veg'),
-    vegan: allItems.some((item: any) => item.dietary_type === 'vegan')
+    vegan: allItems.some((item: any) => item.dietary_type === 'vegan'),
+    jain: allItems.some((item: any) => item.dietary_type === 'jain_veg'),
+    egg: allItems.some((item: any) => item.dietary_type === 'contains_egg')
   };
 
   // Parse social links
@@ -186,6 +189,18 @@ export default async function Home({ params }: { params: { slug: string } }) {
                     Vegan
                   </span>
                 )}
+                {dietaryTypes.jain && (
+                  <span className="bg-teal-600/60 px-3 py-1.5 rounded-full border border-teal-500/40 text-teal-100 font-medium flex items-center gap-1.5 text-sm">
+                    <Diamond className="h-3.5 w-3.5" />
+                    Jain
+                  </span>
+                )}
+                {dietaryTypes.egg && (
+                  <span className="bg-amber-600/60 px-3 py-1.5 rounded-full border border-amber-500/40 text-amber-100 font-medium flex items-center gap-1.5 text-sm">
+                    <Egg className="h-3.5 w-3.5" />
+                    Egg
+                  </span>
+                )}
               </div>
 
               {/* CTA Button */}
@@ -290,15 +305,11 @@ export default async function Home({ params }: { params: { slug: string } }) {
                     </div>
                     {item.dietary_type && (
                       <div className="absolute top-2 right-2">
-                        <div className={cn(
-                          "h-5 w-5 rounded-sm border-2 flex items-center justify-center bg-white shadow-sm",
-                          item.dietary_type === 'veg' ? "border-green-600" : "border-red-600"
-                        )}>
-                          <div className={cn(
-                            "h-2.5 w-2.5 rounded-full",
-                            item.dietary_type === 'veg' ? "bg-green-600" : "bg-red-600"
-                          )} />
-                        </div>
+                        {item.dietary_type === 'veg' && <VegIcon />}
+                        {item.dietary_type === 'non_veg' && <NonVegIcon />}
+                        {item.dietary_type === 'vegan' && <VeganIcon />}
+                        {item.dietary_type === 'jain_veg' && <JainVegIcon />}
+                        {item.dietary_type === 'contains_egg' && <ContainsEggIcon />}
                       </div>
                     )}
                   </div>

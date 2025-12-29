@@ -19,6 +19,7 @@ import { useCartAvailability } from "@/lib/hooks/use-cart-availability";
 
 import { ShopHeader } from "@/components/features/landing/shop-header";
 import { QuickActionsBar } from "@/components/features/landing/quick-actions-bar";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 
 interface CartContentProps {
     initialSettings: any;
@@ -245,7 +246,16 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                             )}
                                         </div>
                                         <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-1">{item.name}</h3>
+                                            <div className="flex items-start gap-2">
+                                                <div className="mt-0.5 shrink-0">
+                                                    {item.dietary_type === 'veg' && <VegIcon />}
+                                                    {item.dietary_type === 'non_veg' && <NonVegIcon />}
+                                                    {item.dietary_type === 'vegan' && <VeganIcon />}
+                                                    {item.dietary_type === 'jain_veg' && <JainVegIcon />}
+                                                    {item.dietary_type === 'contains_egg' && <ContainsEggIcon />}
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-1">{item.name}</h3>
+                                            </div>
                                             <div className="font-medium text-gray-600 text-sm mt-1">
                                                 {isUnavailable ? (
                                                     <span className="text-red-500 text-xs">Item unavailable</span>

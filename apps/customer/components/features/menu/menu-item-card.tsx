@@ -6,7 +6,7 @@ import { useCartStore } from "@/lib/store";
 import { Minus, Plus, Star } from "lucide-react";
 import { useState } from "react";
 import { ItemDetailModal } from "./item-detail-modal";
-import { VegIcon, NonVegIcon } from "@/components/ui/icons";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 
 interface MenuItemCardProps {
     item: MenuItem;
@@ -32,7 +32,11 @@ export function MenuItemCard({ item, currencySymbol = '$', isOpen = true, maxQua
                 {/* Left Side: Text Info */}
                 <div className="flex-1 flex flex-col gap-1">
                     <div className="mb-1">
-                        {item.dietary_type === 'veg' ? (<VegIcon />) : (<NonVegIcon />)}
+                        {item.dietary_type === 'veg' && <VegIcon />}
+                        {item.dietary_type === 'non_veg' && <NonVegIcon />}
+                        {item.dietary_type === 'vegan' && <VeganIcon />}
+                        {item.dietary_type === 'jain_veg' && <JainVegIcon />}
+                        {item.dietary_type === 'contains_egg' && <ContainsEggIcon />}
                     </div>
                     <h3 className="font-bold text-gray-800 text-lg">{item.name}</h3>
                     <div className="font-medium text-gray-700 text-sm">

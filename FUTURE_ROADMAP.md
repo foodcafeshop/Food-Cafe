@@ -94,7 +94,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Featured Shops**: Highlight premium or boosted restaurants on the homepage.
 *   **Location-Based**: Auto-detect user location to show nearby options.
 
-### 📱 15. Mandatory Customer Contact Info
+### 📱 15. Mandatory Customer Contact Info (Live ✅)
 *   **Merchant Config**: Toggle option for merchants to make customer mobile number mandatory.
 *   **Scope**:
     *   **Self-Ordering**: Customers must enter phone number before placing an order.
@@ -178,7 +178,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Add inventory management to merchant app"
 *   [x] "Thermal printer integration for kitchen tickets and receipts"
 *   [ ] "Customer landing page with shop search, filters (city, distance), sorting, and featured shops"
-*   [ ] "Option for merchant to make customer mobile number required for ordering"
+*   [x] "Option for merchant to make customer mobile number required for ordering"
 *   [ ] "Push notifications for order status updates"
 *   [ ] "WhatsApp and Telegram integration for order confirmations"
 *   [ ] "Social sharing for dishes and orders"

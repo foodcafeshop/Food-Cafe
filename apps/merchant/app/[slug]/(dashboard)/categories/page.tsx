@@ -271,7 +271,10 @@ export default function CategoryManagementPage() {
                                 ))}
                                 {category.dietary_type && category.dietary_type !== 'all' && (
                                     <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 border-primary text-primary">
-                                        {category.dietary_type === 'veg' ? 'VEG ONLY' : category.dietary_type === 'non_veg' ? 'NON-VEG ONLY' : 'VEGAN ONLY'}
+                                        {category.dietary_type === 'veg' ? 'VEG ONLY' :
+                                            category.dietary_type === 'non_veg' ? 'NON-VEG ONLY' :
+                                                category.dietary_type === 'vegan' ? 'VEGAN ONLY' :
+                                                    category.dietary_type === 'jain_veg' ? 'JAIN ONLY' : 'EGG + VEG'}
                                     </Badge>
                                 )}
                             </div>
@@ -325,8 +328,10 @@ export default function CategoryManagementPage() {
                                     <SelectContent>
                                         <SelectItem value="all">All Items Allowed</SelectItem>
                                         <SelectItem value="veg">Vegetarian Only</SelectItem>
+                                        <SelectItem value="contains_egg">Egg + Veg</SelectItem>
                                         <SelectItem value="non_veg">Non-Veg Only</SelectItem>
                                         <SelectItem value="vegan">Vegan Only</SelectItem>
+                                        <SelectItem value="jain_veg">Jain Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

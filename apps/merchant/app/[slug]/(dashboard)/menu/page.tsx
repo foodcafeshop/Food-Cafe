@@ -294,8 +294,15 @@ export default function MenuManagementPage() {
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-semibold truncate">{item.name}</h3>
                                         {item.is_popular && <Badge variant="secondary" className="text-[10px]">Popular</Badge>}
-                                        <Badge variant="outline" className={item.dietary_type === 'veg' ? "text-green-600 border-green-600" : item.dietary_type === 'non_veg' ? "text-red-600 border-red-600" : "text-green-600 border-green-600"}>
-                                            {item.dietary_type === 'vegan' ? 'VEGAN' : item.dietary_type === 'veg' ? 'VEG' : 'NON-VEG'}
+                                        <Badge variant="outline" className={
+                                            item.dietary_type === 'non_veg' ? "text-red-600 border-red-600" :
+                                                item.dietary_type === 'contains_egg' ? "text-yellow-700 border-yellow-700" :
+                                                    "text-green-600 border-green-600"
+                                        }>
+                                            {item.dietary_type === 'vegan' ? 'VEGAN' :
+                                                item.dietary_type === 'jain_veg' ? 'JAIN' :
+                                                    item.dietary_type === 'contains_egg' ? 'EGG' :
+                                                        item.dietary_type === 'non_veg' ? 'NON-VEG' : 'VEG'}
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground truncate">{item.description}</p>
@@ -384,6 +391,8 @@ export default function MenuManagementPage() {
                                         <SelectItem value="veg">Vegetarian</SelectItem>
                                         <SelectItem value="non_veg">Non-Vegetarian</SelectItem>
                                         <SelectItem value="vegan">Vegan</SelectItem>
+                                        <SelectItem value="jain_veg">Jain</SelectItem>
+                                        <SelectItem value="contains_egg">Contains Egg</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

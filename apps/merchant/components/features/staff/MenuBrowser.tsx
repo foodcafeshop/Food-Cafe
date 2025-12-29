@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Search, Plus, ChevronLeft } from "lucide-react";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { getFullMenuData } from "@/lib/api";
 import { MenuItem, Category } from "@/lib/types";
 import { useShopId } from "@/lib/hooks/use-shop-id";
@@ -193,7 +194,16 @@ export function MenuBrowser({ onAddToCart, onBack, tableLabel }: MenuBrowserProp
                             )}
                             <div className="flex flex-col flex-1 justify-between min-w-0">
                                 <div>
-                                    <div className="font-semibold truncate">{item.name}</div>
+                                    <div className="font-semibold truncate flex items-center gap-1.5">
+                                        <span className="shrink-0">
+                                            {item.dietary_type === 'non_veg' && <NonVegIcon className="h-4 w-4" />}
+                                            {item.dietary_type === 'veg' && <VegIcon className="h-4 w-4" />}
+                                            {item.dietary_type === 'vegan' && <VeganIcon className="h-4 w-4" />}
+                                            {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-4 w-4" />}
+                                            {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-4 w-4" />}
+                                        </span>
+                                        <span className="truncate">{item.name}</span>
+                                    </div>
                                     <div className="text-sm text-muted-foreground">
                                         {getCurrencySymbol('INR')}{item.offer_price || item.price}
                                     </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Category, MenuItem } from "@/lib/types";
 import { ArrowLeft, Plus, Trash2, X, Edit2 } from "lucide-react";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
@@ -135,9 +136,11 @@ export default function CategoryBuilderPage() {
         // Validation: Check if new dietary type conflicts with existing items
         if (category.dietary_type !== 'all') {
             const invalidItems = categoryItems.filter(item => {
-                if (category.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') return true;
+                if (category.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) return true;
+                if (category.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') return true;
                 if (category.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') return true;
                 if (category.dietary_type === 'vegan' && item.dietary_type !== 'vegan') return true;
+                if (category.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') return true;
                 return false;
             });
 
@@ -187,7 +190,10 @@ export default function CategoryBuilderPage() {
                         ))}
                         {category.dietary_type && category.dietary_type !== 'all' && (
                             <Badge variant="outline" className="text-xs border-primary text-primary">
-                                {category.dietary_type === 'veg' ? 'VEG ONLY' : category.dietary_type === 'non_veg' ? 'NON-VEG ONLY' : 'VEGAN ONLY'}
+                                {category.dietary_type === 'veg' ? 'VEG ONLY' :
+                                    category.dietary_type === 'non_veg' ? 'NON-VEG ONLY' :
+                                        category.dietary_type === 'vegan' ? 'VEGAN ONLY' :
+                                            category.dietary_type === 'jain_veg' ? 'JAIN ONLY' : 'EGG + VEG'}
                             </Badge>
                         )}
                     </div>
@@ -210,7 +216,16 @@ export default function CategoryBuilderPage() {
                                     {item.images?.[0] && <img src={item.images[0]} className="h-full w-full object-cover" />}
                                 </div>
                                 <div className="flex-1">
-                                    <div className="font-medium">{item.name}</div>
+                                    <div className="font-medium flex items-center gap-1.5">
+                                        <span className="shrink-0">
+                                            {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
+                                            {item.dietary_type === 'veg' && <VegIcon className="h-3 w-3" />}
+                                            {item.dietary_type === 'vegan' && <VeganIcon className="h-3 w-3" />}
+                                            {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
+                                            {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
+                                        </span>
+                                        {item.name}
+                                    </div>
                                     <div className="text-sm text-muted-foreground line-clamp-1">{item.description}</div>
                                 </div>
                                 <div className="font-bold">{currency}{item.price}</div>
@@ -244,9 +259,11 @@ export default function CategoryBuilderPage() {
                             if (isAdded) return null;
 
                             // Filter based on dietary type
-                            if (category.dietary_type === 'veg' && item.dietary_type !== 'veg' && item.dietary_type !== 'vegan') return null;
+                            if (category.dietary_type === 'veg' && !['veg', 'vegan', 'jain_veg'].includes(item.dietary_type)) return null;
+                            if (category.dietary_type === 'contains_egg' && item.dietary_type === 'non_veg') return null;
                             if (category.dietary_type === 'non_veg' && item.dietary_type !== 'non_veg') return null;
                             if (category.dietary_type === 'vegan' && item.dietary_type !== 'vegan') return null;
+                            if (category.dietary_type === 'jain_veg' && item.dietary_type !== 'jain_veg') return null;
 
                             return (
                                 <div key={item.id} className="flex items-center gap-4 p-2 border rounded-lg hover:bg-muted cursor-pointer transition-colors" onClick={() => handleAddItem(item.id)}>
@@ -254,7 +271,16 @@ export default function CategoryBuilderPage() {
                                         {item.images?.[0] && <img src={item.images[0]} className="h-full w-full object-cover" />}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="font-medium">{item.name}</div>
+                                        <div className="font-medium flex items-center gap-1.5">
+                                            <span className="shrink-0">
+                                                {item.dietary_type === 'non_veg' && <NonVegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'veg' && <VegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'vegan' && <VeganIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'jain_veg' && <JainVegIcon className="h-3 w-3" />}
+                                                {item.dietary_type === 'contains_egg' && <ContainsEggIcon className="h-3 w-3" />}
+                                            </span>
+                                            {item.name}
+                                        </div>
                                         <div className="text-xs text-muted-foreground">{item.description}</div>
                                     </div>
                                     <div className="font-bold">{currency}{item.price}</div>
@@ -305,8 +331,10 @@ export default function CategoryBuilderPage() {
                                     <SelectContent>
                                         <SelectItem value="all">All Items Allowed</SelectItem>
                                         <SelectItem value="veg">Vegetarian Only</SelectItem>
+                                        <SelectItem value="contains_egg">Egg + Veg</SelectItem>
                                         <SelectItem value="non_veg">Non-Veg Only</SelectItem>
                                         <SelectItem value="vegan">Vegan Only</SelectItem>
+                                        <SelectItem value="jain_veg">Jain Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -5,6 +5,7 @@ import { getTableOrders } from "@/lib/api";
 import { useCartStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, ChefHat, Utensils, XCircle } from "lucide-react";
+import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { getCurrencySymbol } from "@/lib/utils";
 
 interface PlacedOrdersProps {
@@ -124,7 +125,16 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
                                         <div className="flex gap-2">
                                             <span className="font-bold text-gray-600">{item.quantity}x</span>
                                             <div className="flex flex-col">
-                                                <span className="text-gray-700">{item.name}</span>
+                                                <div className="flex items-start gap-1">
+                                                    <div className="mt-1 shrink-0">
+                                                        {item.menu_items?.dietary_type === 'veg' && <VegIcon />}
+                                                        {item.menu_items?.dietary_type === 'non_veg' && <NonVegIcon />}
+                                                        {item.menu_items?.dietary_type === 'vegan' && <VeganIcon />}
+                                                        {item.menu_items?.dietary_type === 'jain_veg' && <JainVegIcon />}
+                                                        {item.menu_items?.dietary_type === 'contains_egg' && <ContainsEggIcon />}
+                                                    </div>
+                                                    <span className="text-gray-700">{item.name}</span>
+                                                </div>
                                                 {item.notes && (
                                                     <span className="text-xs text-gray-400 italic">Note: {item.notes}</span>
                                                 )}

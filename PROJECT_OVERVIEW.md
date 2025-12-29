@@ -32,7 +32,8 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Collaborative Cart**: Using **Supabase Realtime**, multiple devices sync instantaneously. Guest A adds a burger, Guest B sees it immediately on their phone.
 *   **Dynamic Digital Menu**:
     *   **Rich Media**: High-quality images for every item.
-    *   **Live Dietary Filters**: Instant toggles for **Veg**, **Non-Veg**, **Vegan**, **Jain Veg**, and **Contains Egg**.
+    *   **Live Dietary Filters**: Dynamic toggles for **Veg**, **Non-Veg**, **Vegan**, **Jain Veg**, and **Contains Egg** (Smartly hides unavailable types).
+    *   **Universal Iconography**: Standardized visual indicators (Leaf for Veg/Vegan, Diamond for Jain, Egg for Egg) across Menu, Cart, and Order History.
     *   **Smart Instant Search**:
         *   **Offline First**: Search filters the menu instantly on the client-side without network latency.
         *   **Deep Discovery**: Searches across **Names**, **Descriptions**, and hidden **Tags** (e.g., "Spicy", "Chef Special") to find relevant items instantly.
@@ -77,7 +78,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Payment Reconciliation**: Track payments via Cash, Card, or UPI.
     *   **Bill History**: A searchable archive of all past transactions with re-print functionality, optimized for mobile browsing.
 *   **Menu Engineering**:
-    *   **Visual Editor**: Create, edit, and organize Categories and Items.
+    *   **Visual Editor**: Create, edit, and organize Categories and Items with full support for extended dietary types (Jain, Egg).
     *   **Bulk Operations**:
         *   **Smart CSV Import**: Import menus and categories with automatic JSON parsing for tags/images.
         *   **AI Menu Digitization**: Upload photos of physical menus to auto-generate a structured CSV ZIP.

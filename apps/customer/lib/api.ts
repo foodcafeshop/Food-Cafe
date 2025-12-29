@@ -476,7 +476,12 @@ export async function getTableOrders(tableId: string) {
         .from('orders')
         .select(`
       *,
-      order_items (*)
+      order_items (
+        *,
+        menu_items (
+            dietary_type
+        )
+      )
     `)
         .eq('table_id', tableId)
         .in('status', ['queued', 'preparing', 'ready', 'served', 'cancelled'])

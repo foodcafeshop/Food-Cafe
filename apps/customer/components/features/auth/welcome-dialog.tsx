@@ -298,6 +298,19 @@ export function WelcomeDialog() {
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
+                        <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
+                        <Input
+                            id="otp"
+                            placeholder="Enter 4-digit code"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            required
+                            className="h-11"
+                            maxLength={6}
+                        />
+                        <p className="text-xs text-gray-500">Please ask the staff for the table code.</p>
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="name">Your Name <span className="text-red-500">*</span></Label>
                         <Input
                             id="name"
@@ -344,19 +357,7 @@ export function WelcomeDialog() {
                     )}
 
 
-                    <div className="space-y-2">
-                        <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
-                        <Input
-                            id="otp"
-                            placeholder="Enter 4-digit code"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                            className="h-11"
-                            maxLength={6}
-                        />
-                        <p className="text-xs text-gray-500">Please ask the staff for the table code.</p>
-                    </div>
+
 
                     {error && (
                         <div className="text-sm text-red-500 font-medium text-center bg-red-50 p-2 rounded">
