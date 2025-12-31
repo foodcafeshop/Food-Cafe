@@ -13,7 +13,7 @@ const withPWA = withPWAInit({
         runtimeCaching: [
             {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*$/,
-                handler: "StaleWhileRevalidate",
+                handler: "NetworkFirst",
                 options: {
                     cacheName: "supabase-api-cache",
                     expiration: {
