@@ -275,9 +275,11 @@ export async function createOrder(order: any) {
             }
 
             // Perform validations
+            let tableLabel = null;
             if (order.table_id) {
                 const table = await getTableById(order.table_id);
                 if (table) {
+                    tableLabel = table.label; // Capture label for notification
                     if (table.status === 'billed') {
                         throw new Error("Table is currently billed. Please ask staff to clear the table before placing a new order.");
                     }
@@ -310,6 +312,20 @@ export async function createOrder(order: any) {
                     continue;
                 }
                 throw error;
+            }
+
+            if (data) {
+                // Fire and forget notification trigger (don't block order)
+                fetch('/api/notifications/trigger-new-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shopId: shopId,
+                        orderNumber: orderNumber,
+                        tableLabel: tableLabel,
+                        customerName: order.customer_name
+                    })
+                }).catch(err => console.error("Failed to trigger notification:", err));
             }
 
             return data;

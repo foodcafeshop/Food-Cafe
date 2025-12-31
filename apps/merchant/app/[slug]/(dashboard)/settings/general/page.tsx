@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Download } from "lucide-react";
 import JSZip from "jszip";
 import { generateCSV } from "@/lib/csv-utils";
+import { usePushSubscription } from "@/lib/hooks/use-push-subscription";
 import { useTheme } from "next-themes";
 
 export default function GeneralSettingsPage() {
@@ -35,6 +36,12 @@ export default function GeneralSettingsPage() {
     const [shopSlug, setShopSlug] = useState<string | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+    // Push Subscription Hook (Only initialize if we have a shopId, but hook rules require top level)
+    // We'll pass shopId once we have it. The hook should handle null shopId gracefully or we accept it might not subscribe yet.
+    // Actually our hook expects shopId string.
+    const { isSubscribed, loading: isPushLoading, subscribeToPush, unsubscribeFromPush } = usePushSubscription(shopId || '', 'staff');
+
 
     useEffect(() => {
         const fetchShopInfo = async () => {
@@ -316,6 +323,61 @@ export default function GeneralSettingsPage() {
                                 </Select>
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Notifications</CardTitle>
+                        <CardDescription>Manage alerts for this device.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Push Notifications</Label>
+                                <p className="text-sm text-muted-foreground">Receive real-time alerts for new orders on this device.</p>
+                            </div>
+                            <Button
+                                variant={isSubscribed ? "outline" : "default"}
+                                onClick={isSubscribed ? unsubscribeFromPush : subscribeToPush}
+                                disabled={isPushLoading}
+                            >
+                                {isPushLoading ? "Loading..." : isSubscribed ? "Enabled" : "Enable"}
+                            </Button>
+                        </div>
+                        {isSubscribed && (
+                            <div className="flex justify-end pt-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                        toast.loading("Sending test notification...");
+                                        try {
+                                            const { data: { user } } = await supabase.auth.getUser();
+                                            if (!user) throw new Error("No user found");
+
+                                            const res = await fetch('/api/notifications/send', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    title: "Test Notification",
+                                                    body: "This is a test message from Food Cafe!",
+                                                    url: window.location.href,
+                                                    userIds: [user.id] // Target self
+                                                })
+                                            });
+                                            if (!res.ok) throw new Error(await res.text());
+                                            toast.success("Test notification sent!");
+                                        } catch (e: any) {
+                                            console.error(e);
+                                            toast.error("Failed to send test: " + e.message);
+                                        }
+                                    }}
+                                >
+                                    Send Test Notification
+                                </Button>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Sound Notifications</Label>

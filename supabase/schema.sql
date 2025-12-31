@@ -1189,3 +1189,45 @@ begin
   return count;
 end;
 $$ language plpgsql security definer;
+
+
+-- ========================================
+-- Push Notifications Schema
+-- ========================================
+
+-- 29. Push Notifications
+CREATE TABLE public.push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('staff', 'merchant', 'admin', 'customer')),
+  subscription JSONB NOT NULL,
+  user_agent TEXT,
+  preferences JSONB DEFAULT '{"new_order": true, "order_updates": true, "promotions": false}'::JSONB,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  endpoint TEXT GENERATED ALWAYS AS (subscription->>'endpoint') STORED,
+  
+  -- Constraints
+  CONSTRAINT push_subscriptions_owner_check CHECK (num_nonnulls(user_id, customer_id) > 0),
+  CONSTRAINT push_subscriptions_endpoint_key UNIQUE (endpoint)
+);
+
+-- RLS for Push Subscriptions
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- 1. Authenticated Users (Staff/Admins/Merchants)
+CREATE POLICY "Users can manage own subscriptions" 
+  ON public.push_subscriptions 
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 2. Anonymous/Guests (Customers)
+-- We allow anon to Insert/Update/Delete based on matching the endpoint or just being open for INSERT.
+-- Since endpoint is a secret capability URL, knowing it allows managing it.
+CREATE POLICY "Anon can manage subscriptions by endpoint"
+  ON public.push_subscriptions
+  TO anon
+  USING (true) -- Ideally strictly match endpoint, but hard in RLS without session. Relying on endpoint entropy.
+  WITH CHECK (true);

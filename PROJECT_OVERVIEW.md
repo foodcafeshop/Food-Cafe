@@ -160,6 +160,23 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Configurable Branding**: Option to show/hide Shop Logo, custom Header/Footer messages.
     *   **Historical Accuracy**: Reprints past bills with the exact tax/price breakdown from the moment of sale.
 
+### 🔔 9. Push Notifications (Live ✅)
+*   **Edge-First Notification Architecture**:
+    *   **Serverless Triggering**: Next.js API Routes trigger notifications directly via `web-push` libraries without needing heavy backend workers.
+    *   **Standardized Protocol**: Uses VAPID (Voluntary Application Server Identification) for secure, browser-standard communication with FCM/APNs.
+*   **Dual-Channel Strategy**:
+    *   **Merchant Channel ("New Order Alert")**:
+        *   **Critical Alerting**: High-priority notifications for staff when a new order is received.
+        *   **Resilient Delivery**: Service Worker logic ensures "New Order" alerts play a sound and vibrate even if the device is locked (OS dependent).
+        *   **Table Context**: Notification explicitly mentions "Table X - New Order" so waiters know where to look instantly.
+    *   **Customer Channel ("Order Updates")**:
+        *   **Guest Engagement**: Customers (including anonymous guests) can subscribe to updates for their specific table session.
+        *   **Smart Triggers**: Notifications are sent *only* when status changes to critical states (e.g., "Ready" or "Served") to avoid spamming.
+        *   **Deep Linking**: Tapping the notification opens the specific Order Status page for that order.
+*   **Robust Subscription Management**:
+    *   **Device Fingerprinting**: Unique constraints on subscription endpoints prevent duplicate alerts on the same device.
+    *   **Auto-Cleanup**: System automatically prunes invalid/expired subscriptions (410 Gone) to maintain database hygiene.
+
 ---
 
 ## 🛠️ Technical Architecture & Stack

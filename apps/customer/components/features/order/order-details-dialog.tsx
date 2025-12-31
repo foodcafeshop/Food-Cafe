@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/features/feedback/rating-dialog";
 import { useSettingsStore } from "@/lib/settings-store";
 import { toast } from "sonner";
+import { usePushSubscription } from "@/lib/hooks/use-push-subscription";
+import { Bell, BellOff } from "lucide-react";
 
 interface OrderDetailsDialogProps {
     isOpen: boolean;
@@ -141,6 +143,16 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                                     <Clock className="h-3 w-3" /> Estimated time: {timeLeft} mins
                                 </p>
                             )}
+
+                            {/* Push Notification Button */}
+                            {order.status !== 'served' && order.status !== 'cancelled' && (
+                                <div className="pt-2">
+                                    <PushNotificationButton
+                                        shopId={order.shop_id || shopId}
+                                        customerId={order.customer_id}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Timeline */}
@@ -246,5 +258,32 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                 />
             )}
         </Dialog>
+    );
+}
+
+
+function PushNotificationButton({ shopId, customerId }: { shopId: string, customerId?: string }) {
+    const { isSubscribed, loading, subscribeToPush } = usePushSubscription(shopId, 'customer', customerId);
+
+    // Don't show if already subscribed or no customer ID (can't link)
+    if (isSubscribed || !customerId) return null;
+
+    return (
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={subscribeToPush}
+            disabled={loading}
+            className="rounded-full gap-2 text-xs border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
+        >
+            {loading ? (
+                <span>Enabling...</span>
+            ) : (
+                <>
+                    <Bell className="h-3 w-3" />
+                    Notify me when Ready
+                </>
+            )}
+        </Button>
     );
 }

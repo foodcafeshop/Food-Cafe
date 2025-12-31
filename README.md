@@ -202,6 +202,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     RAZORPAY_KEY_ID=rzp_test_...
     RAZORPAY_KEY_SECRET=your_razorpay_secret
     RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+
+    # Push Notifications (VAPID)
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
+    VAPID_PRIVATE_KEY=your_vapid_private_key
+    NEXT_PUBLIC_VAPID_SUBJECT=mailto:admin@foodcafeshop.in
     ```
 
 4.  **Database Setup:**

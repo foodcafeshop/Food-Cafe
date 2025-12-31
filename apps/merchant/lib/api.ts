@@ -340,6 +340,15 @@ export async function updateOrderStatus(id: string, status: string) {
         .eq('id', id);
 
     if (error) throw error;
+
+    // Trigger Notification (Customer) - Only when order is ready
+    if (status === 'ready') {
+        fetch('/api/notifications/trigger-order-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: id, status })
+        }).catch(err => console.error("Failed to trigger customer notification:", err));
+    }
 }
 
 export async function getOrderHistory(shopId: string) {

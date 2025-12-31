@@ -141,6 +141,17 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
     *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
 
+### 🔔 9. Push Notifications (Merchant Strategy)
+*   **Critical Alerts**:
+    *   **"New Order" Sound**: Distinctive alert sound plays even when the device is locked (PWA Service Worker).
+    *   **Visual Banner**: "New Order - Table 5" notification ensures staff know exactly where to go.
+*   **Behavior Rules**:
+    *   **Focus Mode**: Notifications are prioritized to breakthrough "Do Not Disturb" (if OS allows) for critical alerts.
+    *   **Click Action**: Tapping the notification opens the specific Order Details dialog instantly.
+*   **Setup Requirement**:
+    *   Merchants must click **"Enable Notifications"** in *General Settings* to grant browser permissions.
+    *   **Troubleshooting**: If silent, check OS Notification settings for the browser (Chrome/Safari) to ensure sounds are allowed.
+
 ---
 
 ## 🛠️ Technical Architecture & Stack
@@ -198,6 +209,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     RAZORPAY_KEY_ID=rzp_test_...
     RAZORPAY_KEY_SECRET=your_razorpay_secret
     RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+
+    # Push Notifications (VAPID)
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
+    VAPID_PRIVATE_KEY=your_vapid_private_key
+    NEXT_PUBLIC_VAPID_SUBJECT=mailto:admin@foodcafeshop.in
     ```
 
 4.  **Database Setup:**

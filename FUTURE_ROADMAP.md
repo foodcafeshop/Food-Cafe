@@ -101,11 +101,11 @@ Brief overview of planned features for the **Food Cafe** RMS.
     *   **Staff-Placed**: Staff must enter customer phone number when taking an order on their behalf.
 *   **Verification**: clear validation and potential OTP requirement (optional).
 
-### 🔔 16. Push Notifications
+### 🔔 16. Push Notifications (Live ✅)
 *   **Order Status Updates**: "Your order is being prepared", "Your food is ready for pickup".
-*   **Marketing Alerts**: New menu items, flash deals, and promotions.
-*   **Staff Alerts**: Notify waiters when orders are ready for serving.
+*   **Staff Alerts**: Notify waiters when orders are ready for serving or new orders arrive.
 *   **PWA Native**: Leverage service workers for browser-based notifications.
+*   **Future**: Marketing Alerts and Flash Deals.
 
 ### 💬 17. Messaging Integrations
 *   **WhatsApp Business API**: Send order confirmations, digital receipts, and promotional messages.
@@ -179,7 +179,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Thermal printer integration for kitchen tickets and receipts"
 *   [ ] "Customer landing page with shop search, filters (city, distance), sorting, and featured shops"
 *   [x] "Option for merchant to make customer mobile number required for ordering"
-*   [ ] "Push notifications for order status updates"
+*   [x] "Push notifications for order status updates"
 *   [ ] "WhatsApp and Telegram integration for order confirmations"
 *   [ ] "Social sharing for dishes and orders"
 *   [ ] "Table reservation system with booking engine"

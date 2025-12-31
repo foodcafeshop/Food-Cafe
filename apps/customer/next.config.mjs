@@ -9,6 +9,7 @@ const withPWA = withPWAInit({
     disable: process.env.NODE_ENV === "development",
     workboxOptions: {
         disableDevLogs: true,
+        importScripts: ["/custom-sw.js"],
         runtimeCaching: [
             {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*$/,
