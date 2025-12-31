@@ -505,12 +505,18 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
         .eq('payment_status', 'pending');
 
     if (ordersError) throw ordersError;
-    // Filter out cancelled orders just in case, though they shouldn't be 'served'/'billed' usually
+    // Filter out cancelled orders
     const validOrders = (orders || []).filter(o => o.status !== 'cancelled');
 
-    console.log('Valid Orders for Settle:', validOrders); // DEBUG LOG
+    // Handle case where all orders are cancelled (or no active orders)
+    if (!validOrders || validOrders.length === 0) {
+        console.warn("No active orders found. Marking table as billed/void.");
 
-    if (!validOrders || validOrders.length === 0) throw new Error("No pending orders to settle");
+        // Update Table status to 'billed' so it can be cleared
+        await supabase.from('tables').update({ status: 'billed' }).eq('id', tableId);
+
+        return { bill_number: 'VOID' };
+    }
 
     const orderIds = validOrders.map(o => o.id);
     const shopId = validOrders[0].shop_id; // Assume all orders for a table belong to the same shop
