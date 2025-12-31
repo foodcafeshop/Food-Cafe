@@ -20,7 +20,7 @@ interface BillingDialogProps {
     tableId: string | null;
     tableLabel?: string;
     shopId: string | null;
-    onSuccess: () => void;
+    onSuccess: (tableId?: string, status?: string) => void;
 }
 
 export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId, onSuccess }: BillingDialogProps) {
@@ -157,7 +157,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                 setBillNumber(result.bill_number);
             }
             toast.success("Bill settled successfully");
-            onSuccess();
+            onSuccess(tableId, 'billed');
             // Don't close immediately so they can print?
             // Usually we might want to close or refresh.
             // onOpenChange(false); 

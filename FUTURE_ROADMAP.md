@@ -105,6 +105,12 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Order Status Updates**: "Your order is being prepared", "Your food is ready for pickup".
 *   **Staff Alerts**: Notify waiters when orders are ready for serving or new orders arrive.
 *   **PWA Native**: Leverage service workers for browser-based notifications.
+*   **Future**: **Notification Categories**:
+    *   **granular control**: Allow users (Merchant/Customer) to toggle specific categories:
+        *   **Order Updates**: Status changes (Preparing, Ready).
+        *   **Promotions**: Marketing messages and offers.
+        *   **System Alerts**: Maintenance or account security updates.
+        *   **Staff Alerts**: New order assignments (Staff only).
 *   **Future**: Marketing Alerts and Flash Deals.
 
 ### 💬 17. Messaging Integrations
@@ -158,6 +164,14 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Staff Performance**: Orders served, tips collected, efficiency during peak hours.
 *   **Demand Forecasting**: AI predictions for busy days to optimize staffing and inventory.
 
+### ⚡ 26. API Caching Strategy
+*   **Audit**: Identify list of API calls that can be cached (e.g., Menu, Shop Settings, Static Content).
+*   **Strategy**: Implement caching layers:
+    *   **Browser Cache**: Service Worker / LocalStorage for offline-first experience.
+    *   **Edge Cache**: CDN caching for public assets (images, logos).
+    *   **Server State**: React Query / SWR for efficient server state management with hydration.
+*   **Implementation**: Apply caching logic cautiously to different apps (Customer vs Merchant) to prevent stale data issues.
+
 ---
 
 ### 📝 Original Requests
@@ -189,3 +203,5 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Wait time estimation using AI"
 *   [ ] "Add multi-language support for Indian languages"
 *   [ ] "Advanced analytics for customer, menu, and staff performance"
+*   [ ] "Identify list of API calls that can be cached, and cache them in different apps"
+*   [ ] "Add notification categories for granular user control"

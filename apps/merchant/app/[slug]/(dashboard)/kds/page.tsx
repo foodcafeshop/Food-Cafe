@@ -57,12 +57,29 @@ export default function KDSPage() {
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
+        // Capture previous state for rollback
+        const previousOrders = [...orders];
+
+        // Optimistic update
+        setOrders(currentOrders => {
+            if (status === 'served' || status === 'cancelled') {
+                return currentOrders.filter(o => o.id !== id);
+            }
+            return currentOrders.map(o =>
+                o.id === id ? { ...o, status } : o
+            );
+        });
+
         try {
             await updateOrderStatus(id, status);
             toast.success(`Order marked as ${status}`);
-            fetchOrders(); // Optimistic update would be better, but this is safe
+            fetchOrders();
         } catch (e) {
             toast.error("Failed to update order");
+            // 1. Explicitly Revert State immediately
+            setOrders(previousOrders);
+            // 2. Try to re-fetch true state (background reconciliation)
+            fetchOrders();
         }
     };
 

@@ -11,20 +11,23 @@ const withPWA = withPWAInit({
         disableDevLogs: true,
         importScripts: ["/custom-sw.js"],
         runtimeCaching: [
+            // Removed Supabase caching rule to prevent stale data
+            /*
             {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*$/,
-                handler: "StaleWhileRevalidate",
+                handler: "NetworkFirst",
                 options: {
                     cacheName: "supabase-api-cache",
                     expiration: {
                         maxEntries: 50,
-                        maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                        maxAgeSeconds: 60 * 5, // 5 minutes
                     },
                     cacheableResponse: {
                         statuses: [0, 200],
                     },
                 },
             },
+            */
             {
                 urlPattern: /^https:\/\/images\.unsplash\.com\/.*$/,
                 handler: "CacheFirst",

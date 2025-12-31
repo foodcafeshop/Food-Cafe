@@ -146,6 +146,9 @@ export default function TableManagementPage() {
             try {
                 await clearTable(table.id);
                 toast.success("Table marked as empty");
+                setTables(prev => prev.map(t =>
+                    t.id === table.id ? { ...t, status: 'empty' } : t
+                ));
                 fetchTables();
             } catch (e) {
                 console.error(e);
@@ -801,7 +804,12 @@ export default function TableManagementPage() {
                 tableId={billingTable?.id || null}
                 tableLabel={billingTable?.label}
                 shopId={shopId}
-                onSuccess={() => {
+                onSuccess={(tableId, status) => {
+                    if (tableId && status) {
+                        setTables(prev => prev.map(t =>
+                            t.id === tableId ? { ...t, status: status as TableStatus } : t
+                        ));
+                    }
                     fetchTables();
                     setBillingTable(null);
                 }}
