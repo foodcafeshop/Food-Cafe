@@ -179,6 +179,36 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
+### 👤 10. Customer Identity & Session Architecture (Live ✅)
+*   **Shop-Bound Identity**:
+    *   **Strict Isolation**: Customer profiles are tightly scoped to specific `shop_id`s. "John" at Shop A is legally distinct from "John" at Shop B.
+    *   **Cross-Shop Protection**: Smart Guard logic in the frontend immediately detects if a user scans a QR code for a different shop while still logged in, forcibly clearing the old session to prevent data leaks.
+*   **Dual-Profile System**:
+    *   **Registered Users**: Users providing a phone number are persistent. Returning to the shop immediately resumes their history and loyalty status.
+    *   **Guest Profiles ("Ghost Users")**: Users providing *only* a name (no phone) are assigned a unique, ephemeral `customer_id` marked with `is_guest=true`.
+        *   **Privacy-First**: Allows frictionless "Join & Eat" without data collection.
+        *   **Session Integrity**: Even anonymous guests have unique IDs, preventing "John A" and "John B" from colliding on the same table.
+*   **Global App Readiness**:
+    *   **Future-Proof Schema**: `customers` table includes a `global_user_id` foreign key, ready to link local shop profiles to a master "Food Cafe Global Account" (Supabase Auth) in the future.
+*   **The Session Lifecycle**:
+    1.  **Scan & Join**: User is bound to `shop_id` + `table_id` + `customer_id`.
+    2.  **Active Eating**: All orders are tagged with this binding.
+    3.  **Bill & Clear**: When staff marks the table "Empty", the system triggers a **Real-Time Logout** command.
+        *   **Client Side**: User's device is wiped of session data and returned to the Welcome Screen.
+        *   **Server Side**: Guest profiles remain for audit history (but can be pruned); Registered profiles remain for loyalty.
+*   **The "Roaming" Protocol (Global User Flow)**:
+    *   **Scenario**: A Global User ("Alice") leaves Shop A and scans the QR code for Shop B.
+    *   **Auto-Disconnect**: The customer app immediately detects the `shop_id` mismatch and performs a hard logout from Shop A (clearing local cart and session).
+    *   **Federated Identity**: Alice **automatically logs in** (the Global App passes her credentials securely). The system:
+        *   **Check**: Finds no active session.
+        *   **Link**: Retrieves (or creates) her Shop B specific `customer_id` using her Global ID.
+    *   **The "One-Tap" Welcome**: Since her identity is known, the Welcome Dialog **DOES NOT** ask for Name/Phone. It only prompts for:
+        1.  **Table Number** (if not scanned).
+        2.  **OTP** (if security is enabled).
+    *   **Result**: Alice has a seamless experience ("Alice" everywhere) but technically maintains distinct, legally isolated profiles for each shop (`customer_id_A`, `customer_id_B`).
+
+---
+
 ## 🛠️ Technical Architecture & Stack
 
 *   **Frontend Monorepo**: Split architecture separating `apps/customer` (SEO-optimized, lightweight) and `apps/merchant` (Admin Dashboard, feature-rich) for improved code isolation and build performance.

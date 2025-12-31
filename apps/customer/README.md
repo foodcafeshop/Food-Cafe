@@ -41,7 +41,15 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Immersive Photo Gallery**: High-quality "Ambiance" section with lightbox viewer and smart pagination.
 *   **Live Order Tracking**: An "Uber-like" status tracker shows the food journey: *Queued -> Preparing -> Ready -> Served*.
 
-### 👨‍🍳 2. Intelligent Kitchen Display System (KDS)
+### 👤 2. Identity & Session Architecture
+*   **Frictionless Entry**:
+    *   **Name-Only Guest**: Users can join a table with just a name. System creates a temporary "Guest Profile" (`is_guest=true`) bound to that specific shop and table.
+    *   **Registered User**: Providing a phone number links to a persistent profile for order history and loyalty.
+*   **Advanced Session Security**:
+    *   **Smart Shop Guard**: The app detects if a user (with an active session) scans a QR code for a *different* shop. It immediately **wipes local storage** and logs them out to prevent cross-shop data leaks.
+    *   **Auto-Logout**: When the waiter clears the table, a Realtime signal forces all connected devices to the Welcome Screen.
+
+### 👨‍🍳 3. Intelligent Kitchen Display System (KDS)
 *   **Real-Time Ticket Board**: Orders appear on the kitchen screen with a distinctive "Ping" sound the millisecond they are placed.
 *   **Visual Workflow**:
     *   **Queued**: New orders awaiting acceptance.

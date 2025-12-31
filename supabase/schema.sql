@@ -113,13 +113,19 @@ create table public.tables (
 create table if not exists public.customers (
   id uuid primary key default uuid_generate_v4(),
   shop_id uuid references public.shops(id) on delete cascade,
+  global_user_id uuid references auth.users(id) on delete set null,
   name text,
   phone text,
   email text,
+  is_guest boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(shop_id, phone)
 );
+
+-- Add comments for documentation
+comment on column public.customers.is_guest is 'Flag to identify guest users (no phone number provided)';
+comment on column public.customers.global_user_id is 'Link to the Global App User (auth.users) if this customer is a registered global user.';
 
 -- 8. Orders
 create table public.orders (

@@ -154,6 +154,15 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
+### 👤 10. Customer Data Architecture
+*   **Unified Customer View**:
+    *   **Guest vs Registered**: System clearly distinguishes between partial profiles (Guest) and full profiles (Phone Verified).
+    *   **Global Linkage**: Schema supports `global_user_id` to link distinct local profiles to a future master account.
+*   **Data Integrity**:
+    *   **Shop Isolation**: Strict Row Level Security (RLS) policies ensure customer data never leaks between tenants.
+
+---
+
 ## 🛠️ Technical Architecture & Stack
 
 *   **Frontend**: Next.js 14 (App Router) part of the Monorepo, focused on Admin Dashboard and Kitchen Display System (KDS).

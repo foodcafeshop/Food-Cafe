@@ -27,6 +27,10 @@ type CartStore = {
     welcomeMode: 'welcome' | 'checkout';
     setWelcomeOpen: (isOpen: boolean, mode?: 'welcome' | 'checkout') => void;
     logout: () => void;
+    customerId: string | null;
+    setCustomerId: (id: string | null) => void;
+    shopId: string | null;
+    setShopId: (id: string | null) => void;
 };
 
 export const useCartStore = create<CartStore>()(
@@ -76,7 +80,11 @@ export const useCartStore = create<CartStore>()(
             isWelcomeOpen: false,
             welcomeMode: 'welcome',
             setWelcomeOpen: (isOpen, mode = 'welcome') => set({ isWelcomeOpen: isOpen, welcomeMode: mode }),
-            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null }),
+            customerId: null,
+            setCustomerId: (id) => set({ customerId: id }),
+            shopId: null,
+            setShopId: (id) => set({ shopId: id }),
+            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null, customerId: null, shopId: null }),
         }),
         {
             name: 'food-cafe-cart',
@@ -85,7 +93,9 @@ export const useCartStore = create<CartStore>()(
                 tableId: state.tableId,
                 customerName: state.customerName,
                 customerPhone: state.customerPhone,
-                sessionId: state.sessionId
+                sessionId: state.sessionId,
+                customerId: state.customerId,
+                shopId: state.shopId
             }),
         }
     )

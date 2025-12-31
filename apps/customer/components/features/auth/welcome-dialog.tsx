@@ -10,7 +10,7 @@ import { ChefHat } from "lucide-react";
 import Image from "next/image";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { verifyTableOtp, getShopDetails, getSettings, getTableByLabel, joinTable } from "@/lib/api";
+import { verifyTableOtp, getShopDetails, getSettings, getTableByLabel, joinTable, upsertCustomer } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -28,7 +28,8 @@ export function WelcomeDialog() {
         setTableId,
         logout,
         sessionId,
-        setSessionId
+        setSessionId,
+        setCustomerId
     } = useCartStore();
 
     const [name, setName] = useState("");
@@ -231,6 +232,16 @@ export function WelcomeDialog() {
             console.log('Attempting to join table:', targetTableId);
             await joinTable(targetTableId, customerInfo);
             setSessionId(newSessionId);
+
+            // Upsert Customer to bind to Shop (Always do this, even for guests)
+            try {
+                const cId = await upsertCustomer(currentShopId, name.trim(), phone?.trim());
+                if (cId) setCustomerId(cId);
+            } catch (err) {
+                console.error("Failed to bind customer:", err);
+                // Continue anyway, don't block login
+            }
+
             console.log('Table join request sent');
         }
 

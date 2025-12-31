@@ -17,7 +17,27 @@ interface ShopHeaderProps {
     showSearch?: boolean;
 }
 
+import { useEffect } from "react";
+
 export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = false, showCartLink = true, showSearch = true }: ShopHeaderProps) {
+    const { shopId, setShopId, clearCart, logout } = useCartStore();
+
+    // Check for Shop Mismatch
+    useEffect(() => {
+        if (shop?.id) {
+            // If stored shop exists AND is different from current -> Reset Everything
+            if (shopId && shopId !== shop.id) {
+                console.log("Shop switched! Clearing session.");
+                logout();
+                setShopId(shop.id);
+            }
+            // If no shop stored, set it
+            else if (!shopId) {
+                setShopId(shop.id);
+            }
+        }
+    }, [shop?.id, shopId, logout, setShopId]);
+
     return (
         <header className="sticky top-0 z-50 bg-white shadow-sm">
             <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">

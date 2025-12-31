@@ -147,6 +147,18 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
+### 👤 9. Customer Identity & Global Architecture (Live ✅)
+*   **Dual-Profile System**:
+    *   **Guest Mode**: Frictionless, name-only access for temporary customers (`is_guest=true`).
+    *   **Registered Mode**: Phone-based profiles for loyalty and history.
+*   **Session Security**:
+    *   **Cross-Shop Protection**: Smart Guard logic instantly clears session data if a user scans a different shop's QR code.
+    *   **Real-Time Logout**: Server-triggered logout when a table is marked "Empty".
+*   **Global Readiness**:
+    *   **Federated Schema**: Database ready for future "Food Cafe Global App" integration (`global_user_id`).
+
+---
+
 ## 🛠️ Technical Architecture & Stack
 
 *   **Frontend Monorepo**: Split architecture separating `apps/customer` (SEO-optimized, lightweight) and `apps/merchant` (Admin Dashboard, feature-rich) for improved code isolation and build performance.

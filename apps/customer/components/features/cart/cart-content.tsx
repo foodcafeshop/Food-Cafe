@@ -28,7 +28,7 @@ interface CartContentProps {
 }
 
 export function CartContent({ initialSettings, shopId, shop }: CartContentProps) {
-    const { items, updateQuantity, totalPrice, clearCart, tableId } = useCartStore();
+    const { items, updateQuantity, totalPrice, clearCart, tableId, customerId, customerName, customerPhone, setWelcomeOpen } = useCartStore();
     const { taxRate, taxIncludedInPrice, updateSettings } = useSettingsStore();
     const router = useRouter();
 
@@ -123,8 +123,6 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 return;
             }
 
-            const { customerName, customerPhone, setWelcomeOpen } = useCartStore.getState();
-
             if (!customerName) {
                 setWelcomeOpen(true, 'checkout');
                 return;
@@ -138,7 +136,8 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 payment_status: 'pending',
                 payment_method: 'cash', // Default
                 customer_name: customerName,
-                customer_phone: customerPhone
+                customer_phone: customerPhone,
+                customer_id: customerId // Bound ID
             };
 
             const newOrder = await createOrder(orderData);

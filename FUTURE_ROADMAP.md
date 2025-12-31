@@ -173,6 +173,18 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Implementation**: Apply caching logic cautiously to different apps (Customer vs Merchant) to prevent stale data issues.
 
 ---
+### 👤 27. Customer Identity & Global Architecture (Live ✅)
+*   **Guest Profiles**: "Ghost User" system allowing frictionless, name-only access for temporary customers (`is_guest=true`).
+*   **Smart Session Guard**: Automatic cross-shop logout protection to prevent data leaks when scanning different QR codes.
+*   **Federated Schema**: `global_user_id` and `is_guest` columns ready for future Global App integration.
+
+### 🌍 28. Food Cafe Global App (Planned 🚧)
+*   **Automatic Login Flow**: "One-Tap" Welcome Dialog logic designed to accept Global credentials.
+*   **Aggregator App**: A standalone consumer app listing all "Food Cafe" partner shops.
+*   **Global Auth**: Single sign-on (SSO) for customers using Supabase Auth.
+*   **Unified Profile**: Manage one profile (Name, Phone, Saved Payment Methods) usable across all shops.
+*   **Shop Discovery**: Map-based search to find nearby Food Cafe powered restaurants.
+*   **Order History**: Centralized view of all past orders from any shop.
 
 ### 📝 Original Requests
 *   [ ] "Add feature to suggest menu items based on customer inputs, using AI"

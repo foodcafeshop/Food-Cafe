@@ -201,33 +201,38 @@ export async function getLandingPageData(slug: string) {
 
 import { generateOrderNumber } from './utils';
 
-export async function upsertCustomer(shopId: string, name: string, phone: string) {
-    if (!phone) return null;
+export async function upsertCustomer(shopId: string, name: string, phone?: string) {
+    // 1. If phone is provided, try to find existing customer
+    if (phone) {
+        const { data: existingCustomer } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('shop_id', shopId)
+            .eq('phone', phone)
+            .single();
 
-    // 1. Check if customer exists
-    const { data: existingCustomer } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('shop_id', shopId)
-        .eq('phone', phone)
-        .single();
+        if (existingCustomer) {
+            // Found existing user with this phone -> Ensure they are NOT a guest anymore (if they were)
+            // and update name if needed.
+            await supabase.from('customers').update({
+                name: name || undefined, // Update name if provided
+                is_guest: false          // Confirm they are a registered user
+            }).eq('id', existingCustomer.id);
 
-    if (existingCustomer) {
-        // Update name if provided (and different?) - For now, just return ID
-        // Optionally update name if it was null or we want to overwrite
-        if (name) {
-            await supabase.from('customers').update({ name }).eq('id', existingCustomer.id);
+            return existingCustomer.id;
         }
-        return existingCustomer.id;
     }
 
-    // 2. Create new customer
+    // 2. Create new customer (Guest or New Registered)
+    // If no phone -> is_guest = true
+    // If phone provided (but not found above) -> is_guest = false
     const { data: newCustomer, error } = await supabase
         .from('customers')
         .insert({
             shop_id: shopId,
             name: name,
-            phone: phone
+            phone: phone || null,
+            is_guest: !phone // True if no phone, False if phone exists
         })
         .select('id')
         .single();
@@ -254,8 +259,10 @@ export async function createOrder(order: any) {
             }
 
             // Handle Customer
-            let customerId = null;
-            if (order.customer_phone) {
+            let customerId = order.customer_id || null; // Use bound ID if available
+
+            if (!customerId && order.customer_phone) {
+                // Fallback: Lookup or create if ID was lost/not provided
                 customerId = await upsertCustomer(shopId, order.customer_name, order.customer_phone);
             }
 

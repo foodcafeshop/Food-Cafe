@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, Printer, CheckSquare } from "lucide-react";
-import { getTableOrders, settleTableBill, getSettings, updateOrderStatus } from "@/lib/api";
+import { getTableOrders, settleTableBill, getSettings, updateOrderStatus, clearTable } from "@/lib/api";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { toast } from "sonner";
 import { generateReceiptHtml } from "@/lib/print-utils";
@@ -238,6 +238,19 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
         printWindow.document.close();
     };
 
+    const handleClearTable = async () => {
+        if (!tableId) return;
+        try {
+            await clearTable(tableId);
+            toast.success("Table marked as Empty");
+            onSuccess(tableId, 'empty');
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Failed to clear table:", error);
+            toast.error("Failed to clear table");
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg z-[100]">
@@ -248,7 +261,16 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                 {loading ? (
                     <div className="py-8 text-center text-muted-foreground">Loading orders...</div>
                 ) : orders.length === 0 ? (
-                    <div className="py-8 text-center text-muted-foreground">No active orders for this table.</div>
+                    <div className="py-8 text-center space-y-4">
+                        <div className="text-muted-foreground">No active orders for this table.</div>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleClearTable}
+                        >
+                            Mark as Empty
+                        </Button>
+                    </div>
                 ) : (
                     <div className="space-y-6">
                         <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
