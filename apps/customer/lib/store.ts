@@ -76,7 +76,7 @@ export const useCartStore = create<CartStore>()(
             isWelcomeOpen: false,
             welcomeMode: 'welcome',
             setWelcomeOpen: (isOpen, mode = 'welcome') => set({ isWelcomeOpen: isOpen, welcomeMode: mode }),
-            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [] }),
+            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null }),
         }),
         {
             name: 'food-cafe-cart',

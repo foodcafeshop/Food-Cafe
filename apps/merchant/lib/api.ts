@@ -501,32 +501,23 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
             )
         `)
         .eq('table_id', tableId)
-        .in('status', ['served', 'billed']) // Include billed in case re-settling or partial
+        .in('status', ['served', 'billed']) // Include billed in case re-settling
         .eq('payment_status', 'pending');
 
     if (ordersError) throw ordersError;
-    // Filter out cancelled orders
     const validOrders = (orders || []).filter(o => o.status !== 'cancelled');
 
-    // Handle case where all orders are cancelled (or no active orders)
     if (!validOrders || validOrders.length === 0) {
         console.warn("No active orders found. Marking table as billed/void.");
-
-        // Update Table status to 'billed' so it can be cleared
         await supabase.from('tables').update({ status: 'billed' }).eq('id', tableId);
-
         return { bill_number: 'VOID' };
     }
 
     const orderIds = validOrders.map(o => o.id);
-    const shopId = validOrders[0].shop_id; // Assume all orders for a table belong to the same shop
+    const shopId = validOrders[0].shop_id;
 
-    // Create snapshot of items for the bill
     const itemsSnapshot = validOrders.flatMap(order => {
-        if (!order.order_items || !Array.isArray(order.order_items)) {
-            console.warn('Order missing items:', order);
-            return [];
-        }
+        if (!order.order_items || !Array.isArray(order.order_items)) return [];
         return order.order_items.map((item: any) => ({
             name: item.name,
             price: item.price,
@@ -535,9 +526,7 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
         }));
     });
 
-    console.log('Generated Items Snapshot:', itemsSnapshot); // DEBUG LOG
-
-    // 2. Create Bill with Retry Logic for Unique Bill Number
+    // 2. Call RPC with Retry Logic for Unique Bill Number
     const maxRetries = 5;
     let attempt = 0;
     let billData;
@@ -545,30 +534,27 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
     while (attempt < maxRetries) {
         try {
             const billNumber = generateBillNumber();
-            const { data: bill, error: billError } = await supabase
-                .from('bills')
-                .insert({
-                    shop_id: shopId,
-                    table_id: tableId,
-                    total_amount: roundToThree(breakdown?.grandTotal),
-                    payment_method: paymentMethod,
-                    order_ids: orderIds,
-                    items_snapshot: itemsSnapshot, // Store the snapshot
-                    breakdown: breakdown,
-                    bill_number: billNumber
-                })
-                .select()
-                .single();
 
-            if (billError) {
-                if (billError.code === '23505') { // Unique violation
+            const { data, error } = await supabase.rpc('settle_table_bill', {
+                p_shop_id: shopId,
+                p_table_id: tableId,
+                p_bill_number: billNumber,
+                p_payment_method: paymentMethod,
+                p_total_amount: roundToThree(breakdown?.grandTotal),
+                p_order_ids: orderIds,
+                p_items_snapshot: itemsSnapshot,
+                p_breakdown: breakdown
+            });
+
+            if (error) {
+                if (error.code === '23505') { // Unique violation
                     console.warn(`Collision for bill number ${billNumber}, retrying...`);
                     attempt++;
                     continue;
                 }
-                throw billError;
+                throw error;
             }
-            billData = bill;
+            billData = data;
             break;
         } catch (err) {
             throw err;
@@ -576,17 +562,6 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
     }
 
     if (!billData) throw new Error("Failed to generate unique bill number");
-
-    // 3. Update Orders to 'billed' and 'paid'
-    const { error: updateError } = await supabase
-        .from('orders')
-        .update({ status: 'billed', payment_status: 'paid' })
-        .in('id', orderIds);
-
-    if (updateError) throw updateError;
-
-    // 4. Update Table status to 'billed' (or 'empty' if they leave immediately, but usually 'billed' first)
-    await supabase.from('tables').update({ status: 'billed' }).eq('id', tableId);
 
     return billData;
 }

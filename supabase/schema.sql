@@ -217,6 +217,45 @@ create table if not exists public.bills (
   breakdown jsonb
 );
 
+-- RPC: Atomic Bill Settlement
+create or replace function public.settle_table_bill(
+  p_shop_id uuid,
+  p_table_id uuid,
+  p_bill_number text,
+  p_payment_method text,
+  p_total_amount numeric,
+  p_order_ids uuid[],
+  p_items_snapshot jsonb,
+  p_breakdown jsonb
+)
+returns jsonb as $$
+declare
+  v_bill_data jsonb;
+begin
+  -- 1. Insert Bill
+  insert into public.bills (
+    shop_id, table_id, bill_number, total_amount, payment_method, 
+    order_ids, items_snapshot, breakdown
+  ) values (
+    p_shop_id, p_table_id, p_bill_number, p_total_amount, p_payment_method,
+    p_order_ids, p_items_snapshot, p_breakdown
+  ) returning to_jsonb(bills.*) into v_bill_data;
+
+  -- 2. Update Orders
+  update public.orders
+  set status = 'billed',
+      payment_status = 'paid'
+  where id = any(p_order_ids);
+
+  -- 3. Update Table
+  update public.tables
+  set status = 'billed'
+  where id = p_table_id;
+
+  return v_bill_data;
+end;
+$$ language plpgsql security definer;
+
 -- 12. Reviews
 create table if not exists public.reviews (
   id uuid primary key default uuid_generate_v4(),
@@ -335,6 +374,22 @@ create trigger trg_bills_uppercase_number
 before insert or update on public.bills
 for each row
 execute function public.ensure_bill_number_uppercase();
+
+-- Prevent Order Status Updates if Finalized
+create or replace function public.check_order_status_immutable()
+returns trigger as $$
+begin
+  if old.status in ('billed', 'cancelled') and new.status is distinct from old.status then
+    raise exception 'Order status cannot be changed once it is %', old.status;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_check_order_status_immutable
+before update on public.orders
+for each row
+execute function public.check_order_status_immutable();
 
 -- Update Menu Item Ratings
 create or replace function public.update_menu_item_rating()
