@@ -111,9 +111,7 @@ export function TableSelector({ onSelect, onBill, onClear, selectedTableId }: Ta
                                 className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 gap-1"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (confirm(`Mark ${table.label} as Empty?`)) {
-                                        onClear?.(table.id);
-                                    }
+                                    onClear?.(table.id);
                                 }}
                             >
                                 <CheckSquare className="h-3 w-3" /> Clear

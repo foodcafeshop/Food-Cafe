@@ -2,6 +2,16 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, ChefHat, ArrowLeft, XCircle } from "lucide-react";
@@ -18,6 +28,7 @@ export default function KDSPage() {
     const { shopId } = useShopId();
     const [orders, setOrders] = useState<any[]>([]);
     const prevOrdersCount = useRef(0);
+    const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
     useEffect(() => {
         if (shopId) {
@@ -140,17 +151,39 @@ export default function KDSPage() {
                                             const prev = getPrevStatus(order.status);
                                             if (prev) handleStatusUpdate(order.id, prev);
                                         }}
-                                        onCancel={() => {
-                                            if (confirm("Are you sure you want to cancel this order?")) {
-                                                handleStatusUpdate(order.id, 'cancelled');
-                                            }
-                                        }}
+                                        onCancel={() => setOrderToCancel(order.id)}
                                     />
                                 ))}
                         </div>
                     </div>
                 ))}
             </div>
+
+            <AlertDialog open={!!orderToCancel} onOpenChange={() => setOrderToCancel(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to cancel this order? This action requires kitchen staff authorization.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                if (orderToCancel) {
+                                    handleStatusUpdate(orderToCancel, 'cancelled');
+                                    setOrderToCancel(null);
+                                }
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Confirm Cancel
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

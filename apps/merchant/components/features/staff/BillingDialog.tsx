@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -41,6 +51,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const [printerHeader, setPrinterHeader] = useState('');
     const [printerFooter, setPrinterFooter] = useState('');
     const [shopLogo, setShopLogo] = useState<string | null>(null);
+    const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
     useEffect(() => {
         if (open && tableId && shopId) {
@@ -266,7 +277,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                         <Button
                             variant="destructive"
                             size="sm"
-                            onClick={handleClearTable}
+                            onClick={() => setConfirmClearOpen(true)}
                         >
                             Mark as Empty
                         </Button>
@@ -401,6 +412,29 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                     </div>
                 )}
             </DialogContent>
-        </Dialog>
+
+            <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark Table as Empty?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear the table status. Ensure there are no active customers seated.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleClearTable();
+                                setConfirmClearOpen(false);
+                            }}
+                        >
+                            Confirm
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </Dialog >
     );
 }

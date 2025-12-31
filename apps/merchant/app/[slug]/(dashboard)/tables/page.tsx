@@ -7,6 +7,16 @@ import { QrCode, Users, Move, Printer, Plus, Trash2, Edit2, List, Grid, LayoutGr
 import { useState, useEffect, useRef } from "react";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,6 +73,25 @@ export default function TableManagementPage() {
 
     const [restaurantName, setRestaurantName] = useState('Food Cafe');
     const [shopSlug, setShopSlug] = useState<string>("");
+
+    // Alert Dialog State
+    const [alertConfig, setAlertConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        actionLabel: string;
+        variant?: "default" | "destructive";
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        description: "",
+        actionLabel: "Continue",
+        variant: "default",
+        onConfirm: () => { }
+    });
+
+    const closeAlert = () => setAlertConfig(prev => ({ ...prev, isOpen: false }));
 
     useEffect(() => {
         if (shopId) {
@@ -141,20 +170,28 @@ export default function TableManagementPage() {
     // So we can remove it from here.
 
 
-    const handleClearTable = async (table: Table) => {
-        if (confirm(`Mark ${table.label} as Empty?`)) {
-            try {
-                await clearTable(table.id);
-                toast.success("Table marked as empty");
-                setTables(prev => prev.map(t =>
-                    t.id === table.id ? { ...t, status: 'empty' } : t
-                ));
-                fetchTables();
-            } catch (e) {
-                console.error(e);
-                toast.error("Failed to clear table");
+    const handleClearTable = (table: Table) => {
+        setAlertConfig({
+            isOpen: true,
+            title: "Clear Table",
+            description: `Mark ${table.label} as Empty? This will clear active sessions.`,
+            actionLabel: "Mark as Empty",
+            variant: "default", // or destructive if you prefer
+            onConfirm: async () => {
+                try {
+                    await clearTable(table.id);
+                    toast.success("Table marked as empty");
+                    setTables(prev => prev.map(t =>
+                        t.id === table.id ? { ...t, status: 'empty' } : t
+                    ));
+                    fetchTables();
+                } catch (e) {
+                    console.error(e);
+                    toast.error("Failed to clear table");
+                }
+                closeAlert();
             }
-        }
+        });
     };
 
     const getStatusColor = (status: TableStatus) => {
@@ -200,24 +237,34 @@ export default function TableManagementPage() {
         setIsDialogOpen(true);
     };
 
-    const handleDeleteTable = async () => {
-        if (currentTable.id && confirm("Delete this table?")) {
-            const { data, error } = await supabase
-                .from('tables')
-                .delete()
-                .eq('id', currentTable.id)
-                .select();
+    const handleDeleteTable = () => {
+        if (!currentTable.id) return;
 
-            if (error) {
-                toast.error('Failed to delete table');
-            } else if (!data || data.length === 0) {
-                toast.error('Cannot delete table (Permission denied)');
-            } else {
-                setTables(tables.filter(t => t.id !== currentTable.id));
-                setIsDialogOpen(false);
-                toast.success('Table deleted');
+        setAlertConfig({
+            isOpen: true,
+            title: "Delete Table",
+            description: "Are you sure you want to delete this table? This action cannot be undone.",
+            actionLabel: "Delete",
+            variant: "destructive",
+            onConfirm: async () => {
+                const { data, error } = await supabase
+                    .from('tables')
+                    .delete()
+                    .eq('id', currentTable.id)
+                    .select();
+
+                if (error) {
+                    toast.error('Failed to delete table');
+                } else if (!data || data.length === 0) {
+                    toast.error('Cannot delete table (Permission denied)');
+                } else {
+                    setTables(tables.filter(t => t.id !== currentTable.id));
+                    setIsDialogOpen(false);
+                    toast.success('Table deleted');
+                }
+                closeAlert();
             }
-        }
+        });
     };
 
     const handleSave = async () => {
@@ -798,6 +845,30 @@ export default function TableManagementPage() {
             </Dialog>
 
             {/* Billing Dialog */}
+
+            {/* Alert Dialog */}
+            <AlertDialog open={alertConfig.isOpen} onOpenChange={closeAlert}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                alertConfig.onConfirm();
+                            }}
+                            className={alertConfig.variant === "destructive" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+                        >
+                            {alertConfig.actionLabel}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <BillingDialog
                 open={!!billingTable}
                 onOpenChange={(open) => !open && setBillingTable(null)}

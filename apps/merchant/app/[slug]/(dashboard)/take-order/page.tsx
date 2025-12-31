@@ -13,6 +13,16 @@ import { toast } from "sonner";
 import { generateOrderNumber } from "@/lib/utils";
 
 import { BillingDialog } from "@/components/features/staff/BillingDialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { useRouter, useParams } from "next/navigation";
 
@@ -25,8 +35,11 @@ export default function TakeOrderPage() {
     const slug = params.slug as string;
     const [step, setStep] = useState<'table' | 'order'>('table');
     const [selectedTable, setSelectedTable] = useState<{ id: string; label: string } | null>(null);
+
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+    const [discardCartOpen, setDiscardCartOpen] = useState(false);
+    const [clearTableId, setClearTableId] = useState<string | null>(null);
 
     // Billing State
     const [billingTableId, setBillingTableId] = useState<string | null>(null);
@@ -123,17 +136,17 @@ export default function TakeOrderPage() {
 
     const handleBackToTables = () => {
         if (cartItems.length > 0) {
-            if (confirm("Cart will be cleared. Continue?")) {
-                setCartItems([]);
-                setStep('table');
-                setSelectedTable(null);
-                router.push(`/${slug}/take-order`);
-            }
+            setDiscardCartOpen(true);
         } else {
-            setStep('table');
-            setSelectedTable(null);
-            router.push(`/${slug}/take-order`);
+            navigateToTables();
         }
+    };
+
+    const navigateToTables = () => {
+        setCartItems([]);
+        setStep('table');
+        setSelectedTable(null);
+        router.push(`/${slug}/take-order`);
     };
 
     const addToCart = (item: MenuItem) => {
@@ -305,16 +318,21 @@ export default function TakeOrderPage() {
 
     const [refreshKey, setRefreshKey] = useState(0);
 
-    const handleClearTable = async (tableId: string) => {
+    const handleClearTable = (tableId: string) => {
+        setClearTableId(tableId);
+    };
+
+    const confirmClearTable = async () => {
+        if (!clearTableId) return;
         try {
             // Dynamically import clearTable to avoid top-level import issues if any, 
             // though we could add to top imports. Sticking to pattern used for some other actions or just import it.
             // Actually, let's use the top-level import we will add.
             const { clearTable } = await import("@/lib/api");
-            await clearTable(tableId);
+            await clearTable(clearTableId);
             toast.success("Table marked as empty");
             setRefreshKey(prev => prev + 1);
-            if (selectedTable?.id === tableId) {
+            if (selectedTable?.id === clearTableId) {
                 setSelectedTable(null);
                 setStep('table');
                 router.push(`/${slug}/take-order`);
@@ -322,8 +340,11 @@ export default function TakeOrderPage() {
         } catch (error) {
             console.error("Failed to clear table", error);
             toast.error("Failed to mark table as empty");
+        } finally {
+            setClearTableId(null);
         }
     };
+
 
     return (
         <div className="h-full flex flex-col p-0 md:p-6">
@@ -384,6 +405,53 @@ export default function TakeOrderPage() {
                 shopId={shopId}
                 onSuccess={handleBillingSuccess}
             />
+
+            <AlertDialog open={discardCartOpen} onOpenChange={setDiscardCartOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Discard Cart?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Going back will clear your current cart. Are you sure you want to continue?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigateToTables();
+                                setDiscardCartOpen(false);
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Discard & Leave
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={!!clearTableId} onOpenChange={() => setClearTableId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Clear Table?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to mark this table as empty? This will clear active sessions.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                confirmClearTable();
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Clear Table
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
