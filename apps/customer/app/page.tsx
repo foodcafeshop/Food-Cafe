@@ -11,7 +11,10 @@ import CategoryRail from '@/components/landing/category-rail';
 import ShopCard from '@/components/landing/shop-card';
 import { getAllShops } from '@/lib/api';
 
+import { usePWA } from '@/components/providers/pwa-provider';
+
 export default function LandingPage() {
+    const { isStandalone } = usePWA();
     const [shops, setShops] = useState<any[]>([]); // "All Restaurants" (Filtered)
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -110,16 +113,19 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section id="how-it-works">
-                <HowItWorks />
-            </section>
-
-            {/* Why Food Cafe */}
-            <WhyFoodCafe />
-
-            {/* App Download CTA */}
-            <AppDownloadCTA />
+            {/* Promotional Sections - Only visible if NOT in PWA mode */}
+            {!isStandalone && (
+                <>
+                    {/* How It Works */}
+                    <section id="how-it-works">
+                        <HowItWorks />
+                    </section>
+                    {/* Why Food Cafe */}
+                    <WhyFoodCafe />
+                    {/* App Download CTA */}
+                    <AppDownloadCTA />
+                </>
+            )}
 
             {/* Footer */}
             <Footer />
