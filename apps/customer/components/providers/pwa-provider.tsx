@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface PWAContextType {
     isInstallable: boolean;
+    isStandalone: boolean;
     handleInstallClick: () => Promise<void>;
 }
 
@@ -12,6 +13,7 @@ const PWAContext = createContext<PWAContextType | undefined>(undefined);
 export function PWAProvider({ children }: { children: React.ReactNode }) {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isInstallable, setIsInstallable] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
 
     useEffect(() => {
         const handler = (e: any) => {
@@ -28,7 +30,12 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         // Check if already installed
         if (window.matchMedia("(display-mode: standalone)").matches) {
             setIsInstallable(false);
+            setIsStandalone(true);
         }
+
+        window.matchMedia("(display-mode: standalone)").addEventListener("change", (evt) => {
+            setIsStandalone(evt.matches);
+        });
 
         return () => window.removeEventListener("beforeinstallprompt", handler);
     }, []);
@@ -52,7 +59,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <PWAContext.Provider value={{ isInstallable, handleInstallClick }}>
+        <PWAContext.Provider value={{ isInstallable, isStandalone, handleInstallClick }}>
             {children}
         </PWAContext.Provider>
     );
@@ -64,7 +71,7 @@ export function usePWA() {
         // Return dummy implementation if used outside provider (e.g. server components during SSR if incorrectly called, though usePWA implies client)
         // Or better, just console warning and return default
         console.warn("usePWA must be used within a PWAProvider");
-        return { isInstallable: false, handleInstallClick: async () => { } };
+        return { isInstallable: false, isStandalone: false, handleInstallClick: async () => { } };
     }
     return context;
 }

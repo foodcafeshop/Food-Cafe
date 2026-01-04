@@ -110,17 +110,25 @@ export function WelcomeDialog() {
         return () => clearTimeout(timer);
     }, [customerName, setWelcomeOpen]);
 
-    // Realtime Logout Listener & Offline Recovery
+    // Initialize Local State from Store when dialog opens or store changes
+    useEffect(() => {
+        if (isWelcomeOpen) {
+            if (customerName) setName(customerName);
+            if (useCartStore.getState().customerPhone) setPhone(useCartStore.getState().customerPhone || "");
+        }
+    }, [isWelcomeOpen, customerName]);
+
+    // Check URL and Force Open if needed (New Scan / URL Entry)
     useEffect(() => {
         if (!tableId || !sessionId) return;
+        if (!customerName) return; // Handled by the other effect
 
-        // 1. Initial Check (for offline recovery)
-        const checkStatus = async () => {
-            if (!customerName) return; // Only check if logged in
-
+        const validateSession = async () => {
+            // Basic fetch to check if our session ID is still valid for this table
+            // This handles the "Scan QR -> Redirect -> Table ID changes -> Valid?" flow
             const { data: table } = await supabase
                 .from('tables')
-                .select('status, active_customers')
+                .select('active_customers, status')
                 .eq('id', tableId)
                 .single();
 
@@ -129,15 +137,22 @@ export function WelcomeDialog() {
                 const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
 
                 if (table.status === 'empty' || !isSessionValid) {
-                    logout();
+                    // We are logged in conceptually, but not valid for THIS table.
+                    // Don't fully logout (keep name/phone), just force re-entry (OTP).
                     setWelcomeOpen(true, 'welcome');
-                    toast.info("Session expired.");
+                    // Optional: Clearning sessionId might be needed to force a new join
+                    // logout(); // Keeping logout for now to ensure clean state as per current architecture
                 }
             }
         };
-        checkStatus();
 
-        // 2. Realtime Listener
+        validateSession();
+    }, [tableId, sessionId, customerName, setWelcomeOpen]);
+
+    // Realtime Logout Listener
+    useEffect(() => {
+        if (!tableId || !sessionId) return;
+
         const channel = supabase
             .channel(`table-status-${tableId}`)
             .on(
@@ -154,7 +169,6 @@ export function WelcomeDialog() {
                     const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
 
                     if (newStatus === 'empty' || !isSessionValid) {
-                        // Table cleared or user removed
                         logout();
                         setWelcomeOpen(true, 'welcome');
                         toast.info("Session ended by staff.");
@@ -166,7 +180,7 @@ export function WelcomeDialog() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [tableId, sessionId, logout, setWelcomeOpen, customerName]);
+    }, [tableId, sessionId, logout, setWelcomeOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -13,7 +13,7 @@ interface AccountSheetProps {
 }
 
 export function AccountSheet({ open, onOpenChange }: AccountSheetProps) {
-    const { customerName, tableLabel, logout, totalItems } = useCartStore();
+    const { customerName, customerPhone, tableLabel, logout, totalItems } = useCartStore();
     const params = useParams();
     const slug = params?.slug as string;
     const cartCount = totalItems();
@@ -49,6 +49,9 @@ export function AccountSheet({ open, onOpenChange }: AccountSheetProps) {
                         <div>
                             <div className="text-sm text-gray-500 font-medium">{getGreeting()},</div>
                             <div className="text-xl font-bold text-gray-900 leading-tight">{customerName}</div>
+                            {customerPhone && (
+                                <div className="text-sm text-gray-500 font-medium mt-0.5">{customerPhone}</div>
+                            )}
                         </div>
                     </div>
 

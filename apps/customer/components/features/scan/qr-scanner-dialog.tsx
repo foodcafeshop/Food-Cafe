@@ -35,8 +35,9 @@ export function QRScannerDialog({ open, onOpenChange }: QRScannerDialogProps) {
 
             if (isValidDomain) {
                 toast.success("Table found! Redirecting...");
-                // Internal navigation using Next.js router for speed and SPA feel
-                router.push(urlObj.pathname + urlObj.search);
+                // Force a hard reload to ensure clean session state initialization
+                // This guarantees the Welcome Dialog triggers correctly for new tables
+                window.location.href = urlObj.pathname + urlObj.search;
             } else {
                 toast.error("Invalid QR Code: Must be a Food Cafe URL");
                 console.warn("Blocked external QR:", url);

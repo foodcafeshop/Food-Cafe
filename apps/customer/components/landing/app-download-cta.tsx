@@ -2,13 +2,14 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Download, Star, Smartphone } from "lucide-react";
+import { Download, Star, Smartphone, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import { usePWA } from "@/components/providers/pwa-provider";
 
 export default function AppDownloadCTA() {
-    const { handleInstallClick } = usePWA();
+    const { handleInstallClick, isStandalone } = usePWA();
 
     const handleInstall = async () => {
         await handleInstallClick();
@@ -100,11 +101,26 @@ export default function AppDownloadCTA() {
                     >
                         <Button
                             onClick={handleInstall}
+                            disabled={isStandalone}
                             size="lg"
-                            className="h-14 px-10 text-lg font-bold bg-white text-orange-600 hover:bg-zinc-100 rounded-full shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+                            className={cn(
+                                "h-14 px-10 text-lg font-bold rounded-full shadow-xl transition-all",
+                                isStandalone
+                                    ? "bg-emerald-500 text-white hover:bg-emerald-600 cursor-default"
+                                    : "bg-white text-orange-600 hover:bg-zinc-100 hover:shadow-2xl hover:scale-105"
+                            )}
                         >
-                            <Download className="w-5 h-5 mr-2" />
-                            Install App
+                            {isStandalone ? (
+                                <>
+                                    <Check className="w-5 h-5 mr-2" />
+                                    App Installed
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="w-5 h-5 mr-2" />
+                                    Install App
+                                </>
+                            )}
                         </Button>
                         <p className="mt-4 text-sm text-white/70">Works on iOS & Android • No app store needed</p>
                     </motion.div>
