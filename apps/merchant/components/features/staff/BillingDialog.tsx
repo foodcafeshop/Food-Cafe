@@ -223,15 +223,30 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
             billNumber: displayBillNumber,
             billLabel,
             currency,
-            items: orders
-                .filter(o => o.status !== 'cancelled')
-                .flatMap(o => o.order_items || [])
-                .map((item: any) => ({
+            items: (() => {
+                const allItems = orders
+                    .filter(o => o.status !== 'cancelled')
+                    .flatMap(o => o.order_items || []);
+
+                const groupedItems = allItems.reduce((acc: any[], item: any) => {
+                    const key = `${item.menu_item_id || item.name}-${item.price}-${(item.notes || '').trim()}`;
+                    const existing = acc.find((i: any) => i._groupKey === key);
+
+                    if (existing) {
+                        existing.quantity += item.quantity;
+                    } else {
+                        acc.push({ ...item, _groupKey: key });
+                    }
+                    return acc;
+                }, []);
+
+                return groupedItems.map((item: any) => ({
                     name: item.name,
                     quantity: item.quantity,
                     price: item.price,
                     notes: item.notes
-                })),
+                }));
+            })(),
             subtotal: billing.subtotal,
             tax: billing.tax,
             taxRate,

@@ -194,12 +194,26 @@ export default function BillsPage() {
             billLabel: "Bill #",
             orderNumber: billOrders.map(o => o.order_number || o.id.slice(0, 4)).join(', '),
             currency,
-            items: Array.isArray(selectedBill.items_snapshot) ? selectedBill.items_snapshot.map((item: any) => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.price,
-                notes: item.notes
-            })) : [],
+            items: Array.isArray(selectedBill.items_snapshot) ? (() => {
+                const groupedItems = selectedBill.items_snapshot.reduce((acc: any[], item: any) => {
+                    const key = `${item.menu_item_id || item.name}-${item.price}-${(item.notes || '').trim()}`;
+                    const existing = acc.find((i: any) => i._groupKey === key);
+
+                    if (existing) {
+                        existing.quantity += item.quantity;
+                    } else {
+                        acc.push({ ...item, _groupKey: key });
+                    }
+                    return acc;
+                }, []);
+
+                return groupedItems.map((item: any) => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    notes: item.notes
+                }));
+            })() : [],
             subtotal,
             tax,
             taxRate: finalTaxRate,
@@ -405,15 +419,34 @@ export default function BillsPage() {
 
                             <div className="space-y-2">
                                 {Array.isArray(selectedBill.items_snapshot) && selectedBill.items_snapshot.length > 0 ? (
-                                    selectedBill.items_snapshot.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between text-sm">
-                                            <div className="flex gap-2">
-                                                <span className="font-bold">{item.quantity}x</span>
-                                                <span>{item.name}</span>
+                                    (() => {
+                                        const groupedItems = selectedBill.items_snapshot.reduce((acc: any[], item: any) => {
+                                            const key = `${item.menu_item_id || item.name}-${item.price}-${(item.notes || '').trim()}`;
+                                            const existing = acc.find((i: any) => i._groupKey === key);
+
+                                            if (existing) {
+                                                existing.quantity += item.quantity;
+                                            } else {
+                                                acc.push({ ...item, _groupKey: key });
+                                            }
+                                            return acc;
+                                        }, []);
+
+                                        return groupedItems.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between text-sm">
+                                                <div className="flex gap-2">
+                                                    <span className="font-bold">{item.quantity}x</span>
+                                                    <div className="flex flex-col">
+                                                        <span>{item.name}</span>
+                                                        {item.notes && (
+                                                            <span className="text-xs text-muted-foreground italic">Note: {item.notes}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
-                                            <span>{currency}{(item.price * item.quantity).toFixed(2)}</span>
-                                        </div>
-                                    ))
+                                        ));
+                                    })()
                                 ) : (
                                     <p className="text-sm text-muted-foreground italic text-center py-2">Item details not available for this bill.</p>
                                 )}
