@@ -45,7 +45,11 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Interactive Lightbox**: Customers can view the restaurant's ambiance through a high-quality, full-screen image gallery.
         *   **Smart Pagination**: "See More" functionality keeps the initial load fast (limited to 8 images) while allowing deep exploration.
         *   **Accessible Design**: Fully keyboard and screen-reader accessible carousel.
-*   **Live Order Tracking**: An "Uber-like" status tracker shows the food journey: *Queued -> Preparing -> Ready -> Served*.
+*   **Live Order Tracking**: An "Uber-like" status tracker shows the payment journey status: *Queued -> Preparing -> Ready -> Served*.
+*   **Unified Account Hub (New ✅)**:
+    *   **Mobile Experience**: A dedicated **Bottom Sheet Hub** providing a personalized "Good Morning/Evening" greeting, pulsing "Current Table" indicator, and quick-access cards for Menu and Cart.
+    *   **Desktop Experience**: A sleek **Popover Profile Menu** replacing cluttered inline text.
+    *   **Decluttered Navigation**: User-related actions moved to the "Account" tab on mobile, focusing the header on Shop Identity.
 
 ### 👨‍🍳 2. Intelligent Kitchen Display System (KDS)
 *   **Real-Time Ticket Board**: Orders appear on the kitchen screen with a distinctive "Ping" sound the millisecond they are placed.
@@ -118,6 +122,8 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Gallery Control**:
         *   **Visual Manager**: Shop owners can manage the "Our Ambiance" gallery directly from the profile settings.
         *   **Input Validation**: Supports up to 16 high-res image URLs with automatic cleanup of empty inputs.
+    *   **Ratings Visibility (New ✅)**:
+        *   **Toggle Control**: Shop owners can choose to display or hide their aggregate star ratings on the customer landing page.
 *   **Localization**:
     *   **Multi-Currency Support**: Native support for global currencies, with **INR (₹)** prioritized.
 *   **Enterprize-Grade Data Management**:

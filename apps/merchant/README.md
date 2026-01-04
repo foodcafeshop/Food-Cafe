@@ -102,6 +102,8 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Gallery Management**:
     *   **Visual Editor**: Admin interface to manage shop's photo gallery (up to 16 images).
     *   **Auto-Cleanup**: Automatically filters void inputs for a clean database.
+*   **Ratings Visibility**:
+    *   **Toggle Control**: Shop owners can choose to display or hide their aggregate star ratings on the customer landing page.
 *   **Localization**:
     *   **Multi-Currency Support**: Native support for global currencies, with **INR (₹)** prioritized.
 *   **Enterprize-Grade Data Management**:

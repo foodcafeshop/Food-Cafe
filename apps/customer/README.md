@@ -40,6 +40,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Performance Optimized**: Pre-fetching and database indexing ensure sub-100ms menu loads.
     *   **Immersive Photo Gallery**: High-quality "Ambiance" section with lightbox viewer and smart pagination.
 *   **Live Order Tracking**: An "Uber-like" status tracker shows the food journey: *Queued -> Preparing -> Ready -> Served*.
+*   **Unified Account Hub**:
+    *   **Mobile Bottom Sheet**: Centralized hub for profile, current table status, and quick links to Menu/Cart.
+    *   **Desktop Popover**: Clean, non-intrusive profile dropdown replacing cluttered headers.
+    *   **Personalized Experience**: Time-aware greetings (Good Morning/Evening) and prominent logout access.
 
 ### 👤 2. Identity & Session Architecture
 *   **Frictionless Entry**:
