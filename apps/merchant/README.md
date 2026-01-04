@@ -143,6 +143,15 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
     *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
 
+### 🏙️ 8. D2C Marketplace Visibility (Live ✅)
+*   **Automatic Listing**: Your shop is automatically featured on the Food Cafe Consumer App.
+*   **SEO & Discovery**:
+    *   **Unified Search**: Customers find you by name, cuisine, or specific dishes.
+    *   **Location Based**: (Planned) Nearby customers see your restaurant first.
+*   **Direct-to-Consumer**:
+    *   **QR & Links**: Share your unique `foodcafeshop.in/slug` link or QR code for direct access.
+    *   **PWA**: Customers can install the app for instant access to your menu.
+
 ### 🔔 9. Push Notifications (Merchant Strategy)
 *   **Critical Alerts**:
     *   **"New Order" Sound**: Distinctive alert sound plays even when the device is locked (PWA Service Worker).

@@ -87,12 +87,12 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Bluetooth & Network**: Support for Bluetooth-connected and network printers. (🚧 Browser Print only)
 *   **Template Customization**: Configurable receipt layouts with shop branding.
 
-### 🏙️ 14. Enhanced Customer Landing Page
-*   **Shop Search**: Search for restaurants/cafes by name, cuisine, or dish.
-*   **Advanced Filters**: Filter by city, distance, rating, price range, and dietary options.
-*   **Sorting**: Sort results by relevance, distance, rating, or popularity.
-*   **Featured Shops**: Highlight premium or boosted restaurants on the homepage.
-*   **Location-Based**: Auto-detect user location to show nearby options.
+### 🏙️ 14. Enhanced Customer Landing Page (Live ✅)
+*   **Shop Search**: Real-time search for restaurants by name and category tags.
+*   **Smart Limits**: API-level pagination and limits (e.g., Top 9) for performance.
+*   **Mobile Optimized**: Responsive design with sticky glassmorphism navbar and mobile-specific adjustments.
+*   **PWA Installable**: Integrated PWA installation flow for app-like experience.
+*   **Category Exploration**: Visual rail for quick category filtering.
 
 ### 📱 15. Mandatory Customer Contact Info (Live ✅)
 *   **Merchant Config**: Toggle option for merchants to make customer mobile number mandatory.
@@ -178,7 +178,17 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Smart Session Guard**: Automatic cross-shop logout protection to prevent data leaks when scanning different QR codes.
 *   **Federated Schema**: `global_user_id` and `is_guest` columns ready for future Global App integration.
 
-### 🌍 28. Food Cafe Global App (Planned 🚧)
+### 📸 29. QR Code Integration (Live ✅)
+*   **Native-Like Scanner**:
+    *   **Auto-Start Camera**: Camera feed opens immediately upon dialog launch (no extra clicks), mimicking a native app experience.
+    *   **Environment Mode**: Automatically selects the back camera for optimal scanning.
+*   **Seamless Entry**: Allows customers to scan table codes without leaving the web app.
+*   **Strict Security**:
+    *   **Domain Lockdown**: Validates scanned URLs against a strict allowlist (Production: `foodcafeshop.in`, Dev: `localhost`).
+    *   **Phishing Protection**: Blocks any non-Food Cafe QR codes to keep users safe.
+*   **Responsive UI**: Optimized scanning interface with "Starting Camera" loader and full-width viewfinder.
+
+### 🌍 30. Food Cafe Global App (Planned 🚧)
 *   **Automatic Login Flow**: "One-Tap" Welcome Dialog logic designed to accept Global credentials.
 *   **Aggregator App**: A standalone consumer app listing all "Food Cafe" partner shops.
 *   **Global Auth**: Single sign-on (SSO) for customers using Supabase Auth.
@@ -203,7 +213,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [x] "Order should have name of person who placed it, also a field showing if that person is a staff"
 *   [x] "Add inventory management to merchant app"
 *   [x] "Thermal printer integration for kitchen tickets and receipts"
-*   [ ] "Customer landing page with shop search, filters (city, distance), sorting, and featured shops"
+*   [x] "Customer landing page with shop search, filters (city, distance), sorting, and featured shops"
 *   [x] "Option for merchant to make customer mobile number required for ordering"
 *   [x] "Push notifications for order status updates"
 *   [ ] "WhatsApp and Telegram integration for order confirmations"

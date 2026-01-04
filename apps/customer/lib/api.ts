@@ -199,6 +199,56 @@ export async function getLandingPageData(slug: string) {
     };
 }
 
+export async function getAllShops(options?: {
+    search?: string;
+    tags?: string[];
+    onlyOpen?: boolean;
+    sortBy?: 'rating' | 'popularity' | 'newest';
+    limit?: number;
+}) {
+    let query = supabase
+        .from('shops')
+        .select('id, name, slug, description, logo_url, cover_image, average_rating, rating_count, tags, is_open, is_live, latitude, longitude')
+        .eq('is_live', true);
+
+    if (options?.search) {
+        query = query.ilike('name', `%${options.search}%`);
+    }
+
+    if (options?.tags && options.tags.length > 0) {
+        // Correct array overlap check for Postgres
+        query = query.contains('tags', options.tags);
+    }
+
+    if (options?.onlyOpen) {
+        query = query.eq('is_open', true);
+    }
+
+    // Sort logic
+    if (options?.sortBy === 'popularity') {
+        query = query.order('rating_count', { ascending: false });
+    } else if (options?.sortBy === 'newest') {
+        query = query.order('created_at', { ascending: false });
+    } else {
+        // Default: Rating
+        query = query.order('average_rating', { ascending: false });
+    }
+
+    // Apply Limit
+    if (options?.limit) {
+        query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('Error fetching all shops:', error);
+        return [];
+    }
+
+    return data;
+}
+
 import { generateOrderNumber } from './utils';
 
 export async function upsertCustomer(shopId: string, name: string, phone?: string) {

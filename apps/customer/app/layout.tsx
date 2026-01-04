@@ -28,6 +28,7 @@ import { Suspense } from "react";
 // ...
 
 import { Analytics } from "@vercel/analytics/react";
+import { PWAProvider } from "@/components/providers/pwa-provider";
 
 export default function RootLayout({
   children,
@@ -37,12 +38,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-background text-foreground`}>
-        {children}
-        <Suspense fallback={null}>
-          <WelcomeDialog />
-        </Suspense>
-        <Toaster />
-        <Analytics />
+        <PWAProvider>
+          {children}
+          <Suspense fallback={null}>
+            <WelcomeDialog />
+          </Suspense>
+          <Toaster />
+          <Analytics />
+        </PWAProvider>
       </body>
     </html>
   );

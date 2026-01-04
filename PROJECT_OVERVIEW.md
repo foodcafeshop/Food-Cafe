@@ -34,6 +34,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Rich Media**: High-quality images for every item.
     *   **Live Dietary Filters**: Dynamic toggles for **Veg**, **Non-Veg**, **Vegan**, **Jain Veg**, and **Contains Egg** (Smartly hides unavailable types).
     *   **Universal Iconography**: Standardized visual indicators (Leaf for Veg/Vegan, Diamond for Jain, Egg for Egg) across Menu, Cart, and Order History.
+    *   **Integrated QR Scanner (New ✅)**: Built-in scanner in the navbar with **Auto-Camera Start** and **Strict URL Validation** prevents malicious redirects.
     *   **Smart Instant Search**:
         *   **Offline First**: Search filters the menu instantly on the client-side without network latency.
         *   **Deep Discovery**: Searches across **Names**, **Descriptions**, and hidden **Tags** (e.g., "Spicy", "Chef Special") to find relevant items instantly.
@@ -141,7 +142,19 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Database Indexing**: Optimized indexes on `shop_id`, `created_at`, `status`, and `is_featured` for blazing fast queries.
     *   **Parallel Fetching**: API endpoints optimized with `Promise.all` to reduce Time-to-First-Byte (TTFB).
 
-### 💳 7. SaaS Monetization & Revenue Operations (Live ✅)
+### 🏙️ 7. The D2C Marketplace (Consumer Landing Page)
+*   **Unified Discovery**:
+    *   **Real-Time Search**: Instant search for restaurants by name or category tags using server-side filtering and API-level limits.
+    *   **Smart Listings**: "Popular Restaurants" section with optimized grid layout (Top 9) for performance.
+    *   **Mobile-First Design**: Sticky glassmorphism navbar, responsive cards, and touch-optimized navigation rail.
+*   **App-Like Experience (PWA)**:
+    *   **Installable**: Users can install the marketplace as a native app directly from the browser.
+    *   **Offline Capable**: Service workers cache static assets for instant loading on repeat visits.
+*   **Seamless Onboarding**:
+    *   **Integrated QR Scanner**: Built-in camera interface in the navbar allows users to scan table codes immediately without leaving the app.
+    *   **Smart Redirection**: Validates QR content and deep-links directly to the shop's menu.
+
+### 💳 8. SaaS Monetization & Revenue Operations
 *   **Provider-Agnostic Architecture**:
     *   **Adapter Pattern**: Designed to switch between **Razorpay**, Stripe, or PhonePe without code rewrites. Currently fully integrated with Razorpay for India.
     *   **Robust Webhooks**: Idempotent webhook handling ensures events (payments, cancellations) are never missed or processed twice.
@@ -157,7 +170,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
     *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
 
-### 🖨️ 8. Thermal Printer Integration (Live ✅)
+### 🖨️ 9. Thermal Printer Integration
 *   **Universal Browser Support**:
     *   **Driverless Printing**: Works with any standard 80mm/58mm thermal printer recognized by the OS (USB/Bluetooth/Network).
     *   **Customizable Templates**: Dedicated layouts for **Kitchen Order Tickets (KOT)** (Large fonts, high contrast) and **Customer Bills** (Branded, detailed).
@@ -166,7 +179,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Configurable Branding**: Option to show/hide Shop Logo, custom Header/Footer messages.
     *   **Historical Accuracy**: Reprints past bills with the exact tax/price breakdown from the moment of sale.
 
-### 🔔 9. Push Notifications (Live ✅)
+### 🔔 10. Push Notifications
 *   **Edge-First Notification Architecture**:
     *   **Serverless Triggering**: Next.js API Routes trigger notifications directly via `web-push` libraries without needing heavy backend workers.
     *   **Standardized Protocol**: Uses VAPID (Voluntary Application Server Identification) for secure, browser-standard communication with FCM/APNs.
@@ -185,7 +198,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
-### 👤 10. Customer Identity & Session Architecture (Live ✅)
+### 👤 11. Customer Identity & Session Architecture
 *   **Shop-Bound Identity**:
     *   **Strict Isolation**: Customer profiles are tightly scoped to specific `shop_id`s. "John" at Shop A is legally distinct from "John" at Shop B.
     *   **Cross-Shop Protection**: Smart Guard logic in the frontend immediately detects if a user scans a QR code for a different shop while still logged in, forcibly clearing the old session to prevent data leaks.

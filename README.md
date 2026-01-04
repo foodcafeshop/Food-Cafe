@@ -138,7 +138,13 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Shop Scope**: Merchants create coupons for Customers (Food discounts).
     *   **Smart Rules**: Enforce per-user limits and target specific user groups (Whitelisting).
 
-### 🖨️ 8. Thermal Printer Integration
+### 🏙️ 8. The D2C Marketplace
+*   **Consumer Landing Page**:
+    *   **Unified Search**: Real-time discovery of restaurants with smart filters and API-level pagination.
+    *   **PWA Installable**: Native-like app experience with offline support and home screen installation.
+    *   **Built-In QR Scanner**: Integrated camera scanner for seamless table entry.
+
+### 🖨️ 9. Thermal Printer Integration
 *   **Universal Compatibility**: Works with any OS-recognized thermal printer (58mm/80mm) via standard browser print dialogs.
 *   **Dual-Template System**:
     *   **Kitchen Order Tickets (KOT)**: High-contrast, large-font layout for kitchen staff.
@@ -147,7 +153,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
-### 👤 9. Customer Identity & Global Architecture (Live ✅)
+### 👤 10. Customer Identity & Global Architecture
 *   **Dual-Profile System**:
     *   **Guest Mode**: Frictionless, name-only access for temporary customers (`is_guest=true`).
     *   **Registered Mode**: Phone-based profiles for loyalty and history.

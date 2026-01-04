@@ -30,7 +30,10 @@ create table public.shops (
   owner_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   is_banned boolean default false,
-  display_ratings boolean default true
+  display_ratings boolean default true,
+  latitude double precision,
+  longitude double precision,
+  tags text[] default array[]::text[]
 );
 
 -- 1. Menus
@@ -820,6 +823,7 @@ GRANT EXECUTE ON FUNCTION public.join_table(UUID, JSONB) TO anon, authenticated,
 
 -- Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_shops_is_live ON public.shops(is_live);
+CREATE INDEX IF NOT EXISTS idx_shops_tags ON public.shops USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_menus_is_active ON public.menus(is_active);
 CREATE INDEX IF NOT EXISTS idx_menu_items_is_featured ON public.menu_items(is_featured);
 CREATE INDEX IF NOT EXISTS idx_menu_items_shop_id_featured ON public.menu_items(shop_id, is_featured);

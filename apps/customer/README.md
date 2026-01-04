@@ -53,58 +53,18 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Smart Shop Guard**: The app detects if a user (with an active session) scans a QR code for a *different* shop. It immediately **wipes local storage** and logs them out to prevent cross-shop data leaks.
     *   **Auto-Logout**: When the waiter clears the table, a Realtime signal forces all connected devices to the Welcome Screen.
 
-### 👨‍🍳 3. Intelligent Kitchen Display System (KDS)
-*   **Real-Time Ticket Board**: Orders appear on the kitchen screen with a distinctive "Ping" sound the millisecond they are placed.
-*   **Visual Workflow**:
-    *   **Queued**: New orders awaiting acceptance.
-    *   **Preparing**: Active cooking items.
-    *   **Ready**: Plated items waiting for pickup.
-*   **Smart Aggregation**: The KDS groups identical items (e.g., "3x Chicken Burgers") so chefs can batch cook efficiently.
-*   **Urgency Indicators**: Color-coded visualization helps prioritization during peak hours.
+### 👨‍🍳 3. Kitchen Display System (Integration)
+*   **Real-Time Sync**: Orders placed here appear instantly on the Merchant KDS.
+*   **Live Status Updates**: "Preparing" and "Ready" statuses are pushed back to the customer device in real-time.
 
-### 📊 3. Admin Command Center & Analytics
-*   **Interactive Dashboard**:
-    *   **Revenue Overview**: Area chart tracking **Gross Revenue**, **Net Sales**, **Tax Collected**, and **Service Charge** over custom date ranges (Today, Week, Month, Custom).
-    *   **Category Analytics**: Interactive Pie Chart with a **smart toggle** to view breakdown by **Sales Volume (Qty)** or **Sales Value (Revenue)**.
-    *   **Peak Hours Analysis**: Bar chart visualizing busiest hours of the last 30 days to optimize staff scheduling.
-    *   **Real-time Metrics**: Live counters for Active Orders, Occupied Tables, and System Health.
-    *   **Vercel Analytics**: Integrated web analytics for tracking traffic and performance.
-*   **Floor Management (Mobile Optimized)**:
-    *   **Visual Floor Plan**: A canvas-style view of the restaurant layout, now fully responsive with a **Card View** for mobile devices.
-    *   **Live Status Indicators**: Tables change color in real-time: **Empty** (Green), **Occupied** (Blue), **Billed** (Red).
-    *   **Staff Take Order**: Dedicated interface for waiters to place orders for tables, view OTPs, and add item notes directly.
-    *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
-*   **Financial & Billing Engine**:
-    *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.
-    *   **Payment Reconciliation**: Track payments via Cash, Card, or UPI.
-    *   **Bill History**: A searchable archive of all past transactions with re-print functionality, optimized for mobile browsing.
-*   **Menu Engineering**:
-    *   **Visual Editor**: Create, edit, and organize Categories and Items.
-    *   **Bulk Operations**:
-        *   **Smart CSV Import**: Import menus and categories with automatic JSON parsing for tags/images.
-        *   **AI Menu Digitization**: Upload photos of physical menus to auto-generate a structured CSV ZIP.
-            *   **Smart Parsing**: Uses Google Gemini AI to extract items, prices, and descriptions.
-            *   **Auto-Enhancement**: Generates appetizing descriptions and fetches relevant stock images (via Bing Search) for every item.
-            *   **Intelligent Logic**: Handles multi-price items (e.g. "Full/Half"), strictly enforces database schema constraints, and auto-generates tags.
-            *   **Premium UX**: Featuring resilient background processing (persists during navigation), live timer, and AI status animations.
-        *   **Relational Linking**: Advanced import logic connects Menus to Categories and Categories to Items by **Name**.
-        *   **Data Integrity**: Database enforces `UNIQUE(shop_id, name)` constraints.
-
-### 🏢 4. Shop Management & Data Sovereignty
-*   **Staff Management**:
-    *   **Role-Based Access Control (RBAC)**:
-        *   **Shop Owner**: Complete control over shop, settings, financials, and deletion.
-        *   **Admin**: can manage operations, menus, and add/edit/delete staff members.
-        *   **Staff**: Restricted to order taking and table updates (cannot delete tables or view sensitive settings).
-    *   **Secure Invitations**: Add staff securely; they inherit shop context automatically.
-*   **Gallery Management**:
-    *   **Visual Editor**: Admin interface to manage shop's photo gallery (up to 16 images).
-    *   **Auto-Cleanup**: Automatically filters void inputs for a clean database.
-*   **Localization**:
-    *   **Multi-Currency Support**: Native support for global currencies, with **INR (₹)** prioritized.
-*   **Enterprize-Grade Data Management**:
-    *   **Full Data Export**: One-click "Export to ZIP" functionality generating portable CSVs for all shop data.
-    *   **Cascade Shop Deletion**: "Danger Zone" feature allows complete removal of a shop and all associated data.
+### 🏙️ 4. The D2C Marketplace (Live ✅)
+*   **Consumer Landing Page**:
+    *   **Unified Search**: Real-time discovery of restaurants with smart filters and API-level pagination.
+    *   **PWA Installable**: Native-like app experience with offline support and home screen installation.
+    *   **Built-In QR Scanner**: Integrated camera scanner for seamless table entry.
+*   **Smart Discovery**:
+    *   **Popular Restaurants**: "Top 9" grid layout showcasing trending spots.
+    *   **Category Rail**: Visual browsing by cuisine or food type.
 
 ### 🔒 5. Security & Infrastructure
 *   **Row Level Security (RLS)**:
