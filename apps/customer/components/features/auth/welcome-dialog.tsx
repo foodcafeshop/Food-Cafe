@@ -164,6 +164,9 @@ export function WelcomeDialog() {
                     filter: `id=eq.${tableId}`
                 },
                 (payload) => {
+                    // Guard Rail: Ensure we are still strictly on this table
+                    if (payload.new.id !== useCartStore.getState().tableId) return;
+
                     const newStatus = payload.new.status;
                     const activeCustomers = payload.new.active_customers as any[] || [];
                     const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
