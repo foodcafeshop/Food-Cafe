@@ -151,12 +151,7 @@ export default async function Home({ params }: { params: { slug: string } }) {
                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-lg">
                   {shop.name}
                 </h1>
-                {shop.display_ratings !== false && shop.average_rating > 0 && (
-                  <span className="bg-amber-500/80 px-3 py-1.5 rounded-full border border-amber-400/40 text-white font-semibold flex items-center gap-1.5 text-base shadow-lg">
-                    <Star className="h-4 w-4 fill-white text-white" />
-                    {shop.average_rating} ({shop.rating_count})
-                  </span>
-                )}
+
               </div>
               {shop.description && (
                 <p className="text-lg md:text-xl opacity-90 drop-shadow-md line-clamp-2">

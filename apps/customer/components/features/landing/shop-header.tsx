@@ -47,6 +47,7 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
             <div className="container max-w-7xl mx-auto flex h-20 items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href={`/${slug}`} className="flex items-center gap-2 font-bold text-2xl text-orange-500 hover:opacity-90 transition-opacity">
+                        {/* ... (Logo image logic) ... */}
                         {shop?.logo_url ? (
                             <img src={shop.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
                         ) : (
@@ -61,6 +62,7 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                         )}
                         <span className="tracking-tight">{shop?.name || 'Food Cafe'}</span>
                     </Link>
+                    {/* Show rating if enabled */}
                     {shop?.average_rating > 0 && shop?.display_ratings !== false && (
                         <div className={cn(
                             "flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 ml-2",
@@ -71,11 +73,7 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
                             <span className="text-[10px] text-orange-400">({shop.rating_count})</span>
                         </div>
                     )}
-                    <div className="hidden md:flex items-center gap-2 text-sm text-gray-500 ml-8 hover:text-orange-500 cursor-pointer transition-colors">
-                        <span className="font-bold text-gray-700 border-b-2 border-gray-700 pb-0.5">Location</span>
-                        <span className="truncate max-w-[200px]">{shop?.address || 'Select Location'}</span>
-                        <ChevronDown className="h-4 w-4 text-orange-500" />
-                    </div>
+
                 </div>
 
                 <div className="flex items-center gap-6">
