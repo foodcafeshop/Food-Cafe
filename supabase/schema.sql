@@ -29,7 +29,8 @@ create table public.shops (
   is_open boolean not null default true,
   owner_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  is_banned boolean default false
+  is_banned boolean default false,
+  display_ratings boolean default true
 );
 
 -- 1. Menus

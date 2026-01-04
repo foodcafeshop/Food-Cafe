@@ -17,6 +17,8 @@ type CartStore = {
     totalPrice: () => number;
     tableId: string | null;
     setTableId: (id: string | null) => void;
+    tableLabel: string | null;
+    setTableLabel: (label: string | null) => void;
     customerName: string | null;
     setCustomerName: (name: string | null) => void;
     customerPhone: string | null;
@@ -71,6 +73,8 @@ export const useCartStore = create<CartStore>()(
             totalPrice: () => get().items.reduce((acc, item) => acc + (item.offer_price ?? item.price) * item.quantity, 0),
             tableId: null,
             setTableId: (id) => set({ tableId: id }),
+            tableLabel: null,
+            setTableLabel: (label) => set({ tableLabel: label }),
             customerName: null,
             setCustomerName: (name) => set({ customerName: name }),
             customerPhone: null,
@@ -84,13 +88,14 @@ export const useCartStore = create<CartStore>()(
             setCustomerId: (id) => set({ customerId: id }),
             shopId: null,
             setShopId: (id) => set({ shopId: id }),
-            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null, customerId: null, shopId: null }),
+            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null, tableLabel: null, customerId: null, shopId: null }),
         }),
         {
             name: 'food-cafe-cart',
             partialize: (state) => ({
                 items: state.items,
                 tableId: state.tableId,
+                tableLabel: state.tableLabel,
                 customerName: state.customerName,
                 customerPhone: state.customerPhone,
                 sessionId: state.sessionId,

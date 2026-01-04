@@ -770,7 +770,10 @@ export default function TableManagementPage() {
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="label" className="text-right">Label</Label>
-                            <Input id="label" value={currentTable.label || ''} onChange={e => setCurrentTable({ ...currentTable, label: e.target.value })} className="col-span-3" />
+                            <Input id="label" value={currentTable.label || ''} onChange={e => setCurrentTable({ ...currentTable, label: e.target.value.slice(0, 10) })} maxLength={10} className="col-span-3" />
+                            {currentTable.label && currentTable.label.length >= 10 && (
+                                <p className="text-[10px] text-red-500 col-start-2 col-span-3">Maximum 10 characters allowed</p>
+                            )}
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="seats" className="text-right">Seats</Label>

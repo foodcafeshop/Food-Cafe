@@ -107,6 +107,16 @@ export default function ProfileSettingsPage() {
                                 onCheckedChange={(checked) => setShop({ ...shop, is_open: checked })}
                             />
                         </div>
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="displayRatings" className="text-muted-foreground">
+                                Display Ratings
+                            </Label>
+                            <Switch
+                                id="displayRatings"
+                                checked={shop.display_ratings !== false}
+                                onCheckedChange={(checked) => setShop({ ...shop, display_ratings: checked })}
+                            />
+                        </div>
                     </div>
                 </CardHeader>
             </Card>

@@ -26,6 +26,7 @@ export function WelcomeDialog() {
         welcomeMode,
         tableId,
         setTableId,
+        setTableLabel,
         logout,
         sessionId,
         setSessionId,
@@ -58,6 +59,13 @@ export function WelcomeDialog() {
 
             if (tableIdParam) {
                 setTableId(tableIdParam);
+                // We should fetch label if needed, but if we have ID we can fetch later or let other components handle it.
+                // But wait, if we have tableLabel from param, we should set it!
+            }
+
+            if (tableLabel) {
+                // If we have the label from the URL, set it immediately
+                setTableLabel(tableLabel);
             }
 
             const shop = await getShopDetails(slug);
@@ -70,17 +78,26 @@ export function WelcomeDialog() {
                 setOtpEnabled(settings?.enable_otp ?? false);
                 setIsPhoneMandatory(settings?.is_customer_phone_mandatory ?? false);
 
-                // 3. Resolve Label if needed
+                // 3. Resolve Label if needed (if we have label but no ID)
                 if (tableLabel && !tableIdParam) {
                     const table = await getTableByLabel(shop.id, tableLabel);
                     if (table) {
                         setTableId(table.id);
+                        setTableLabel(table.label);
                     }
+                } else if (tableIdParam && !tableLabel) {
+                    // If we have ID but no Label, fetch it?
+                    // Let's do it to be safe.
+                    import("@/lib/api").then(async ({ getTableById }) => {
+                        const table = await getTableById(tableIdParam);
+                        if (table) setTableLabel(table.label);
+                    });
                 }
             }
         };
         init();
-    }, [pathname, searchParams, setTableId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname, searchParams, setTableId, setTableLabel]);
 
     useEffect(() => {
         // Show dialog if no customer name is set on mount
@@ -186,6 +203,7 @@ export function WelcomeDialog() {
                 targetTableId = table.id;
                 // Update global state
                 setTableId(targetTableId);
+                setTableLabel(table.label);
             } catch (err) {
                 console.error(err);
                 setError("Failed to verify table. Please try again.");
@@ -363,6 +381,7 @@ export function WelcomeDialog() {
                                 onChange={(e) => setManualTableLabel(e.target.value)}
                                 required
                                 className="h-11"
+                                maxLength={10}
                             />
                         </div>
                     )}

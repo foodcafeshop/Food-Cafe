@@ -146,29 +146,37 @@ export default async function Home({ params }: { params: { slug: string } }) {
         <div className="absolute inset-0 flex items-end">
           <div className="container max-w-7xl mx-auto px-4 pb-8 text-white">
             <div className="max-w-2xl space-y-4">
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-lg">
-                {shop.name}
-              </h1>
+              {/* Shop Name + Rating */}
+              <div className="flex flex-wrap items-center gap-4">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-lg">
+                  {shop.name}
+                </h1>
+                {shop.display_ratings !== false && shop.average_rating > 0 && (
+                  <span className="bg-amber-500/80 px-3 py-1.5 rounded-full border border-amber-400/40 text-white font-semibold flex items-center gap-1.5 text-base shadow-lg">
+                    <Star className="h-4 w-4 fill-white text-white" />
+                    {shop.average_rating} ({shop.rating_count})
+                  </span>
+                )}
+              </div>
               {shop.description && (
                 <p className="text-lg md:text-xl opacity-90 drop-shadow-md line-clamp-2">
                   {shop.description}
                 </p>
               )}
 
-              {/* Badges */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              {/* Badges - Single Row */}
+              <div className="flex flex-wrap gap-2 pt-2">
                 {shop.is_open ? (
-                  <span className="bg-green-500/60 px-4 py-1.5 rounded-full border border-green-400/40 text-green-100 font-medium flex items-center gap-2 pulse-glow">
+                  <span className="bg-green-500/60 px-3 py-1.5 rounded-full border border-green-400/40 text-green-100 font-medium flex items-center gap-2 pulse-glow text-sm">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                     Open Now
                   </span>
                 ) : (
-                  <span className="bg-red-500/60 px-4 py-1.5 rounded-full border border-red-400/40 text-red-100 font-medium flex items-center gap-2">
+                  <span className="bg-red-500/60 px-3 py-1.5 rounded-full border border-red-400/40 text-red-100 font-medium flex items-center gap-2 text-sm">
                     <span className="w-2 h-2 bg-red-400 rounded-full"></span>
                     Closed
                   </span>
                 )}
-                {/* Dietary Badges */}
                 {dietaryTypes.veg && (
                   <span className="bg-green-600/60 px-3 py-1.5 rounded-full border border-green-500/40 text-green-100 font-medium flex items-center gap-1.5 text-sm">
                     <Leaf className="h-3.5 w-3.5" />

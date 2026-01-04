@@ -31,8 +31,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [isSearchOpen, setIsSearchOpen] = useState(!!initialQuery);
     const currencySymbol = getCurrencySymbol(settings?.currency);
-    const { setTableId, tableId } = useCartStore();
-    const [tableLabel, setTableLabel] = useState<string>("");
+    const { setTableId, tableId, setTableLabel } = useCartStore();
 
     useEffect(() => {
         const tableIdParam = searchParams.get("tableId");
@@ -58,7 +57,7 @@ export function MenuContent({ categories: initialCategories, settings, shop }: M
             }
         };
         fetchTableLabel();
-    }, [tableId]);
+    }, [tableId, setTableLabel]);
 
     // Real-time Menu Text Updates
     useEffect(() => {

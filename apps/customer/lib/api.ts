@@ -62,7 +62,7 @@ export async function getFullMenuData(slug: string) {
     // 1. Get Shop Details (Blocking)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, is_live, is_open, average_rating, rating_count, slug, logo_url, address, currency:settings(currency)') // Try to fetch currency with shop if possible, but settings is separate table.
+        .select('id, name, is_live, is_open, average_rating, rating_count, display_ratings, slug, logo_url, address, currency:settings(currency)')
         .eq('slug', slug)
         .single();
 
@@ -137,7 +137,7 @@ export async function getLandingPageData(slug: string) {
     // 1. Fetch Shop Details (Blocking, needed for ID)
     const { data: shop } = await supabase
         .from('shops')
-        .select('id, name, description, address, location_url, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, is_open, shop_type, social_links')
+        .select('id, name, description, address, location_url, opening_hours, contact_phone, contact_email, gstin, fssai_license, logo_url, cover_image, gallery_images, is_live, is_open, display_ratings, average_rating, rating_count, shop_type, social_links')
         .eq('slug', slug)
         .single();
 
