@@ -3,6 +3,7 @@
     "short_name": "FoodCafe",
     "description": "Seamless QR ordering for modern restaurants.",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ea580c",
     "theme_color": "#ea580c",

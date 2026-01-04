@@ -3,6 +3,7 @@
     "short_name": "FoodCafe Admin",
     "description": "Global Platform Management for FoodCafe",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ea580c",
     "theme_color": "#ea580c",
