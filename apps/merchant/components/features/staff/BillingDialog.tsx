@@ -414,7 +414,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
             </DialogContent>
 
             <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="z-[200]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Mark Table as Empty?</AlertDialogTitle>
                         <AlertDialogDescription>
