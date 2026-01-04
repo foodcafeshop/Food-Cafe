@@ -12,6 +12,7 @@ import ShopCard from '@/components/landing/shop-card';
 import { getAllShops } from '@/lib/api';
 
 import { usePWA } from '@/components/providers/pwa-provider';
+import { cn } from '@/lib/utils';
 
 export default function LandingPage() {
     const { isStandalone } = usePWA();
@@ -52,7 +53,7 @@ export default function LandingPage() {
             <D2CHero searchValue={searchQuery} onSearchChange={setSearchQuery} />
 
             {/* Restaurants Section */}
-            <section id="restaurants" className="py-20 bg-gradient-to-b from-white via-orange-50/30 to-white px-4">
+            <section id="restaurants" className={cn("bg-gradient-to-b from-white via-orange-50/30 to-white px-4", isStandalone ? "py-6" : "py-20")}>
                 <div className="container mx-auto px-4">
                     {/* Category Rail */}
                     <div className="mb-8">
@@ -114,21 +115,23 @@ export default function LandingPage() {
             </section>
 
             {/* Promotional Sections - Only visible if NOT in PWA mode */}
-            {!isStandalone && (
-                <>
-                    {/* How It Works */}
-                    <section id="how-it-works">
-                        <HowItWorks />
-                    </section>
-                    {/* Why Food Cafe */}
-                    <WhyFoodCafe />
-                    {/* App Download CTA */}
-                    <AppDownloadCTA />
-                </>
-            )}
+            {
+                !isStandalone && (
+                    <>
+                        {/* How It Works */}
+                        <section id="how-it-works">
+                            <HowItWorks />
+                        </section>
+                        {/* Why Food Cafe */}
+                        <WhyFoodCafe />
+                        {/* App Download CTA */}
+                        <AppDownloadCTA />
 
-            {/* Footer */}
-            <Footer />
-        </main>
+                        {/* Footer */}
+                        <Footer />
+                    </>
+                )
+            }
+        </main >
     );
 }
