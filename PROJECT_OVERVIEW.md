@@ -146,6 +146,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Unified Discovery**:
     *   **Real-Time Search**: Instant search for restaurants by name or category tags using server-side filtering and API-level limits.
     *   **Smart Listings**: "Popular Restaurants" section with optimized grid layout (Top 9) for performance.
+    *   **Intelligent Location**: Zero-click city detection (GPS + IP Fallback) ensures hyper-local search relevance.
     *   **Mobile-First Design**: Sticky glassmorphism navbar, responsive cards, and touch-optimized navigation rail.
 *   **App-Like Experience (PWA)**:
     *   **Installable**: Users can install the marketplace as a native app directly from the browser.

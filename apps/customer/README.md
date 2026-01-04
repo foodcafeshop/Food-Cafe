@@ -65,6 +65,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 *   **Smart Discovery**:
     *   **Popular Restaurants**: "Top 9" grid layout showcasing trending spots.
     *   **Category Rail**: Visual browsing by cuisine or food type.
+    *   **Smart Geolocation**: Auto-detects user city (GPS + IP Fallback) for hyper-local search results.
 
 ### 🔒 5. Security & Infrastructure
 *   **Row Level Security (RLS)**:

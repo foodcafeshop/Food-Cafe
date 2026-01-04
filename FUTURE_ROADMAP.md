@@ -93,6 +93,12 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Mobile Optimized**: Responsive design with sticky glassmorphism navbar and mobile-specific adjustments.
 *   **PWA Installable**: Integrated PWA installation flow for app-like experience.
 *   **Category Exploration**: Visual rail for quick category filtering.
+*   **Smart Geolocation**: Auto-detects user city (GPS + IP Fallback) for hyper-local search intent.
+*   **Contextual Search**: Dynamic placeholders and mobile-optimized interactions (auto-collapse/expand).
+*   **Planned Enhancements 🚧**:
+    *   **City Autocomplete**: Search and select from a list of operational cities (derived from registered shops).
+    *   **Strict Geofencing**: Restrict manual selection to service areas only.
+    *   **City-Scoped Discovery**: Global search results filtered strictly by the selected city context.
 
 ### 📱 15. Mandatory Customer Contact Info (Live ✅)
 *   **Merchant Config**: Toggle option for merchants to make customer mobile number mandatory.

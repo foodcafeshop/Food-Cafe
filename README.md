@@ -141,6 +141,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 ### 🏙️ 8. The D2C Marketplace
 *   **Consumer Landing Page**:
     *   **Unified Search**: Real-time discovery of restaurants with smart filters and API-level pagination.
+    *   **Intelligent Location**: Zero-click city detection (GPS + IP Fallback) ensures hyper-local search relevance.
     *   **PWA Installable**: Native-like app experience with offline support and home screen installation.
     *   **Built-In QR Scanner**: Integrated camera scanner for seamless table entry.
 
