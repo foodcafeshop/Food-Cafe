@@ -52,7 +52,7 @@ export default function D2CHero({ searchValue, onSearchChange }: D2CHeroProps) {
 
         const fetchIpLocation = async () => {
             try {
-                const response = await fetch('https://ipapi.co/json/');
+                const response = await fetch('https://ipwho.is/');
                 const data = await response.json();
                 if (data.city) {
                     setLocationName(data.city);
@@ -66,6 +66,11 @@ export default function D2CHero({ searchValue, onSearchChange }: D2CHeroProps) {
                 setIsLocating(false);
             }
         };
+
+        if (isAuto && !isStandalone) {
+            await fetchIpLocation();
+            return;
+        }
 
         if (!navigator.geolocation) {
             await fetchIpLocation();
