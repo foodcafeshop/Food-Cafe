@@ -157,6 +157,9 @@ export default function BillsPage() {
         let subtotal = 0;
         let tax = 0;
         let serviceCharge = 0;
+        let discountAmount = 0;
+        let discountReason = '';
+        let discountedSubtotal = 0;
         let finalTaxRate = 0;
         let finalTaxIncluded = false;
 
@@ -164,6 +167,9 @@ export default function BillsPage() {
             subtotal = Number(selectedBill.breakdown.subtotal);
             tax = Number(selectedBill.breakdown.tax);
             serviceCharge = Number(selectedBill.breakdown.serviceCharge || 0);
+            discountAmount = Number(selectedBill.breakdown.discountAmount || 0);
+            discountReason = selectedBill.breakdown.discountReason || '';
+            discountedSubtotal = Number(selectedBill.breakdown.discountedSubtotal || 0);
             finalTaxRate = Number(selectedBill.breakdown.taxRate || 0);
             finalTaxIncluded = !!selectedBill.breakdown.taxIncluded;
         } else {
@@ -177,6 +183,9 @@ export default function BillsPage() {
             subtotal = itemsTotal; // Assume Exclusive Base
             tax = diff > 0 ? diff : 0;
             serviceCharge = 0;
+            // No discount for old bills
+            discountAmount = 0;
+            discountedSubtotal = subtotal;
 
             // For old bills, we force Exclusive display to show the "Tax" amount found
             finalTaxRate = 0;
@@ -222,6 +231,9 @@ export default function BillsPage() {
             serviceChargeRate: 0, // We don't store SC rate in breakdown yet, so hiding %
             includeServiceCharge: serviceCharge > 0.01,
             grandTotal: selectedBill.total_amount,
+            discountAmount,
+            discountReason,
+            discountedSubtotal,
             printerWidth
         };
 
@@ -458,6 +470,9 @@ export default function BillsPage() {
                                     let subtotal = 0;
                                     let tax = 0;
                                     let serviceCharge = 0;
+                                    let discountAmount = 0;
+                                    let discountReason = '';
+                                    let discountedSubtotal = 0;
                                     let finalTaxRate = 0;
                                     let finalTaxIncluded = false;
 
@@ -465,6 +480,9 @@ export default function BillsPage() {
                                         subtotal = Number(selectedBill.breakdown.subtotal);
                                         tax = Number(selectedBill.breakdown.tax);
                                         serviceCharge = Number(selectedBill.breakdown.serviceCharge || 0);
+                                        discountAmount = Number(selectedBill.breakdown.discountAmount || 0);
+                                        discountReason = selectedBill.breakdown.discountReason || '';
+                                        discountedSubtotal = Number(selectedBill.breakdown.discountedSubtotal || 0);
                                         finalTaxRate = Number(selectedBill.breakdown.taxRate || 0);
                                         finalTaxIncluded = !!selectedBill.breakdown.taxIncluded;
                                     } else { // Fallback for old bills
@@ -478,6 +496,10 @@ export default function BillsPage() {
                                         tax = diff > 0 ? diff : 0;
                                         serviceCharge = 0; // Don't assume SC for old bills without breakdown
 
+                                        // No discount for old bills
+                                        discountAmount = 0;
+                                        discountedSubtotal = subtotal;
+
                                         finalTaxRate = 0;
                                         finalTaxIncluded = false;
                                     }
@@ -490,6 +512,19 @@ export default function BillsPage() {
                                                 <span>{finalTaxIncluded ? "Subtotal (incl. taxes)" : "Subtotal"}</span>
                                                 <span>{currency}{displaySubtotal.toFixed(2)}</span>
                                             </div>
+
+                                            {discountAmount > 0.01 && (
+                                                <>
+                                                    <div className="flex justify-between items-center text-sm text-green-600 font-medium">
+                                                        <span>Discount {discountReason && `(${discountReason})`}</span>
+                                                        <span>-{currency}{discountAmount.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                        <span>Total after Discount</span>
+                                                        <span>{currency}{(discountedSubtotal || (subtotal - discountAmount)).toFixed(2)}</span>
+                                                    </div>
+                                                </>
+                                            )}
 
                                             {!finalTaxIncluded && tax > 0 && (
                                                 <div className="flex justify-between items-center text-sm text-muted-foreground">

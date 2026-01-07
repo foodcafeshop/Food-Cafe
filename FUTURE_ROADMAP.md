@@ -202,6 +202,39 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Shop Discovery**: Map-based search to find nearby Food Cafe powered restaurants.
 *   **Order History**: Centralized view of all past orders from any shop.
 
+### 📊 31. Data Migration & Integrations
+*   **Platform Imports**: Tools to import menu, inventory, and sales reports from legacy systems (e.g., Petpooja, DotPe).
+*   **Format Support**: CSV/Excel mapping tool to standardize external data into Food Cafe schema.
+*   **Historical Data**: Import past order history for analytics continuity.
+
+### 🔐 32. Authentication & Security Enhancements
+*   **Firebase Integration**: Hybrid auth support linking Firebase Auth with Supabase RLS.
+*   **Phone Auth**: Robust OTP login flow using Firebase Phone Auth as an alternative provider.
+*   **Account Linking**: Allow users to link Email and Phone credentials to a single identity.
+
+### 🥘 33. Advanced Menu Variants
+*   **Complex Variants**: Support for multi-dimensional variants (e.g., Size + Crust + Toppings).
+*   **Price Overrides**: Set distinct base prices for each variant combination.
+*   **Stock Linking**: Map variants to specific inventory items (e.g., "Large" uses "Large Pizza Base").
+
+### 💸 34. Ad-hoc Bill Discounts (Live ✅)
+*   **Manual Discounts**: Allow authorized staff to apply flat discounts directly on the bill.
+*   **Reason Codes**: Mandatory selection of reason (e.g., "Staff Meal", "Customer Complaint", "Loyalty").
+*   **Audit Trail**: Track who applied discounts and why.
+*   **Future**: Percentage discounts and Manager Approval PINs.
+
+### 🍽️ 35. Service Types & Order Modes
+*   **Dine-in**: Standard flow with table selection and service charge logic.
+*   **Takeaway**: Optimized flow skipping table headers; collects customer name/phone directly.
+*   **Packaging Charges**: Auto-apply packaging fees based on service type.
+*   **Kitchen Routing**: Distinct ticket headers (DINE-IN vs TAKEAWAY) for kitchen staff awareness.
+
+### 🤵 36. Staff Attribution & Performance
+*   **Order Linking**: Explicitly tag every order/item to the staff member who punched it.
+*   **Table Ownership**: Assign tables to specific waiters for the duration of a meal.
+*   **Performance Reports**: Track sales by staff member, average tip, and table turnover time.
+*   **Tip Management**: Calculate and distribute tips (if recorded) based on attribution.
+
 ### 📝 Original Requests
 *   [ ] "Add feature to suggest menu items based on customer inputs, using AI"
 *   [ ] "View calories based on orders"
@@ -233,3 +266,10 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Advanced analytics for customer, menu, and staff performance"
 *   [ ] "Identify list of API calls that can be cached, and cache them in different apps"
 *   [ ] "Add notification categories for granular user control"
+*   [ ] "Import reports from other platforms"
+*   [ ] "Integrate firebase auth with supabase"
+*   [ ] "Add variants to menu items"
+*   [x] "Discount option in bill"
+*   [ ] "Service type: dine-in, takeaway"
+*   [ ] "Linking orders to waiters"
+

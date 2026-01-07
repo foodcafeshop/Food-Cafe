@@ -224,7 +224,10 @@ create table if not exists public.bills (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   order_ids uuid[] not null,
   items_snapshot jsonb not null,
-  breakdown jsonb
+  breakdown jsonb,
+  discount_amount numeric default 0,
+  discount_reason text,
+  created_by uuid references auth.users(id) on delete set null
 );
 
 -- RPC: Atomic Bill Settlement
@@ -236,7 +239,9 @@ create or replace function public.settle_table_bill(
   p_total_amount numeric,
   p_order_ids uuid[],
   p_items_snapshot jsonb,
-  p_breakdown jsonb
+  p_breakdown jsonb,
+  p_discount_amount numeric default 0,
+  p_discount_reason text default null
 )
 returns jsonb as $$
 declare
@@ -245,10 +250,12 @@ begin
   -- 1. Insert Bill
   insert into public.bills (
     shop_id, table_id, bill_number, total_amount, payment_method, 
-    order_ids, items_snapshot, breakdown
+    order_ids, items_snapshot, breakdown,
+    discount_amount, discount_reason, created_by
   ) values (
     p_shop_id, p_table_id, p_bill_number, p_total_amount, p_payment_method,
-    p_order_ids, p_items_snapshot, p_breakdown
+    p_order_ids, p_items_snapshot, p_breakdown,
+    p_discount_amount, p_discount_reason, auth.uid()
   ) returning to_jsonb(bills.*) into v_bill_data;
 
   -- 2. Update Orders

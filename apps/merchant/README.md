@@ -66,6 +66,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
 *   **Financial & Billing Engine**:
     *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.
+    *   **Ad-Hoc Discounts**: Apply manual discounts with reason codes directly at checkout.
     *   **Payment Reconciliation**: Track payments via Cash, Card, or UPI.
     *   **Bill History**: A searchable archive of all past transactions with re-print functionality, optimized for mobile browsing.
 *   **Menu Engineering**:

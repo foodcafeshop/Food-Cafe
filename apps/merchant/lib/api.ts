@@ -543,7 +543,9 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
                 p_total_amount: roundToThree(breakdown?.grandTotal),
                 p_order_ids: orderIds,
                 p_items_snapshot: itemsSnapshot,
-                p_breakdown: breakdown
+                p_breakdown: breakdown,
+                p_discount_amount: breakdown?.discountAmount || 0,
+                p_discount_reason: breakdown?.discountReason || null
             });
 
             if (error) {

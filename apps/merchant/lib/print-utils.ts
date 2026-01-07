@@ -24,6 +24,9 @@ export interface ReceiptData {
     serviceChargeRate: number;
     includeServiceCharge: boolean;
     grandTotal: number;
+    discountAmount?: number;
+    discountReason?: string;
+    discountedSubtotal?: number;
     printerWidth?: string; // e.g. '80mm' or '58mm'
 }
 
@@ -47,6 +50,9 @@ export function generateReceiptHtml(data: ReceiptData): string {
         serviceChargeRate,
         includeServiceCharge,
         grandTotal,
+        discountAmount = 0,
+        discountReason,
+        discountedSubtotal,
         printerWidth = '80mm'
     } = data;
 
@@ -196,13 +202,26 @@ export function generateReceiptHtml(data: ReceiptData): string {
                                 <span>Subtotal</span>
                                 <span>${currency}${subtotalExclusive.toFixed(2)}</span>
                             </div>
-                            ${taxAmount > 0.01 ? `
-                                <div class="flex justify-between mb-1">
-                                    <span>Tax${taxRate > 0 ? ` (${taxRate}%)` : ''}</span>
-                                    <span>${currency}${taxAmount.toFixed(2)}</span>
-                                </div>
-                            ` : ''}
                         `}
+
+                        ${discountAmount > 0.01 ? `
+                            <div class="flex justify-between mb-1" style="color: black;">
+                                <span>Discount</span>
+                                <span>-${currency}${discountAmount.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between mb-1 font-bold">
+                                <span>Total after Discount</span>
+                                <span>${currency}${(discountedSubtotal ?? (subtotalExclusive - discountAmount)).toFixed(2)}</span>
+                            </div>
+                            <div class="w-full border-b border-dashed mb-1"></div>
+                        ` : ''}
+
+                        ${!taxIncluded && taxAmount > 0.01 ? `
+                            <div class="flex justify-between mb-1">
+                                <span>Tax${taxRate > 0 ? ` (${taxRate}%)` : ''}</span>
+                                <span>${currency}${taxAmount.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
                         
                         ${scAmount > 0.01 ? `
                             <div class="flex justify-between mb-1">
@@ -210,6 +229,8 @@ export function generateReceiptHtml(data: ReceiptData): string {
                                 <span>${currency}${scAmount.toFixed(2)}</span>
                             </div>
                         ` : ''}
+
+
 
                         <div class="w-full border-b border-2 mb-2" style="margin-top: 8px;"></div>
 

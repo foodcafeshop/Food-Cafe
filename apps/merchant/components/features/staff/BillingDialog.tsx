@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, Printer, CheckSquare } from "lucide-react";
@@ -44,6 +45,10 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const [taxRate, setTaxRate] = useState(0);
     const [taxIncluded, setTaxIncluded] = useState(false);
     const [billNumber, setBillNumber] = useState<string | null>(null);
+
+    // Discount State
+    const [discountAmount, setDiscountAmount] = useState<number>(0);
+    const [discountReason, setDiscountReason] = useState<string>('');
 
     // Printer Settings State
     const [printerWidth, setPrinterWidth] = useState('80mm');
@@ -138,23 +143,28 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
             taxVal = subtotalVal * (taxRate / 100);
         }
 
-        // Service charge is usually on the exclusive subtotal
-        const serviceCharge = includeServiceCharge ? (subtotalVal * (serviceChargeRate / 100)) : 0;
-        const serviceChargeVal = serviceCharge;
+        // Apply Discount on Subtotal (Exclusive)
+        const discountedSubtotal = Math.max(0, subtotalVal - discountAmount);
+
+        // Recalculate Tax on Discounted Subtotal
+        const finalTaxVal = discountedSubtotal * (taxRate / 100);
+
+        // Recalculate Service Charge on Discounted Subtotal
+        const finalServiceChargeVal = includeServiceCharge ? (discountedSubtotal * (serviceChargeRate / 100)) : 0;
 
         // Grand Total
-        // If included: ItemTotal (which is Sub+Tax) + ServiceCharge
-        // If excluded: Subtotal + Tax + ServiceCharge
-        // Mathematically equivalent: (ExclusiveSubtotal + Tax) + ServiceCharge
-        const grandTotal = subtotalVal + taxVal + serviceChargeVal;
+        const finalGrandTotal = discountedSubtotal + finalTaxVal + finalServiceChargeVal;
 
         return {
-            subtotal: roundToThree(subtotalVal),
-            tax: roundToThree(taxVal),
+            subtotal: roundToThree(subtotalVal), // Original Subtotal
+            tax: roundToThree(finalTaxVal),      // Tax on discounted amount
             taxRate,
             taxIncluded,
-            serviceCharge: roundToThree(serviceChargeVal),
-            grandTotal: roundToThree(grandTotal)
+            serviceCharge: roundToThree(finalServiceChargeVal), // SC on discounted amount
+            grandTotal: roundToThree(finalGrandTotal),
+            discountAmount,
+            discountReason,
+            discountedSubtotal: roundToThree(discountedSubtotal) // Expose for UI/Print if needed
         };
     };
 
@@ -162,6 +172,10 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
 
     const handleSettleBill = async () => {
         if (!tableId) return;
+        if (discountAmount > 0 && !discountReason.trim()) {
+            toast.error("Please provide a reason for the discount");
+            return;
+        }
         try {
             const result = await settleTableBill(tableId, paymentMethod, billing);
             if (result && result.bill_number) {
@@ -255,6 +269,9 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
             serviceChargeRate,
             includeServiceCharge,
             grandTotal: billing.grandTotal,
+            discountAmount: billing.discountAmount,
+            discountReason: billing.discountReason,
+            discountedSubtotal: billing.discountedSubtotal,
             printerWidth
         };
 
@@ -354,21 +371,61 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                             {taxIncluded ? (
                                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                                     <span>Subtotal (incl. taxes)</span>
-                                    {/* Subtotal is exclusive, tax is tax. Sum is inclusive total or separate */}
-                                    {/* billing.subtotal is exclusive. billing.tax is tax. So sum is inclusive */}
                                     <span>{currency}{(billing.subtotal + billing.tax).toFixed(2)}</span>
                                 </div>
                             ) : (
-                                <>
-                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                        <span>Subtotal</span>
-                                        <span>{currency}{billing.subtotal.toFixed(2)}</span>
+                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                    <span>Subtotal</span>
+                                    <span>{currency}{billing.subtotal.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Discount Input Section */}
+                            <div className="pt-2 border-t mt-2 space-y-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <Label htmlFor="discount-amount" className="font-medium text-muted-foreground">Discount</Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground">- {currency}</span>
+                                        <Input
+                                            id="discount-amount"
+                                            type="number"
+                                            value={discountAmount || ''}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                // Enforce positive and max limit
+                                                if (val >= 0 && val <= billing.subtotal) {
+                                                    setDiscountAmount(val);
+                                                }
+                                            }}
+                                            className="h-8 w-20 text-right"
+                                            placeholder="0"
+                                            min="0"
+                                            max={billing.subtotal}
+                                        />
                                     </div>
-                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                                        <span>Tax ({taxRate}%)</span>
-                                        <span>{currency}{billing.tax.toFixed(2)}</span>
-                                    </div>
-                                </>
+                                </div>
+                                {discountAmount > 0 && (
+                                    <Input
+                                        placeholder="Reason (e.g. Staff Meal, Complaint)"
+                                        value={discountReason}
+                                        onChange={(e) => setDiscountReason(e.target.value)}
+                                        className="h-8 text-sm"
+                                    />
+                                )}
+                            </div>
+
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between items-center text-sm font-medium">
+                                    <span>Total after Discount</span>
+                                    <span>{currency}{billing.discountedSubtotal?.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {!taxIncluded && (
+                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                    <span>Tax ({taxRate}%)</span>
+                                    <span>{currency}{billing.tax.toFixed(2)}</span>
+                                </div>
                             )}
 
                             <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -382,6 +439,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                                 </div>
                                 <span>{currency}{billing.serviceCharge.toFixed(2)}</span>
                             </div>
+
                             <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
                                 <span>Grand Total</span>
                                 <span>{currency}{billing.grandTotal.toFixed(2)}</span>
