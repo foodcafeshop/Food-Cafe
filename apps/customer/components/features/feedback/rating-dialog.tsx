@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { submitReview } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/lib/store";
 
 interface RatingDialogProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ export function RatingDialog({ isOpen, onClose, orderId, shopId, items }: Rating
     const [generalComment, setGeneralComment] = useState("");
     const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
     const [submitting, setSubmitting] = useState(false);
+    const { customerName, customerId } = useCartStore();
 
     const handleStarClick = (rating: number, itemId?: string) => {
         if (itemId) {
@@ -42,7 +44,8 @@ export function RatingDialog({ isOpen, onClose, orderId, shopId, items }: Rating
                     order_id: orderId,
                     rating: generalRating,
                     comment: generalComment,
-                    customer_name: 'Guest Customer' // In a real app, get from auth
+                    customer_name: customerName || 'Guest Customer',
+                    customer_id: customerId || null
                 });
             }
 
@@ -54,7 +57,8 @@ export function RatingDialog({ isOpen, onClose, orderId, shopId, items }: Rating
                         order_id: orderId,
                         menu_item_id: itemId,
                         rating: rating,
-                        customer_name: 'Guest Customer'
+                        customer_name: customerName || 'Guest Customer',
+                        customer_id: customerId || null
                     });
                 }
             });

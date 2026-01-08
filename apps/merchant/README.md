@@ -1,7 +1,4 @@
-# 🍔 Food Cafe - Premium Restaurant Management System
-
-**Version:** 1.0 (Investor Ready)  
-**Last Updated:** Dec 2025
+# Food Cafe - Premium Restaurant Management System
 
 **Food Cafe** is a state-of-the-art, multi-tenant Restaurant Management System (RMS) designed to revolutionize the dining experience. It unifies customer ordering, kitchen operations, and administrative management into a single, real-time ecosystem.
 

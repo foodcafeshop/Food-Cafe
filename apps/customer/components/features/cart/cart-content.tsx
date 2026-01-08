@@ -2,7 +2,7 @@
 
 import { useCartStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, ChevronLeft, Banknote } from "lucide-react";
+import { Minus, Plus, ChevronLeft, Banknote, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/order-store";
@@ -34,6 +34,7 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
     const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Sync settings from server to store
     useEffect(() => {
@@ -113,6 +114,8 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
             return;
         }
 
+        setIsSubmitting(true);
+
         try {
             // 1. Create Order
             // 1. Validate Item Availability (Real-time check)
@@ -181,6 +184,8 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
             } else {
                 toast.error("Failed to place order. Please try again.");
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -351,17 +356,26 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                         {/* Desktop Checkout Button */}
                         <Button
                             size="lg"
-                            className={`w-full text-lg font-bold h-14 text-white shadow-lg hidden md:flex justify-between px-6 ${(!shop.is_open || !shop.is_live) ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-green-600 hover:bg-green-700 shadow-green-200'}`}
+                            className={`w-full text-lg font-bold h-14 text-white shadow-lg hidden md:flex justify-between px-6 ${(!shop.is_open || !shop.is_live || isSubmitting) ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-green-600 hover:bg-green-700 shadow-green-200'}`}
                             onClick={handlePlaceOrder}
-                            disabled={!shop.is_open || !shop.is_live}
+                            disabled={!shop.is_open || !shop.is_live || isSubmitting}
                         >
                             <div className="flex flex-col items-start leading-none">
                                 <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
                                 <span>{currencySymbol}{totalAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
-                                {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
+                                {isSubmitting ? (
+                                    <>
+                                        <span>Placing Order...</span>
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
+                                        {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
+                                    </>
+                                )}
                             </div>
                         </Button>
                         {(!shop.is_open || !shop.is_live) && (
@@ -383,17 +397,26 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                     )}
                     <Button
                         size="lg"
-                        className={`w-full text-lg font-bold h-14 text-white shadow-xl flex justify-between px-6 rounded-2xl ${(!shop.is_open || !shop.is_live) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                        className={`w-full text-lg font-bold h-14 text-white shadow-xl flex justify-between px-6 rounded-2xl ${(!shop.is_open || !shop.is_live || isSubmitting) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                         onClick={handlePlaceOrder}
-                        disabled={!shop.is_open || !shop.is_live}
+                        disabled={!shop.is_open || !shop.is_live || isSubmitting}
                     >
                         <div className="flex flex-col items-start leading-none">
                             <span className="text-[10px] font-medium opacity-80 uppercase">Total</span>
                             <span className="font-extrabold">{currencySymbol}{totalAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2 font-bold">
-                            <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
-                            {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
+                            {isSubmitting ? (
+                                <>
+                                    <span>Placing Order...</span>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                </>
+                            ) : (
+                                <>
+                                    <span>{shop.is_open && shop.is_live ? 'Place Order' : 'Shop Closed'}</span>
+                                    {shop.is_open && shop.is_live && <ChevronLeft className="h-5 w-5 rotate-180" />}
+                                </>
+                            )}
                         </div>
                     </Button>
                 </div>
