@@ -179,8 +179,8 @@ export async function getLandingPageData(slug: string) {
         // Reviews (Recent 5)
         supabase
             .from('reviews')
-            .select('id, rating, comment, customer_name, created_at, menu_items!inner(shop_id)')
-            .eq('menu_items.shop_id', shop.id)
+            .select('id, rating, comment, customer_name, created_at')
+            .eq('shop_id', shop.id)
             .order('created_at', { ascending: false })
             .limit(5)
     ]);
@@ -1167,11 +1167,7 @@ export async function getReviewByBill(billId: string, customerId: string) {
 export async function getReviews(limit = 50) {
     const { data, error } = await supabase
         .from('reviews')
-        .select(`
-            *,
-            menu_items (name, image),
-            orders (order_number)
-        `)
+        .select('id, customer_name, rating, comment, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 
