@@ -557,7 +557,7 @@ export async function getTableOrders(tableId: string) {
       )
     `)
         .eq('table_id', tableId)
-        .in('status', ['queued', 'preparing', 'ready', 'served', 'cancelled'])
+        .in('status', ['queued', 'preparing', 'ready', 'served', 'billed', 'cancelled'])
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -1103,13 +1103,64 @@ export async function getDashboardStats(
 
 // Reviews
 export async function submitReview(review: any) {
-    const { data, error } = await supabase
+    // 1. Upsert Parent Review
+    const { data: parentReview, error: parentError } = await supabase
         .from('reviews')
-        .insert(review)
+        .upsert({
+            shop_id: review.shop_id,
+            bill_id: review.bill_id, // Link to bill
+            customer_id: review.customer_id,
+            rating: review.rating,
+            comment: review.comment,
+            customer_name: review.customer_name
+        }, { onConflict: 'bill_id, customer_id' })
         .select()
         .single();
 
-    if (error) throw error;
+    if (parentError) throw parentError;
+
+    // 2. Upsert Review Items
+    if (review.items && review.items.length > 0) {
+        const reviewItems = review.items.map((item: any) => ({
+            review_id: parentReview.id,
+            menu_item_id: item.menu_item_id,
+            rating: item.rating,
+            comment: item.comment
+        }));
+
+        const { error: itemsError } = await supabase
+            .from('review_items')
+            .upsert(reviewItems, { onConflict: 'review_id, menu_item_id' });
+
+        if (itemsError) {
+            console.error("Error upserting review items:", itemsError);
+            throw itemsError;
+        }
+    }
+
+    return parentReview;
+}
+
+export async function getReviewByBill(billId: string, customerId: string) {
+    const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+            *,
+            review_items (
+                menu_item_id,
+                rating,
+                comment
+            )
+        `)
+        .eq('bill_id', billId)
+        .eq('customer_id', customerId)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return null; // No rows found
+        console.error('Error fetching existing review:', error);
+        return null;
+    }
     return data;
 }
 
@@ -1259,4 +1310,19 @@ export async function cancelOrder(orderId: string) {
 
     if (updateError) throw updateError;
     return true;
+}
+
+export async function getTableBill(tableId: string) {
+    const { data, error } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('table_id', tableId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+    if (error) {
+        return null;
+    }
+    return data;
 }

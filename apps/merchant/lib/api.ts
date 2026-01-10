@@ -571,27 +571,13 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
 
 
 export async function clearTable(tableId: string) {
-    // 1. Clear the table status
-    const { error: tableError } = await supabase
-        .from('tables')
-        .update({
-            status: 'empty',
-            active_customers: []
-        })
-        .eq('id', tableId);
+    const { error } = await supabase.rpc('complete_table_session', {
+        p_table_id: tableId
+    });
 
-    if (tableError) throw tableError;
-
-    // 2. Detach cancelled orders from this table so they don't show up for next session
-    const { error: cleanupError } = await supabase
-        .from('orders')
-        .update({ table_id: null })
-        .eq('table_id', tableId)
-        .eq('status', 'cancelled');
-
-    if (cleanupError) {
-        console.error("Failed to cleanup cancelled orders:", cleanupError);
-        // Don't throw here, as the primary action (clearing table) succeeded
+    if (error) {
+        console.error("Error clearing table:", error);
+        throw error;
     }
 
     return true;
@@ -1010,14 +996,21 @@ export async function submitReview(review: any) {
     return data;
 }
 
-export async function getReviews(limit = 50) {
+export async function getReviews(shopId: string, limit = 50) {
     const { data, error } = await supabase
         .from('reviews')
         .select(`
             *,
-            menu_items (name, image),
-            orders (order_number)
+            bills (
+                bill_number
+            ),
+            review_items (
+                rating,
+                comment,
+                menu_items (name, images)
+            )
         `)
+        .eq('shop_id', shopId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -1311,9 +1304,9 @@ export async function getMenuItemIngredients(menuItemId: string) {
     const { data, error } = await supabase
         .from('menu_item_ingredients')
         .select(`
-            *,
-            inventory_items (*)
-        `)
+        *,
+        inventory_items(*)
+            `)
         .eq('menu_item_id', menuItemId);
 
     if (error) {
@@ -1360,21 +1353,21 @@ export async function getAllRecipes(shopId: string) {
     const { data, error } = await supabase
         .from('menu_items')
         .select(`
+    id,
+        name,
+        images,
+        menu_item_ingredients(
             id,
-            name,
-            images,
-            menu_item_ingredients (
+            quantity_required,
+            unit,
+            inventory_items(
                 id,
-                quantity_required,
+                name,
                 unit,
-                inventory_items (
-                    id,
-                    name,
-                    unit,
-                    stock_quantity
-                )
+                stock_quantity
             )
-        `)
+        )
+            `)
         .eq('shop_id', shopId)
         .order('name');
 

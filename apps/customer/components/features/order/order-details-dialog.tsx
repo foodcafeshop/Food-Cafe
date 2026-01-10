@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 import { getOrderById, cancelOrder } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { RatingDialog } from "@/components/features/feedback/rating-dialog";
 import { useSettingsStore } from "@/lib/settings-store";
 import { toast } from "sonner";
 import { usePushSubscription } from "@/lib/hooks/use-push-subscription";
@@ -29,7 +28,6 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
     const [order, setOrder] = useState<any>(initialOrder || null);
     const [loading, setLoading] = useState(!initialOrder);
     const [timeLeft, setTimeLeft] = useState(12);
-    const [isRatingOpen, setIsRatingOpen] = useState(false);
     const { getCurrencySymbol } = useSettingsStore();
 
     // Reset state when dialog opens with a new orderId
@@ -224,16 +222,6 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                             })()}
                         </div>
 
-                        {(order.status === 'served' || order.status === 'billed') && (
-                            <Button
-                                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                                onClick={() => setIsRatingOpen(true)}
-                            >
-                                <Star className="w-4 h-4 mr-2" />
-                                Rate your Experience
-                            </Button>
-                        )}
-
                         {order.status === 'queued' && (
                             <Button
                                 variant="destructive"
@@ -247,16 +235,6 @@ export function OrderDetailsDialog({ isOpen, onClose, orderId, initialOrder, sho
                     </div>
                 )}
             </DialogContent>
-
-            {order && (
-                <RatingDialog
-                    isOpen={isRatingOpen}
-                    onClose={() => setIsRatingOpen(false)}
-                    orderId={order.id}
-                    shopId={order.shop_id}
-                    items={order.order_items || []}
-                />
-            )}
         </Dialog>
     );
 }

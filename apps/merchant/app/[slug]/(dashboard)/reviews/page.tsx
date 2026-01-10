@@ -6,17 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { useShopId } from "@/lib/hooks/use-shop-id";
+
 export default function ReviewsPage() {
+    const { shopId } = useShopId();
     const [reviews, setReviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadReviews();
-    }, []);
+        if (shopId) {
+            loadReviews();
+        }
+    }, [shopId]);
 
     const loadReviews = async () => {
+        if (!shopId) return;
         setLoading(true);
-        const data = await getReviews();
+        const data = await getReviews(shopId);
         setReviews(data || []);
         setLoading(false);
     };
@@ -51,17 +57,34 @@ export default function ReviewsPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-4 space-y-3">
-                                {review.menu_items && (
-                                    <div className="flex items-center gap-2 text-sm font-medium border-b pb-2">
-                                        {review.menu_items.image && (
-                                            <img src={review.menu_items.image} alt={review.menu_items.name} className="w-8 h-8 rounded-md object-cover" />
-                                        )}
-                                        <span>{review.menu_items.name}</span>
+                                {review.comment && (
+                                    <p className="text-sm text-gray-600 italic mb-3">"{review.comment}"</p>
+                                )}
+
+                                {review.review_items && review.review_items.length > 0 && (
+                                    <div className="space-y-2 mt-2">
+                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rated Items</div>
+                                        {review.review_items.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex items-center justify-between text-sm bg-muted/20 p-2 rounded-md">
+                                                <div className="flex items-center gap-2">
+                                                    {item.menu_items?.images?.[0] && (
+                                                        <img src={item.menu_items.images[0]} alt={item.menu_items.name} className="w-8 h-8 rounded-md object-cover" />
+                                                    )}
+                                                    <span className="font-medium">{item.menu_items?.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                                    <span className="font-bold text-xs">{item.rating}</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
-                                <p className="text-sm text-gray-600 italic">"{review.comment || 'No comment provided'}"</p>
+                                {!review.comment && (!review.review_items || review.review_items.length === 0) && (
+                                    <p className="text-sm text-muted-foreground italic">No detailed feedback provided.</p>
+                                )}
                                 <div className="text-xs text-muted-foreground pt-2">
-                                    Order #{review.orders?.order_number || review.order_id.slice(0, 8)}
+                                    Bill #{review.bills?.bill_number || review.bill_id?.slice(0, 8)}
                                 </div>
                             </CardContent>
                         </Card>

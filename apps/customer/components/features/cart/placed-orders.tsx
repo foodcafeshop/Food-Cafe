@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import { getTableOrders } from "@/lib/api";
 import { useCartStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, ChefHat, Utensils, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle2, ChefHat, Utensils, XCircle, Star } from "lucide-react";
 import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { getCurrencySymbol } from "@/lib/utils";
+import { RatingDialog } from "../feedback/rating-dialog";
+import { getTableBill } from "@/lib/api";
 
 interface PlacedOrdersProps {
     currencySymbol?: string;
@@ -17,6 +20,10 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
     const { tableId } = useCartStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showRating, setShowRating] = useState(false);
+    const [billId, setBillId] = useState<string | null>(null);
+    const [ratingItems, setRatingItems] = useState<any[]>([]);
+    const [shopId, setShopId] = useState<string | null>(null);
 
     useEffect(() => {
         if (tableId) {
@@ -35,6 +42,32 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
         setOrders(data || []);
         setLoading(false);
     };
+
+    const checkBillStatus = async () => {
+        if (!tableId) return;
+        const hasBilledOrders = orders.some(o => o.status === 'billed' || o.status === 'complete');
+
+        if (hasBilledOrders) {
+            const bill = await getTableBill(tableId);
+            if (bill) {
+                setBillId(bill.id);
+                setShopId(bill.shop_id);
+                // Collect unique items for rating
+                if (bill.items_snapshot) {
+                    setRatingItems(bill.items_snapshot.map((i: any) => ({
+                        menu_item_id: i.id || i.menu_item_id, // Handle both potential formats
+                        name: i.name
+                    })));
+                }
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (orders.length > 0) {
+            checkBillStatus();
+        }
+    }, [orders]);
 
     if (loading) return <div className="p-4 text-center text-gray-500">Loading orders...</div>;
     if (orders.length === 0) return null;
@@ -73,19 +106,59 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-800">Placed Orders</h2>
-                <Badge variant="outline" className="text-gray-600 border-gray-300">
-                    Total Bill:
-                    {grandTax > 0.01 ? (
-                        <span className="ml-1">
-                            {currencySymbol}{grandTotal.toFixed(2)} (incl. taxes)
-                        </span>
-                    ) : (
-                        <span className="ml-1">{currencySymbol}{grandTotal.toFixed(2)}</span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between w-full sm:w-auto">
+                    <h2 className="text-lg font-bold text-gray-800">Placed Orders</h2>
+                    <div className="sm:hidden">
+                        <Badge variant="outline" className="text-gray-600 border-gray-300 py-1.5 whitespace-nowrap">
+                            Total:
+                            {grandTax > 0.01 ? (
+                                <span className="ml-1 font-medium">
+                                    {currencySymbol}{grandTotal.toFixed(2)}
+                                </span>
+                            ) : (
+                                <span className="ml-1 font-medium">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                            )}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end">
+                    {billId && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full sm:w-auto text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100"
+                            onClick={() => setShowRating(true)}
+                        >
+                            <Star className="w-4 h-4 mr-1 fill-yellow-600" />
+                            Rate Experience
+                        </Button>
                     )}
-                </Badge>
+                    <div className="hidden sm:block">
+                        <Badge variant="outline" className="text-gray-600 border-gray-300 py-1.5 whitespace-nowrap">
+                            Total:
+                            {grandTax > 0.01 ? (
+                                <span className="ml-1 font-medium">
+                                    {currencySymbol}{grandTotal.toFixed(2)}
+                                </span>
+                            ) : (
+                                <span className="ml-1 font-medium">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                            )}
+                        </Badge>
+                    </div>
+                </div>
             </div>
+
+            {showRating && billId && shopId && (
+                <RatingDialog
+                    isOpen={showRating}
+                    onClose={() => setShowRating(false)}
+                    billId={billId}
+                    shopId={shopId}
+                    items={ratingItems}
+                />
+            )}
 
             <div className="space-y-4">
                 {orders.map((order) => {
@@ -153,4 +226,3 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
         </div>
     );
 }
-

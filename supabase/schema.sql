@@ -137,7 +137,7 @@ create table public.orders (
   shop_id uuid references public.shops(id) on delete cascade,
   table_id uuid references public.tables(id) on delete set null,
   order_number text,
-  status text check (status in ('queued', 'preparing', 'ready', 'served', 'cancelled', 'billed')) default 'queued',
+  status text check (status in ('queued', 'preparing', 'ready', 'served', 'billed', 'complete', 'cancelled')) default 'queued',
   total_amount decimal(10, 2) not null default 0,
   payment_status text check (payment_status in ('pending', 'paid')) default 'pending',
   payment_method text,
@@ -273,17 +273,53 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- RPC: Complete Table Session (After Payment)
+create or replace function public.complete_table_session(
+  p_table_id uuid
+)
+returns void as $$
+begin
+  -- 1. Update Orders to 'complete' for this table where status is 'billed'
+  update public.orders
+  set status = 'complete'
+  where table_id = p_table_id
+  and status = 'billed';
+
+  -- 2. Update Table Status to 'empty' and clear active customers
+  update public.tables
+  set status = 'empty',
+      active_customers = '{}'
+  where id = p_table_id;
+
+  -- 3. Detach cancelled orders so they don't stick to the table
+  update public.orders
+  set table_id = null
+  where table_id = p_table_id
+  and status = 'cancelled';
+end;
+$$ language plpgsql security definer;
+
 -- 12. Reviews
 create table if not exists public.reviews (
   id uuid primary key default uuid_generate_v4(),
   shop_id uuid references public.shops(id) on delete cascade,
-  order_id uuid references public.orders(id) on delete cascade,
+  bill_id uuid references public.bills(id) on delete cascade, -- Required: Linked to Bill
   customer_id uuid references public.customers(id) on delete set null,
-  menu_item_id uuid references public.menu_items(id) on delete cascade, -- Nullable: If null, it's a general order review
   rating integer not null check (rating >= 1 and rating <= 5),
   comment text,
   customer_name text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(bill_id, customer_id)
+);
+
+create table if not exists public.review_items (
+  id uuid primary key default uuid_generate_v4(),
+  review_id uuid references public.reviews(id) on delete cascade,
+  menu_item_id uuid references public.menu_items(id) on delete cascade,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(review_id, menu_item_id)
 );
 
 -- 13. User Roles
@@ -320,8 +356,9 @@ create index idx_bills_shop_id on public.bills(shop_id);
 create index if not exists idx_customers_shop_id on public.customers(shop_id);
 create index if not exists idx_customers_phone on public.customers(phone);
 create index if not exists idx_reviews_shop_id on public.reviews(shop_id);
-create index if not exists idx_reviews_menu_item_id on public.reviews(menu_item_id);
-create index if not exists idx_reviews_order_id on public.reviews(order_id);
+create index if not exists idx_reviews_bill_id on public.reviews(bill_id);
+create index if not exists idx_review_items_review_id on public.review_items(review_id);
+create index if not exists idx_review_items_menu_item_id on public.review_items(menu_item_id);
 
 -- Helper Functions (Security Definer)
 
@@ -396,9 +433,16 @@ execute function public.ensure_bill_number_uppercase();
 create or replace function public.check_order_status_immutable()
 returns trigger as $$
 begin
-  if old.status in ('billed', 'cancelled') and new.status is distinct from old.status then
+  -- Allow transition from billed to complete, but lock other changes from billed
+  if old.status = 'billed' and new.status != 'complete' and new.status is distinct from old.status then
+      raise exception 'Order status cannot be changed once it is billed (except to complete)';
+  end if;
+
+  -- Cancelled and Complete should be immutable
+  if old.status in ('cancelled', 'complete') and new.status is distinct from old.status then
     raise exception 'Order status cannot be changed once it is %', old.status;
   end if;
+  
   return new;
 end;
 $$ language plpgsql;
@@ -407,32 +451,6 @@ create trigger trg_check_order_status_immutable
 before update on public.orders
 for each row
 execute function public.check_order_status_immutable();
-
--- Update Menu Item Ratings
-create or replace function public.update_menu_item_rating()
-returns trigger as $$
-begin
-  if (TG_OP = 'INSERT' or TG_OP = 'UPDATE') and new.menu_item_id is not null then
-    update public.menu_items
-    set 
-      average_rating = (select avg(rating) from public.reviews where menu_item_id = new.menu_item_id),
-      rating_count = (select count(*) from public.reviews where menu_item_id = new.menu_item_id)
-    where id = new.menu_item_id;
-  elsif (TG_OP = 'DELETE') and old.menu_item_id is not null then
-    update public.menu_items
-    set 
-      average_rating = coalesce((select avg(rating) from public.reviews where menu_item_id = old.menu_item_id), 0),
-      rating_count = (select count(*) from public.reviews where menu_item_id = old.menu_item_id)
-    where id = old.menu_item_id;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_update_menu_item_rating
-AFTER INSERT OR UPDATE OR DELETE ON public.reviews
-FOR EACH ROW
-EXECUTE FUNCTION public.update_menu_item_rating();
 
 -- Update Shop Ratings
 CREATE OR REPLACE FUNCTION public.update_shop_rating()
@@ -459,6 +477,32 @@ CREATE TRIGGER trg_update_shop_rating
 AFTER INSERT OR UPDATE OR DELETE ON public.reviews
 FOR EACH ROW
 EXECUTE FUNCTION public.update_shop_rating();
+
+-- Update Menu Item Ratings (From review_items)
+create or replace function public.update_menu_item_rating()
+returns trigger as $$
+begin
+  if (TG_OP = 'INSERT' or TG_OP = 'UPDATE') and new.menu_item_id is not null then
+    update public.menu_items
+    set 
+      average_rating = (select avg(rating) from public.review_items where menu_item_id = new.menu_item_id),
+      rating_count = (select count(*) from public.review_items where menu_item_id = new.menu_item_id)
+    where id = new.menu_item_id;
+  elsif (TG_OP = 'DELETE') and old.menu_item_id is not null then
+    update public.menu_items
+    set 
+      average_rating = coalesce((select avg(rating) from public.review_items where menu_item_id = old.menu_item_id), 0),
+      rating_count = (select count(*) from public.review_items where menu_item_id = old.menu_item_id)
+    where id = old.menu_item_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_menu_item_rating
+AFTER INSERT OR UPDATE OR DELETE ON public.review_items
+FOR EACH ROW
+EXECUTE FUNCTION public.update_menu_item_rating();
 
 -- Create Shop Owner Role
 create or replace function public.create_shop_owner_role()
@@ -622,7 +666,8 @@ create policy "Admin can insert settings" on public.settings for insert with che
 
 -- BILLS
 -- Staff/Admin can read
-create policy "Staff can read bills" on public.bills for select using (public.is_staff_of(shop_id));
+-- Public can read (needed for customers to fetch bill for review)
+create policy "Public can read bills" on public.bills for select using (true);
 -- Staff/Admin can insert
 create policy "Staff can insert bills" on public.bills for insert with check (public.is_staff_of(shop_id));
 
@@ -637,6 +682,17 @@ create policy "Public can update customers" on public.customers for update using
 create policy "Public can read reviews" on public.reviews for select using (true);
 -- Public can insert
 create policy "Public can insert reviews" on public.reviews for insert with check (true);
+-- Public can update
+create policy "Public can update reviews" on public.reviews for update using (true);
+
+-- REVIEW ITEMS
+alter table public.review_items enable row level security;
+-- Public can read
+create policy "Public can read review_items" on public.review_items for select using (true);
+-- Public can insert
+create policy "Public can insert review_items" on public.review_items for insert with check (true);
+-- Public can update
+create policy "Public can update review_items" on public.review_items for update using (true);
 
 -- USER ROLES
 -- Admins can read roles (using security definer function to avoid recursion)
