@@ -5,12 +5,13 @@ import { getReviews } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Review } from "@/lib/types";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
 export default function ReviewsPage() {
     const { shopId } = useShopId();
-    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

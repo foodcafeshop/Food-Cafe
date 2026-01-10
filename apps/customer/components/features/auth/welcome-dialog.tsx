@@ -133,7 +133,9 @@ export function WelcomeDialog() {
                 .single();
 
             if (table) {
-                const activeCustomers = table.active_customers as any[] || [];
+                let activeCustomers = table.active_customers;
+                if (!Array.isArray(activeCustomers)) activeCustomers = [];
+
                 const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
 
                 if (table.status === 'empty' || !isSessionValid) {
@@ -168,7 +170,9 @@ export function WelcomeDialog() {
                     if (payload.new.id !== useCartStore.getState().tableId) return;
 
                     const newStatus = payload.new.status;
-                    const activeCustomers = payload.new.active_customers as any[] || [];
+                    let activeCustomers = payload.new.active_customers;
+                    if (!Array.isArray(activeCustomers)) activeCustomers = [];
+
                     const isSessionValid = activeCustomers.some((c: any) => c.sessionId === sessionId);
 
                     if (newStatus === 'empty' || !isSessionValid) {

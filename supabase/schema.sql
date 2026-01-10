@@ -288,7 +288,7 @@ begin
   -- 2. Update Table Status to 'empty' and clear active customers
   update public.tables
   set status = 'empty',
-      active_customers = '{}'
+      active_customers = '[]'
   where id = p_table_id;
 
   -- 3. Detach cancelled orders so they don't stick to the table
@@ -642,6 +642,13 @@ create policy "Public can insert orders" on public.orders for insert with check 
 create policy "Public can read orders" on public.orders for select using (true);
 -- Staff/Admin can update (Status changes)
 create policy "Staff can update orders" on public.orders for update using (public.is_staff_of(shop_id));
+-- Customers can cancel own queued orders
+create policy "Customers can cancel own queued orders" on public.orders for update using (
+  (auth.uid() = customer_id or customer_id is null) -- Allow if linked or if guest (checked by session ownership, simplified here to owner)
+  and status = 'queued'
+) with check (
+  status = 'cancelled'
+);
 
 -- ORDER ITEMS
 -- Public can insert

@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import { Menu, Category, MenuItem, Shop } from './types';
+import { supabase } from "./supabase";
+import { Category, Menu, MenuItem, Settings, InventoryItem, InventoryAdjustment, MenuItemIngredient, Order, Review, Shop, AdjustmentReason, Bill } from "./types";
 import { roundToThree } from './utils';
 
 export async function getActiveMenu(shopId: string): Promise<Menu | null> {
@@ -629,7 +629,7 @@ export async function getTableById(tableId: string) {
     return data;
 }
 
-export async function getBills(shopId: string) {
+export async function getBills(shopId: string): Promise<Bill[]> {
     const { data, error } = await supabase
         .from('bills')
         .select(`
@@ -643,7 +643,7 @@ export async function getBills(shopId: string) {
         console.error('Error fetching bills:', error);
         return [];
     }
-    return data;
+    return data as any as Bill[];
 }
 
 export async function updateMenuItem(id: string, updates: Partial<MenuItem>) {
@@ -996,7 +996,7 @@ export async function submitReview(review: any) {
     return data;
 }
 
-export async function getReviews(shopId: string, limit = 50) {
+export async function getReviews(shopId: string, limit = 50): Promise<Review[]> {
     const { data, error } = await supabase
         .from('reviews')
         .select(`
@@ -1018,7 +1018,7 @@ export async function getReviews(shopId: string, limit = 50) {
         console.error('Error fetching reviews:', error);
         return [];
     }
-    return data;
+    return data as any as Review[];
 }
 
 export async function getPeakHoursStats(shopId: string) {
@@ -1155,7 +1155,7 @@ export async function cancelOrder(orderId: string) {
 // Inventory Management API
 // ========================================
 
-import { InventoryItem, MenuItemIngredient, InventoryAdjustment, AdjustmentReason } from './types';
+
 
 // Inventory Items CRUD
 export async function getInventoryItems(shopId: string) {

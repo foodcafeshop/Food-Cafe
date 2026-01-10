@@ -32,6 +32,8 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
             const interval = setInterval(fetchOrders, 10000);
             return () => clearInterval(interval);
         } else {
+            // Clear orders when session ends (tableId becomes null)
+            setOrders([]);
             setLoading(false);
         }
     }, [tableId]);

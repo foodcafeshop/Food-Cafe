@@ -144,3 +144,89 @@ export interface InventoryAdjustment {
     // Joined fields
     inventory_item?: InventoryItem;
 }
+
+// Order Types
+export type OrderStatus = 'queued' | 'preparing' | 'ready' | 'served' | 'billed' | 'complete' | 'cancelled';
+
+export interface OrderItem {
+    id: string;
+    order_id: string;
+    menu_item_id: string | null;
+    name: string;
+    price: number;
+    quantity: number;
+    notes?: string | null;
+    created_at: string;
+    // Joined fields
+    menu_items?: MenuItem;
+}
+
+export interface Order {
+    id: string;
+    shop_id: string;
+    table_id: string | null;
+    customer_id: string | null;
+    order_number: string;
+    status: OrderStatus;
+    total_amount: number;
+    payment_status: 'pending' | 'paid';
+    payment_method: string | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    created_at: string;
+    updated_at: string;
+    ready_at?: string | null;
+    served_at?: string | null;
+    // Joined fields
+    tables?: { label: string };
+    customers?: { name: string; phone: string };
+    order_items?: OrderItem[];
+    bills?: { bill_number: string };
+    is_staff_order?: boolean;
+    staff_name?: string;
+}
+
+// Review Types
+export interface ReviewItem {
+    id: string;
+    review_id: string;
+    menu_item_id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    // Joined fields
+    menu_items?: { name: string; images: string[] };
+}
+
+export interface Review {
+    id: string;
+    shop_id: string;
+    bill_id: string;
+    customer_id: string | null;
+    rating: number;
+    comment: string | null;
+    customer_name: string | null;
+    created_at: string;
+    // Joined fields
+    bills?: { bill_number: string };
+    review_items?: ReviewItem[];
+}
+
+export interface Bill {
+    id: string;
+    shop_id: string;
+    table_id: string | null;
+    bill_number: string;
+    total_amount: number;
+    payment_method: string;
+    created_at: string;
+    order_ids: string[];
+    items_snapshot: any; // Ideally this should be more specific but start with any for JSONB
+    breakdown: { tax?: number; serviceCharge?: number;[key: string]: any } | null;
+    discount_amount: number;
+    discount_reason: string | null;
+    created_by: string | null;
+    // Joined fields
+    tables?: { label: string };
+    shops?: { name: string };
+}
