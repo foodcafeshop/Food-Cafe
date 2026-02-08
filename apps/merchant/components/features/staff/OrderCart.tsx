@@ -81,8 +81,14 @@ export function OrderCart({
     };
 
     const handlePlaceOrderClick = async () => {
-        // Local Validation for Mandatory Phone to UX guidance
+        // Local Validation for Mandatory Details to UX guidance
         if (isPhoneMandatory) {
+            if (!customerName) {
+                setActiveSection('customer');
+                setIsCustomerDesktopOpen(true);
+                toast.error("Customer Name is mandatory.");
+                return;
+            }
             if (!customerPhone) {
                 setActiveSection('customer');
                 setIsCustomerDesktopOpen(true);
@@ -140,7 +146,9 @@ export function OrderCart({
             <div className="flex-1 flex flex-col min-h-0 relative">
                 <div className={`${activeSection === 'customer' ? 'block' : 'hidden'} ${isCustomerDesktopOpen ? 'lg:block' : 'lg:hidden'} p-4 bg-background space-y-3 animate-in slide-in-from-top-2 duration-200 border-b`}>
                     <div className="space-y-1">
-                        <Label htmlFor="customerName" className="text-xs text-muted-foreground">Customer Name</Label>
+                        <Label htmlFor="customerName" className="text-xs text-muted-foreground">
+                            Customer Name {isPhoneMandatory ? <span className="text-destructive">*</span> : ''}
+                        </Label>
                         <div className="relative">
                             <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input

@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, Printer, CheckSquare } from "lucide-react";
-import { getTableOrders, settleTableBill, getSettings, updateOrderStatus, clearTable } from "@/lib/api";
+import { getTableOrders, settleTableBill, getSettings, updateOrderStatus, clearTable, getOrderById, settleOrderBill } from "@/lib/api";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { toast } from "sonner";
 import { generateReceiptHtml } from "@/lib/print-utils";
@@ -30,13 +30,15 @@ interface BillingDialogProps {
     onOpenChange: (open: boolean) => void;
     tableId: string | null;
     tableLabel?: string;
+    orderId?: string | null; // Added
     shopId: string | null;
-    onSuccess: (tableId?: string, status?: string) => void;
+    onSuccess: (id?: string, status?: string) => void;
 }
 
-export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId, onSuccess }: BillingDialogProps) {
+export function BillingDialog({ open, onOpenChange, tableId, tableLabel, orderId, shopId, onSuccess }: BillingDialogProps) {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [settling, setSettling] = useState(false); // New state for settlement process
     const [currency, setCurrency] = useState('₹'); // Default fallback
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [serviceChargeRate, setServiceChargeRate] = useState(0);
@@ -58,34 +60,73 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const [shopLogo, setShopLogo] = useState<string | null>(null);
     const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
+    // Explicitly fetched table label to handle mismatch cases
+    const [fetchedTableLabel, setFetchedTableLabel] = useState<string | null>(null);
+    const [deliveryChargeType, setDeliveryChargeType] = useState<'flat' | 'percent'>('flat');
+    const [deliveryChargeAmount, setDeliveryChargeAmount] = useState(0);
+    const [waiveServiceChargeForTakeaway, setWaiveServiceChargeForTakeaway] = useState(false);
+
     useEffect(() => {
-        if (open && tableId && shopId) {
+        if (open && (tableId || orderId) && shopId) {
             loadData();
         }
-    }, [open, tableId, shopId]);
+    }, [open, tableId, orderId, shopId]);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            // Fetch Settings, Shop Logo and Bill Info in parallel
-            const [ordersData, settings, shopDataResult, billResult] = await Promise.all([
-                getTableOrders(tableId!),
+            // Determine fetch promise
+            let ordersPromise;
+            let billPromise;
+            // Initialize as promise that resolves to match Supabase response shape roughly or null
+            let tablePromise: Promise<any> = Promise.resolve({ data: null });
+
+            if (orderId) {
+                ordersPromise = getOrderById(orderId).then(data => data ? [data] : []);
+                billPromise = Promise.resolve({ data: null });
+            } else if (tableId) {
+                ordersPromise = getTableOrders(tableId);
+                billPromise = supabase.from('bills').select('bill_number').eq('table_id', tableId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+
+                // Explicitly fetch table label to be 100% sure
+                tablePromise = Promise.resolve(supabase.from('tables').select('label').eq('id', tableId).single());
+            }
+
+            // Fetch Settings, Shop Logo, Bill Info and Table details in parallel
+            const [ordersData, settings, shopDataResult, billResult, tableResult] = await Promise.all([
+                ordersPromise,
                 getSettings(shopId!),
                 supabase.from('shops').select('logo_url').eq('id', shopId!).single(),
-                supabase.from('bills').select('bill_number').eq('table_id', tableId!).order('created_at', { ascending: false }).limit(1).maybeSingle()
+                billPromise,
+                tablePromise
             ]);
 
             setOrders(ordersData || []);
 
-            if (billResult.data) {
+            // Use the explicitly fetched table label if available
+            if (tableResult?.data?.label) {
+                setFetchedTableLabel(tableResult.data.label);
+            } else {
+                setFetchedTableLabel(null);
+            }
+
+
+            if (billResult?.data) {
                 setBillNumber(billResult.data.bill_number);
             } else {
                 setBillNumber(null);
+                // If orderId is passed, maybe check if order is already paid/billed
+                if (ordersData && ordersData.length > 0 && ordersData[0].payment_status === 'paid') {
+                    // Maybe fetch bill? Not implemented yet for order lookup by order_id in bills logic efficiently without scanning.
+                }
             }
 
             if (settings) {
                 if (settings.currency) setCurrency(settings.currency);
                 if (settings.service_charge !== undefined) setServiceChargeRate(settings.service_charge);
+                if (settings.delivery_charge_amount !== undefined) setDeliveryChargeAmount(settings.delivery_charge_amount);
+                if (settings.delivery_charge_type) setDeliveryChargeType(settings.delivery_charge_type as 'flat' | 'percent');
+
                 if (settings.restaurant_name) setRestaurantName(settings.restaurant_name);
                 if (settings.tax_rate !== undefined) setTaxRate(settings.tax_rate);
                 if (settings.tax_included_in_price !== undefined) setTaxIncluded(settings.tax_included_in_price);
@@ -112,22 +153,26 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     const calculateBilling = () => {
         // Ensure we only calculate based on non-cancelled orders
         const activeOrders = orders.filter(o => o.status !== 'cancelled');
-        // Calculate raw sum of item prices * quantity
-        // Assuming order_items contains price and quantity, sum them up.
-        // Wait, orders object has 'total_amount'.
-        // If tax is included, 'total_amount' is the inclusive sum.
-        // If tax is excluded, 'total_amount' is the exclusive sum (typically).
-        // Let's rely on summing items to be safe if 'total_amount' handling is ambiguous in DB.
 
         let itemTotal = 0;
+        let packagingTotal = 0;
+        let deliveryTotal = 0;
+
         activeOrders.forEach(order => {
-            // If order_items is joined, use it for accuracy
-            if (order.order_items && order.order_items.length > 0) {
-                itemTotal += order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-            } else {
-                // Fallback to order total if items missing
-                itemTotal += order.total_amount;
+            // Item Total
+            if (activeOrders.length > 0) {
+                if (order.order_items && order.order_items.length > 0) {
+                    itemTotal += order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+                } else {
+                    itemTotal += order.total_amount;
+                }
             }
+
+            // Fees
+            packagingTotal += Number(order.packaging_charge) || 0;
+            deliveryTotal += Number(order.delivery_fee) || 0;
+
+            // Should also check metadata for fees if stored there? Assuming column for now.
         });
 
         let subtotalVal = 0;
@@ -150,47 +195,63 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
         const finalTaxVal = discountedSubtotal * (taxRate / 100);
 
         // Recalculate Service Charge on Discounted Subtotal
-        const finalServiceChargeVal = includeServiceCharge ? (discountedSubtotal * (serviceChargeRate / 100)) : 0;
+        // Service Charge is only applicable for Dine-in orders
+        const isDineIn = activeOrders.some(o => o.service_type === 'dine_in');
+        const effectiveServiceChargeRate = isDineIn ? serviceChargeRate : 0;
 
-        // Grand Total
-        const finalGrandTotal = discountedSubtotal + finalTaxVal + finalServiceChargeVal;
+        const finalServiceChargeVal = includeServiceCharge ? (discountedSubtotal * (effectiveServiceChargeRate / 100)) : 0;
+
+        // Grand Total: discountedSubtotal + tax + SC + packaging + delivery
+        const finalGrandTotal = discountedSubtotal + finalTaxVal + finalServiceChargeVal + packagingTotal + deliveryTotal;
 
         return {
-            subtotal: roundToThree(subtotalVal), // Original Subtotal
-            tax: roundToThree(finalTaxVal),      // Tax on discounted amount
+            subtotal: roundToThree(subtotalVal),
+            tax: roundToThree(finalTaxVal),
             taxRate,
             taxIncluded,
-            serviceCharge: roundToThree(finalServiceChargeVal), // SC on discounted amount
+            serviceCharge: roundToThree(finalServiceChargeVal),
             grandTotal: roundToThree(finalGrandTotal),
             discountAmount,
             discountReason,
-            discountedSubtotal: roundToThree(discountedSubtotal) // Expose for UI/Print if needed
+            discountedSubtotal: roundToThree(discountedSubtotal),
+            packagingTotal: roundToThree(packagingTotal),
+            deliveryTotal: roundToThree(deliveryTotal)
         };
     };
 
     const billing = calculateBilling();
 
     const handleSettleBill = async () => {
-        if (!tableId) return;
+        if (!tableId && !orderId) return;
         if (discountAmount > 0 && !discountReason.trim()) {
             toast.error("Please provide a reason for the discount");
             return;
         }
+
+        setSettling(true); // Disable button during settlement
         try {
-            const result = await settleTableBill(tableId, paymentMethod, billing);
+            let result;
+            if (orderId) {
+                result = await settleOrderBill(orderId, paymentMethod, billing);
+                // Determine status based on service type
+                const isTakeawayOrDelivery = orders.length > 0 && ['takeaway', 'delivery'].includes(orders[0].service_type);
+                const newStatus = isTakeawayOrDelivery ? 'complete' : 'billed';
+                onSuccess(orderId, newStatus);
+            } else if (tableId) {
+                result = await settleTableBill(tableId, paymentMethod, billing);
+                onSuccess(tableId, 'billed');
+            }
+
             if (result && result.bill_number) {
                 setBillNumber(result.bill_number);
             }
             toast.success("Bill settled successfully");
-            onSuccess(tableId, 'billed');
-            // Don't close immediately so they can print?
-            // Usually we might want to close or refresh.
-            // onOpenChange(false); 
-            // Refresh orders to see status change
-            loadData();
+            onOpenChange(false); // Close dialog after successful settlement
         } catch (error) {
             console.error(error);
             toast.error("Failed to settle bill");
+        } finally {
+            setSettling(false); // Re-enable button
         }
     };
 
@@ -198,8 +259,14 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
         try {
             await updateOrderStatus(orderId, status);
             toast.success(`Order marked as ${status}`);
-            const updatedOrders = await getTableOrders(tableId!);
-            setOrders(updatedOrders || []);
+            // Reload specific order or table orders
+            if (tableId) {
+                const updatedOrders = await getTableOrders(tableId);
+                setOrders(updatedOrders || []);
+            } else {
+                const updatedOrder = await getOrderById(orderId);
+                setOrders(updatedOrder ? [updatedOrder] : []);
+            }
         } catch (e) {
             console.error(e);
             toast.error("Failed to update status");
@@ -207,7 +274,7 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
     };
 
     const handlePrintBill = () => {
-        if (!tableId || !restaurantName) return;
+        if ((!tableId && !orderId) || !restaurantName) return;
 
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -215,32 +282,74 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
             return;
         }
 
-        const { subtotal, tax, serviceCharge, grandTotal } = calculateBilling();
+        const billingData = calculateBilling();
         const date = new Date().toLocaleString();
 
-        const orderNumbers = orders
-            .filter(o => o.status !== 'cancelled')
+        const activeApprovedOrders = orders.filter(o => o.status !== 'cancelled');
+        const orderNumbers = activeApprovedOrders
             .map(o => o.order_number || o.id.slice(0, 4))
             .join(', ');
 
-        // Use Bill Number if available, otherwise Order Numbers
         const displayBillNumber = billNumber ? billNumber : orderNumbers;
         const billLabel = billNumber ? "Bill #" : "Orders #";
+
+        // Extract Customer/Service Info from first order (assuming homogeneous)
+        const firstOrder = activeApprovedOrders[0];
+        const serviceType = firstOrder?.service_type || 'dine_in';
+        const customerName = firstOrder?.customer_name;
+        const customerPhone = firstOrder?.customer_phone;
+
+        // Determine Table Label
+        // Proirity 1: Label from order data (joined with tables) - this is the source of truth
+        // Priority 2: Label from props - fallback if order data doesn't have it
+        // Priority 3: "Order #..." for takeaway/delivery
+
+        let displayTableLabel = null;
+
+        if (fetchedTableLabel) {
+            displayTableLabel = fetchedTableLabel;
+        }
+
+        // Check if we have a valid table label from the order data join
+        if (!displayTableLabel && firstOrder?.tables?.label && firstOrder.tables.label !== 'Table') {
+            displayTableLabel = firstOrder.tables.label;
+        }
+
+        // If not found in order data, try the prop (but skip if it's just "Table" and we want to avoid generic names?)
+        // Actually, user said DB says "T1", so firstOrder.tables.label SHOULD be "T1".
+        // The prop was "Table" for some reason.
+        if (!displayTableLabel && tableLabel) {
+            displayTableLabel = tableLabel;
+        }
+
+        // If still no label, try to get it from order data even if it was "Table" (maybe that IS the name?)
+        if (!displayTableLabel && firstOrder?.tables?.label) {
+            displayTableLabel = firstOrder.tables.label;
+        }
+
+        // Fallback logic for takeaways or missing table info
+        if (!displayTableLabel) {
+            if (activeApprovedOrders.some(o => ['takeaway', 'delivery'].includes(o.service_type))) {
+                displayTableLabel = `Order #${orderNumbers}`;
+            } else if (orderId && !firstOrder?.table_id) {
+                displayTableLabel = `Order #${orderNumbers}`;
+            } else {
+                displayTableLabel = orderId ? `Order #${orderNumbers}` : 'Unknown Table';
+            }
+        }
 
         const receiptData = {
             restaurantName,
             shopLogo: showLogo ? shopLogo : null,
             printerHeader,
             printerFooter,
-            tableLabel: tableLabel || 'Unknown Table',
+            tableLabel: displayTableLabel,
             date,
             billNumber: displayBillNumber,
             billLabel,
             currency,
             items: (() => {
-                const allItems = orders
-                    .filter(o => o.status !== 'cancelled')
-                    .flatMap(o => o.order_items || []);
+                const allItems = activeApprovedOrders.flatMap(o => o.order_items || []);
 
                 const groupedItems = allItems.reduce((acc: any[], item: any) => {
                     const key = `${item.menu_item_id || item.name}-${item.price}-${(item.notes || '').trim()}`;
@@ -261,18 +370,24 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                     notes: item.notes
                 }));
             })(),
-            subtotal: billing.subtotal,
-            tax: billing.tax,
+            subtotal: billingData.subtotal,
+            tax: billingData.tax,
             taxRate,
             taxIncluded,
-            serviceCharge: billing.serviceCharge,
+            serviceCharge: billingData.serviceCharge,
             serviceChargeRate,
             includeServiceCharge,
-            grandTotal: billing.grandTotal,
-            discountAmount: billing.discountAmount,
-            discountReason: billing.discountReason,
-            discountedSubtotal: billing.discountedSubtotal,
-            printerWidth
+            grandTotal: billingData.grandTotal,
+            discountAmount: billingData.discountAmount,
+            discountReason: billingData.discountReason,
+            discountedSubtotal: billingData.discountedSubtotal,
+            printerWidth,
+            // New Fields
+            packagingCharge: billingData.packagingTotal,
+            deliveryFee: billingData.deliveryTotal,
+            serviceType,
+            customerName,
+            customerPhone
         };
 
         const html = generateReceiptHtml(receiptData);
@@ -298,7 +413,12 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg z-[100]">
                 <DialogHeader>
-                    <DialogTitle>Bill for {tableLabel}</DialogTitle>
+                    <DialogTitle>
+                        {orderId
+                            ? `Bill for Order #${orders[0]?.order_number || orders[0]?.id?.slice(0, 4) || '...'}`
+                            : `Bill for ${tableLabel}`
+                        }
+                    </DialogTitle>
                 </DialogHeader>
 
                 {loading ? (
@@ -421,6 +541,20 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                                 </div>
                             )}
 
+                            {billing.packagingTotal > 0 && (
+                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                    <span>Packaging Charges</span>
+                                    <span>{currency}{billing.packagingTotal.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {billing.deliveryTotal > 0 && (
+                                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                    <span>Delivery Fees</span>
+                                    <span>{currency}{billing.deliveryTotal.toFixed(2)}</span>
+                                </div>
+                            )}
+
                             {!taxIncluded && (
                                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                                     <span>Tax ({taxRate}%)</span>
@@ -470,16 +604,16 @@ export function BillingDialog({ open, onOpenChange, tableId, tableLabel, shopId,
                         )}
 
                         <DialogFooter>
-                            <Button variant="outline" onClick={handlePrintBill} className="gap-2">
+                            <Button variant="outline" onClick={handlePrintBill} className="gap-2" disabled={settling}>
                                 <Printer className="h-4 w-4" /> Print Bill
                             </Button>
-                            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={settling}>Cancel</Button>
                             <Button
                                 onClick={handleSettleBill}
                                 className="bg-green-600 hover:bg-green-700"
-                                disabled={orders.some(o => ['queued', 'preparing', 'ready'].includes(o.status))}
+                                disabled={settling || orders.some(o => ['queued', 'preparing', 'ready'].includes(o.status))}
                             >
-                                <Receipt className="mr-2 h-4 w-4" /> Settle Bill
+                                <Receipt className="mr-2 h-4 w-4" /> {settling ? 'Settling...' : 'Settle Bill'}
                             </Button>
                         </DialogFooter>
                     </div>

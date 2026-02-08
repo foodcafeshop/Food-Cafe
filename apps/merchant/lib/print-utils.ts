@@ -28,6 +28,13 @@ export interface ReceiptData {
     discountReason?: string;
     discountedSubtotal?: number;
     printerWidth?: string; // e.g. '80mm' or '58mm'
+
+    // New Fields
+    packagingCharge?: number;
+    deliveryFee?: number;
+    serviceType?: string; // 'dine_in' | 'takeaway' | 'delivery'
+    customerName?: string;
+    customerPhone?: string;
 }
 
 export function generateReceiptHtml(data: ReceiptData): string {
@@ -53,19 +60,26 @@ export function generateReceiptHtml(data: ReceiptData): string {
         discountAmount = 0,
         discountReason,
         discountedSubtotal,
-        printerWidth = '80mm'
+        printerWidth = '80mm',
+        packagingCharge = 0,
+        deliveryFee = 0,
+        serviceType,
+        customerName,
+        customerPhone
     } = data;
 
     const isNarrow = printerWidth === '58mm';
     const fontSize = isNarrow ? '12px' : '14px';
 
-    // Use passed values for totals to support historical reprints
     const subtotalExclusive = subtotal;
     const taxAmount = tax;
     const scAmount = serviceCharge;
     const finalGrandTotal = grandTotal;
 
     const footerText = printerFooter || "";
+
+    const isTakeaway = serviceType === 'takeaway';
+    const isDelivery = serviceType === 'delivery';
 
     return `
         <html>
@@ -119,6 +133,9 @@ export function generateReceiptHtml(data: ReceiptData): string {
                     .border-b { border-bottom: 1px solid #000; }
                     .border-dashed { border-bottom-style: dashed; }
                     .border-2 { border-bottom-width: 2px; }
+                    .border { border: 1px solid #000; }
+                    .rounded-sm { border-radius: 2px; }
+                    .px-1 { padding-left: 4px; padding-right: 4px; }
                     
                     .logo {
                         width: 64px;
@@ -163,8 +180,17 @@ export function generateReceiptHtml(data: ReceiptData): string {
                     <!-- Order Meta -->
                     <div class="w-full border-b border-dashed mb-2"></div>
                     <div class="w-full text-left text-xs mb-2">
-                        <div>${billLabel || 'Bill #'}: ${billNumber || 'Draft'}</div>
-                        <div>Table: ${tableLabel}</div>
+                         <div class="flex justify-between font-bold mb-1">
+                            <span>${billLabel || 'Bill #'}: ${billNumber || 'Draft'}</span>
+                             <span style="text-transform: uppercase; border: 1px solid #000; padding: 0 4px; border-radius: 2px; font-size: 10px;">
+                                ${serviceType ? serviceType.replace('_', ' ') : 'DINE IN'}
+                            </span>
+                        </div>
+                        ${(!isTakeaway && !isDelivery) ? `<div>Table: ${tableLabel}</div>` : ''}
+                        ${(customerName || customerPhone) ? `
+                            <div>Name: ${customerName || 'Guest'}</div>
+                            <div>Phone: ${customerPhone || 'N/A'}</div>
+                        ` : ''}
                         <div>Date: ${date}</div>
                     </div>
 
@@ -202,6 +228,10 @@ export function generateReceiptHtml(data: ReceiptData): string {
                                 <span>Subtotal</span>
                                 <span>${currency}${subtotalExclusive.toFixed(2)}</span>
                             </div>
+                            <div class="flex justify-between mb-1">
+                                <span>Tax${taxRate > 0 ? ` (${taxRate}%)` : ''}</span>
+                                <span>${currency}${taxAmount.toFixed(2)}</span>
+                            </div>
                         `}
 
                         ${discountAmount > 0.01 ? `
@@ -215,13 +245,6 @@ export function generateReceiptHtml(data: ReceiptData): string {
                             </div>
                             <div class="w-full border-b border-dashed mb-1"></div>
                         ` : ''}
-
-                        ${!taxIncluded && taxAmount > 0.01 ? `
-                            <div class="flex justify-between mb-1">
-                                <span>Tax${taxRate > 0 ? ` (${taxRate}%)` : ''}</span>
-                                <span>${currency}${taxAmount.toFixed(2)}</span>
-                            </div>
-                        ` : ''}
                         
                         ${scAmount > 0.01 ? `
                             <div class="flex justify-between mb-1">
@@ -229,7 +252,20 @@ export function generateReceiptHtml(data: ReceiptData): string {
                                 <span>${currency}${scAmount.toFixed(2)}</span>
                             </div>
                         ` : ''}
-
+                        
+                        ${packagingCharge > 0 ? `
+                            <div class="flex justify-between mb-1">
+                                <span>Packaging</span>
+                                <span>${currency}${packagingCharge.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                        
+                        ${deliveryFee > 0 ? `
+                            <div class="flex justify-between mb-1">
+                                <span>Delivery Fee</span>
+                                <span>${currency}${deliveryFee.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
 
 
                         <div class="w-full border-b border-2 mb-2" style="margin-top: 8px;"></div>

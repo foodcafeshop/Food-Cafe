@@ -1,4 +1,7 @@
 export type DietaryType = 'veg' | 'non_veg' | 'vegan' | 'jain_veg' | 'contains_egg';
+export type ServiceType = 'dine_in' | 'takeaway' | 'delivery';
+export type PackagingChargeType = 'flat' | 'item';
+export type DeliveryChargeType = 'flat' | 'percent';
 
 export interface Shop {
     id: string;
@@ -70,6 +73,7 @@ export interface MenuItem {
     average_rating: number;
     rating_count: number;
     max_quantity?: number | null;
+
     // Joined fields
     category_id?: string; // From join
 }
@@ -98,6 +102,12 @@ export interface Settings {
     printer_footer_text?: string;
     printer_show_logo?: boolean;
     printer_paper_width?: string;
+    enabled_service_types: ServiceType[];
+    packaging_charge_type: PackagingChargeType;
+    packaging_charge_amount: number;
+    delivery_charge_type: DeliveryChargeType;
+    delivery_charge_amount: number;
+    takeaway_otp?: string;
     updated_at: string;
 }
 
@@ -173,10 +183,16 @@ export interface Order {
     payment_method: string | null;
     customer_name: string | null;
     customer_phone: string | null;
+    service_type: ServiceType;
+    metadata: Record<string, any>;
+    scheduled_for: string | null;
+    delivery_fee: number;
+    packaging_charge: number;
     created_at: string;
     updated_at: string;
     ready_at?: string | null;
     served_at?: string | null;
+    pickup_otp?: string | null;
     // Joined fields
     tables?: { label: string };
     customers?: { name: string; phone: string };
@@ -229,4 +245,22 @@ export interface Bill {
     // Joined fields
     tables?: { label: string };
     shops?: { name: string };
+}
+
+export interface PackagingItem {
+    id: string;
+    shop_id: string;
+    name: string;
+    price: number;
+    cost_price: number | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface MenuItemPackaging {
+    menu_item_id: string;
+    packaging_item_id: string;
+    quantity: number;
+    // Joined
+    packaging_items?: PackagingItem;
 }

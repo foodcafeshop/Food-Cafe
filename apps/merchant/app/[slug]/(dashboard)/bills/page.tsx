@@ -52,7 +52,7 @@ export default function BillsPage() {
             if (selectedBill && selectedBill.order_ids && selectedBill.order_ids.length > 0) {
                 const { data } = await supabase
                     .from('orders')
-                    .select('order_number, id')
+                    .select('order_number, id, service_type, customer_name, customer_phone')
                     .in('id', selectedBill.order_ids);
                 setBillOrders(data || []);
             } else {
@@ -162,6 +162,8 @@ export default function BillsPage() {
         let discountedSubtotal = 0;
         let finalTaxRate = 0;
         let finalTaxIncluded = false;
+        let packagingTotal = 0;
+        let deliveryTotal = 0;
 
         if (selectedBill.breakdown) {
             subtotal = Number(selectedBill.breakdown.subtotal);
@@ -172,6 +174,10 @@ export default function BillsPage() {
             discountedSubtotal = Number(selectedBill.breakdown.discountedSubtotal || 0);
             finalTaxRate = Number(selectedBill.breakdown.taxRate || 0);
             finalTaxIncluded = !!selectedBill.breakdown.taxIncluded;
+
+            // New Fields
+            packagingTotal = Number(selectedBill.breakdown.packagingTotal || 0);
+            deliveryTotal = Number(selectedBill.breakdown.deliveryTotal || 0);
         } else {
             // Fallback logic for old bills
             const itemsTotal = Array.isArray(selectedBill.items_snapshot)
@@ -191,6 +197,8 @@ export default function BillsPage() {
             finalTaxRate = 0;
             finalTaxIncluded = false;
         }
+
+        const firstOrder = billOrders[0];
 
         const receiptData = {
             restaurantName,
@@ -234,7 +242,12 @@ export default function BillsPage() {
             discountAmount,
             discountReason,
             discountedSubtotal,
-            printerWidth
+            printerWidth,
+            packagingCharge: packagingTotal,
+            deliveryFee: deliveryTotal,
+            serviceType: firstOrder?.service_type || 'dine_in',
+            customerName: firstOrder?.customer_name,
+            customerPhone: firstOrder?.customer_phone
         };
 
         const html = generateReceiptHtml(receiptData);

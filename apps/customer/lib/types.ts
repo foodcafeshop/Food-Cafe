@@ -1,4 +1,24 @@
 export type DietaryType = 'veg' | 'non_veg' | 'vegan' | 'jain_veg' | 'contains_egg';
+export type ServiceType = 'dine_in' | 'takeaway' | 'delivery';
+export type PackagingChargeType = 'flat' | 'item';
+export type DeliveryChargeType = 'flat' | 'percent';
+
+export interface PackagingItem {
+    id: string;
+    shop_id: string;
+    name: string;
+    price: number;
+    cost_price: number | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface MenuItemPackaging {
+    menu_item_id: string;
+    packaging_item_id: string;
+    quantity: number;
+    packaging_items?: PackagingItem;
+}
 
 export interface Shop {
     id: string;
@@ -70,8 +90,10 @@ export interface MenuItem {
     average_rating: number;
     rating_count: number;
     max_quantity?: number | null;
+
     // Joined fields
     category_id?: string; // From join
+    menu_item_packaging?: MenuItemPackaging[];
 }
 
 export interface CategoryItem {
@@ -94,5 +116,11 @@ export interface Settings {
     tax_included_in_price: boolean;
     is_customer_phone_mandatory: boolean;
     max_item_quantity: number;
+    enabled_service_types?: ServiceType[];
+    packaging_charge_type?: PackagingChargeType;
+    packaging_charge_amount?: number;
+    delivery_charge_type?: DeliveryChargeType;
+    delivery_charge_amount?: number;
+    takeaway_otp?: string;
     updated_at: string;
 }

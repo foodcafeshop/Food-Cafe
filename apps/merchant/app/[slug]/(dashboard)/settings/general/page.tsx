@@ -393,6 +393,57 @@ export default function GeneralSettingsPage() {
 
                 <Card>
                     <CardHeader>
+                        <CardTitle>Service Configuration</CardTitle>
+                        <CardDescription>Manage your service modes and fees.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Service Modes */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Service Availability</h3>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Dine-in</Label>
+                                    <p className="text-sm text-muted-foreground">Allow customers to order from tables.</p>
+                                </div>
+                                <Switch
+                                    checked={settings.enabled_service_types?.includes('dine_in') ?? true}
+                                    onCheckedChange={(checked) => {
+                                        const current = settings.enabled_service_types || ['dine_in', 'takeaway'];
+                                        const next = checked
+                                            ? [...new Set([...current, 'dine_in'])]
+                                            : current.filter(t => t !== 'dine_in');
+                                        setSettings({ ...settings, enabled_service_types: next as any[] });
+                                    }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Takeaway / Pickup</Label>
+                                    <p className="text-sm text-muted-foreground">Allow customers to order for pickup (skips table selection).</p>
+                                </div>
+                                <Switch
+                                    checked={settings.enabled_service_types?.includes('takeaway') ?? true}
+                                    onCheckedChange={(checked) => {
+                                        const current = settings.enabled_service_types || ['dine_in', 'takeaway'];
+                                        const next = checked
+                                            ? [...new Set([...current, 'takeaway'])]
+                                            : current.filter(t => t !== 'takeaway');
+                                        setSettings({ ...settings, enabled_service_types: next as any[] });
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+
+
+                        {/* Fee Management */}
+
+                    </CardContent>
+                </Card>
+
+
+                <Card>
+                    <CardHeader>
                         <CardTitle>Customer Experience</CardTitle>
                         <CardDescription>Configure how customers interact with your shop.</CardDescription>
                     </CardHeader>

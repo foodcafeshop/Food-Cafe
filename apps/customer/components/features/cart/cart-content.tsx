@@ -7,6 +7,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/order-store";
 import { useSettingsStore } from "@/lib/settings-store";
+
+import { Settings, ServiceType } from "@/lib/types"; // Import types
+import { ShoppingBag, UtensilsCrossed, Bike } from "lucide-react"; // Icons
 import { useEffect } from "react";
 import { createOrder, createOrderItems, validateOrderItemsAvailability } from "@/lib/api";
 import { toast } from "sonner";
@@ -28,7 +31,7 @@ interface CartContentProps {
 }
 
 export function CartContent({ initialSettings, shopId, shop }: CartContentProps) {
-    const { items, updateQuantity, totalPrice, clearCart, tableId, customerId, customerName, customerPhone, setWelcomeOpen } = useCartStore();
+    const { items, updateQuantity, totalPrice, clearCart, tableId, customerId, customerName, customerPhone, setWelcomeOpen, serviceType, setServiceType } = useCartStore();
     const { taxRate, taxIncludedInPrice, updateSettings } = useSettingsStore();
     const router = useRouter();
 
@@ -72,6 +75,55 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
         totalAmount = subtotal + taxAmount;
     }
 
+
+
+    // --- Service Type & Fee Calculations ---
+    const settings = initialSettings as Settings;
+    const isTakeaway = serviceType === 'takeaway';
+    const isDelivery = serviceType === 'delivery';
+
+    // 1. Service Charge Logic
+    let serviceChargeRate = settings?.service_charge ?? 0;
+    if (isTakeaway || isDelivery) {
+        serviceChargeRate = 0;
+    }
+    const serviceChargeAmount = subtotal * (serviceChargeRate / 100);
+
+    // 2. Packaging Charge Logic
+    let packagingAmount = 0;
+    if (isTakeaway || isDelivery) {
+        if (settings?.packaging_charge_type === 'item') {
+            // Method A: Sum of item-level packaging prices (Dynamic)
+            packagingAmount = availableItems.reduce((sum, item) => {
+                if (item.menu_item_packaging && item.menu_item_packaging.length > 0) {
+                    const itemPkgCost = item.menu_item_packaging.reduce((pkgSum, p) => {
+                        const price = p.packaging_items?.price || 0;
+                        return pkgSum + (price * p.quantity);
+                    }, 0);
+                    return sum + (itemPkgCost * item.quantity);
+                }
+                return sum;
+            }, 0);
+        } else {
+            // Method B: Flat Charge (Default)
+            packagingAmount = settings?.packaging_charge_amount || 0;
+        }
+    }
+
+    // 3. Delivery Fee
+    // 3. Delivery Fee
+    let deliveryFee = 0;
+    if (isDelivery) {
+        if (settings?.delivery_charge_type === 'percent') {
+            deliveryFee = subtotal * ((settings?.delivery_charge_amount || 0) / 100);
+        } else {
+            deliveryFee = settings?.delivery_charge_amount || 0;
+        }
+    }
+
+    // Final Total Update
+    totalAmount += serviceChargeAmount + packagingAmount + deliveryFee;
+
     // Use prop settings for immediate render, fallback to store if needed
     const currencySymbol = getCurrencySymbol(initialSettings?.currency);
 
@@ -109,10 +161,52 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
             currentTotal = currentSubtotal + currentTax;
         }
 
-        if (!currentTableId) {
+        // Add Fees to currentTotal for order placement
+        // (Re-using logic from above briefly for safety, ideally extracted to hook but inline is okay for now)
+        let svcCharge = settings?.service_charge ?? 0;
+        if (isTakeaway || isDelivery) svcCharge = 0;
+        const svcAmount = currentSubtotal * (svcCharge / 100);
+
+        let pkgAmount = 0;
+        if (isTakeaway || isDelivery) {
+            if (settings?.packaging_charge_type === 'item') {
+                pkgAmount = currentItems.reduce((sum, item) => {
+                    if (item.menu_item_packaging && item.menu_item_packaging.length > 0) {
+                        const itemPkgCost = item.menu_item_packaging.reduce((pkgSum, p) => {
+                            const price = p.packaging_items?.price || 0;
+                            return pkgSum + (price * p.quantity);
+                        }, 0);
+                        return sum + (itemPkgCost * item.quantity);
+                    }
+                    return sum;
+                }, 0);
+            } else {
+                pkgAmount = settings?.packaging_charge_amount || 0;
+            }
+        }
+        let delFee = 0;
+        if (isDelivery) {
+            if (settings?.delivery_charge_type === 'percent') {
+                delFee = currentSubtotal * ((settings?.delivery_charge_amount || 0) / 100);
+            } else {
+                delFee = settings?.delivery_charge_amount || 0;
+            }
+        }
+
+        currentTotal += svcAmount + pkgAmount + delFee;
+
+        if (!isTakeaway && !isDelivery && !currentTableId) {
             toast.error("Please scan a QR code to place an order.");
             return;
         }
+
+        // Validate Takeaway
+        if ((isTakeaway || isDelivery) && (!customerName || !customerPhone)) {
+            toast.error("Name and Phone are required.");
+            setWelcomeOpen(true, 'checkout');
+            return;
+        }
+
 
         setIsSubmitting(true);
 
@@ -133,14 +227,20 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
 
             const orderData = {
                 shop_id: shopId,
-                table_id: currentTableId,
+                table_id: (isTakeaway || isDelivery) ? null : currentTableId,
                 status: 'queued',
                 total_amount: currentTotal,
                 payment_status: 'pending',
                 payment_method: 'cash', // Default
                 customer_name: customerName,
                 customer_phone: customerPhone,
-                customer_id: customerId // Bound ID
+                customer_id: customerId, // Bound ID
+                service_type: serviceType,
+                packaging_charge: pkgAmount,
+                delivery_fee: delFee,
+                metadata: {
+                    waived_service_charge: isTakeaway || isDelivery
+                }
             };
 
             const newOrder = await createOrder(orderData);
@@ -236,6 +336,59 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                 <div className="grid md:grid-cols-3 gap-8 items-start">
                     {/* Left Column: Cart Items */}
                     <div className="md:col-span-2 space-y-6">
+                        {/* Service Type Selector - Show all options, disable unavailable ones */}
+                        {settings?.enabled_service_types && (
+                            <div className="bg-muted/30 p-1 rounded-lg flex mb-4 border">
+                                <button
+                                    onClick={() => settings.enabled_service_types?.includes('dine_in') && setServiceType('dine_in')}
+                                    disabled={!settings.enabled_service_types.includes('dine_in')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${!settings.enabled_service_types.includes('dine_in')
+                                        ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+                                        : serviceType === 'dine_in'
+                                            ? 'bg-orange-50 border border-orange-200 text-orange-700 shadow-sm'
+                                            : 'text-muted-foreground hover:bg-background/50'
+                                        }`}
+                                >
+                                    <UtensilsCrossed className="w-4 h-4" />
+                                    Dine-In
+                                </button>
+                                <button
+                                    onClick={() => settings.enabled_service_types?.includes('takeaway') && setServiceType('takeaway')}
+                                    disabled={!settings.enabled_service_types.includes('takeaway')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${!settings.enabled_service_types.includes('takeaway')
+                                        ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+                                        : serviceType === 'takeaway'
+                                            ? 'bg-blue-50 border border-blue-200 text-blue-700 shadow-sm'
+                                            : 'text-muted-foreground hover:bg-background/50'
+                                        }`}
+                                >
+                                    <ShoppingBag className="w-4 h-4" />
+                                    Takeaway
+                                </button>
+                                <button
+                                    onClick={() => settings.enabled_service_types?.includes('delivery') && setServiceType('delivery')}
+                                    disabled={!settings.enabled_service_types.includes('delivery')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${!settings.enabled_service_types.includes('delivery')
+                                        ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+                                        : serviceType === 'delivery'
+                                            ? 'bg-purple-50 border border-purple-200 text-purple-700 shadow-sm'
+                                            : 'text-muted-foreground hover:bg-background/50'
+                                        }`}
+                                >
+                                    <Bike className="w-4 h-4" />
+                                    Delivery
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Table Info (Only if Dine-In) */}
+                        {!isTakeaway && !isDelivery && (
+                            <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg border border-border/50">
+                                <span className="text-sm font-medium text-muted-foreground">Table</span>
+                                <span className="font-bold">{useCartStore.getState().tableLabel || "Unknown"}</span>
+                            </div>
+                        )}
+
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             {items.map((item) => {
                                 const isUnavailable = unavailableItemIds.has(item.id);
@@ -333,6 +486,30 @@ export function CartContent({ initialSettings, shopId, shop }: CartContentProps)
                                 </span>
                                 <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
                             </div>
+
+                            {/* Service Charge */}
+                            {serviceChargeAmount > 0 && (
+                                <div className="flex justify-between text-sm text-gray-600">
+                                    <span>Service Charge ({serviceChargeRate}%)</span>
+                                    <span>{currencySymbol}{serviceChargeAmount.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Packaging Charge */}
+                            {packagingAmount > 0 && (
+                                <div className="flex justify-between text-sm text-gray-600">
+                                    <span>Packaging & Handling</span>
+                                    <span>{currencySymbol}{packagingAmount.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Delivery Fee */}
+                            {deliveryFee > 0 && (
+                                <div className="flex justify-between text-sm text-gray-600">
+                                    <span>Delivery Fee</span>
+                                    <span>{currencySymbol}{deliveryFee.toFixed(2)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between font-bold text-gray-800 text-lg pt-2">
                                 <span>To Pay</span>
                                 <span>{currencySymbol}{totalAmount.toFixed(2)}</span>

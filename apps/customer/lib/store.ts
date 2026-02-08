@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { MenuItem } from './types';
+import { MenuItem, ServiceType } from './types';
 
 export type CartItem = MenuItem & {
     quantity: number;
@@ -33,6 +33,8 @@ type CartStore = {
     setCustomerId: (id: string | null) => void;
     shopId: string | null;
     setShopId: (id: string | null) => void;
+    serviceType: ServiceType;
+    setServiceType: (type: ServiceType) => void;
 };
 
 export const useCartStore = create<CartStore>()(
@@ -88,7 +90,9 @@ export const useCartStore = create<CartStore>()(
             setCustomerId: (id) => set({ customerId: id }),
             shopId: null,
             setShopId: (id) => set({ shopId: id }),
-            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null, tableLabel: null, customerId: null, shopId: null }),
+            serviceType: 'dine_in',
+            setServiceType: (type) => set({ serviceType: type }),
+            logout: () => set({ customerName: null, customerPhone: null, sessionId: null, items: [], tableId: null, tableLabel: null, customerId: null, shopId: null, serviceType: 'dine_in' }),
         }),
         {
             name: 'food-cafe-cart',
@@ -100,7 +104,8 @@ export const useCartStore = create<CartStore>()(
                 customerPhone: state.customerPhone,
                 sessionId: state.sessionId,
                 customerId: state.customerId,
-                shopId: state.shopId
+                shopId: state.shopId,
+                serviceType: state.serviceType
             }),
         }
     )

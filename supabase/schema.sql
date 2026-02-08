@@ -4,6 +4,15 @@ create extension if not exists "uuid-ossp";
 -- Create User Roles Enum
 create type public.app_role as enum ('admin', 'staff', 'superadmin');
 
+-- Create Service Type Enum
+create type public.service_type as enum ('dine_in', 'takeaway', 'delivery');
+
+-- Create Packaging Charge Type Enum
+create type public.packaging_charge_type as enum ('flat', 'percentage', 'item');
+
+-- Create Delivery Charge Type Enum
+create type public.delivery_charge_type as enum ('flat', 'percentage');
+
 -- 0. Shops (Multi-Tenancy Root)
 create table public.shops (
   id uuid primary key default uuid_generate_v4(),
@@ -87,6 +96,7 @@ create table public.menu_items (
   average_rating numeric(3, 1) default 0,
   rating_count integer default 0,
   max_quantity integer,
+
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(shop_id, name)
 );
@@ -144,6 +154,12 @@ create table public.orders (
   customer_name text,
   customer_phone text,
   customer_id uuid references public.customers(id) on delete set null,
+  service_type public.service_type default 'dine_in',
+  metadata jsonb default '{}'::jsonb,
+  scheduled_for timestamp with time zone,
+  delivery_fee decimal(10, 2) default 0.00,
+  packaging_charge decimal(10, 2) default 0.00,
+  pickup_otp text, -- OTP for customer pickup verification
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   ready_at timestamp with time zone,
@@ -181,6 +197,12 @@ create table public.settings (
   printer_footer_text text,
   printer_show_logo boolean default true,
   printer_paper_width text default '80mm',
+  enabled_service_types text[] default array['dine_in', 'takeaway'],
+  packaging_charge_type public.packaging_charge_type default 'flat',
+  packaging_charge_amount decimal(10, 2) default 0.00,
+  delivery_charge_type public.delivery_charge_type default 'flat',
+  delivery_charge_amount decimal(10, 2) default 0.00,
+  takeaway_otp text, -- OTP for takeaway order verification
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(shop_id)
 );
@@ -212,6 +234,89 @@ begin
   );
 end;
 $$ language plpgsql security definer;
+
+-- Verify Takeaway OTP
+create or replace function public.verify_takeaway_otp(p_shop_id uuid, p_otp text)
+returns boolean as $$
+begin
+  -- Always verify the OTP matches context: takeaway OTP is mandatory for security
+  return exists (
+    select 1 from public.settings
+    where shop_id = p_shop_id
+    and takeaway_otp = p_otp
+  );
+end;
+$$ language plpgsql security definer;
+
+-- Rotate Takeaway OTP (generate new 4-digit OTP)
+create or replace function public.rotate_takeaway_otp(p_shop_id uuid)
+returns text as $$
+declare
+  new_otp text;
+  otp_enabled boolean;
+begin
+  -- Check if OTP is enabled for the shop
+  select enable_otp into otp_enabled from public.settings where shop_id = p_shop_id;
+
+  -- If OTP is not enabled, do not rotate
+  if otp_enabled is not true then
+    return null;
+  end if;
+
+  -- Generate a random 4-digit OTP
+  new_otp := lpad((floor(random() * 10000))::text, 4, '0');
+  
+  -- Update the settings with the new OTP
+  update public.settings
+  set takeaway_otp = new_otp,
+      updated_at = now()
+  where shop_id = p_shop_id;
+
+  return new_otp;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to rotate OTP after successful takeaway order
+create or replace function public.handle_new_takeaway_order()
+returns trigger as $$
+begin
+  -- Only for takeaway or delivery orders
+  if new.service_type in ('takeaway', 'delivery') then
+    -- Rotate the OTP (function handles the enable_otp check)
+    perform public.rotate_takeaway_otp(new.shop_id);
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Drop trigger if exists
+drop trigger if exists on_new_takeaway_order on public.orders;
+
+-- Create Trigger
+create trigger on_new_takeaway_order
+  after insert on public.orders
+  for each row
+  execute function public.handle_new_takeaway_order();
+
+-- Trigger to initialize OTP when settings are created
+create or replace function public.init_takeaway_otp()
+returns trigger as $$
+begin
+  if new.takeaway_otp is null or new.takeaway_otp = '0000' then
+    new.takeaway_otp := lpad((floor(random() * 10000))::text, 4, '0');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+-- Drop trigger if exists
+drop trigger if exists on_init_takeaway_otp on public.settings;
+
+-- Create Trigger
+create trigger on_init_takeaway_otp
+  before insert on public.settings
+  for each row
+  execute function public.init_takeaway_otp();
 
 -- 11. Bills
 create table if not exists public.bills (
@@ -359,6 +464,10 @@ create index if not exists idx_reviews_shop_id on public.reviews(shop_id);
 create index if not exists idx_reviews_bill_id on public.reviews(bill_id);
 create index if not exists idx_review_items_review_id on public.review_items(review_id);
 create index if not exists idx_review_items_menu_item_id on public.review_items(menu_item_id);
+
+create index idx_packaging_items_shop_id on public.packaging_items(shop_id);
+create index idx_menu_item_packaging_menu_item_id on public.menu_item_packaging(menu_item_id);
+create index idx_menu_item_packaging_packaging_item_id on public.menu_item_packaging(packaging_item_id);
 
 -- Helper Functions (Security Definer)
 
@@ -1367,3 +1476,69 @@ CREATE POLICY "Anon can manage subscriptions by endpoint"
   TO anon
   USING (true) -- Ideally strictly match endpoint, but hard in RLS without session. Relying on endpoint entropy.
   WITH CHECK (true);
+
+-- ========================================
+-- Packaging Inventory Schema
+-- ========================================
+
+-- 1. Packaging Items Table (The Inventory)
+create table public.packaging_items (
+  id uuid primary key default uuid_generate_v4(),
+  shop_id uuid references public.shops(id) on delete cascade,
+  name text not null,
+  price decimal(10, 2) not null default 0.00, -- The charge passed to customer
+  cost_price decimal(10, 2), -- Optional: Internal cost for the merchant
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(shop_id, name)
+);
+
+-- 2. Menu Item Packaging (Junction: Item <-> Packaging)
+create table public.menu_item_packaging (
+  menu_item_id uuid references public.menu_items(id) on delete cascade,
+  packaging_item_id uuid references public.packaging_items(id) on delete cascade,
+  quantity integer not null default 1,
+  primary key (menu_item_id, packaging_item_id)
+);
+
+-- 3. Enable RLS (Security)
+alter table public.packaging_items enable row level security;
+alter table public.menu_item_packaging enable row level security;
+
+-- 4. Policies (Same as other shop items)
+create policy "Shops can view their own packaging items"
+  on public.packaging_items for select
+  using (auth.uid() in (select owner_id from public.shops where id = packaging_items.shop_id));
+
+create policy "Shops can insert their own packaging items"
+  on public.packaging_items for insert
+  with check (auth.uid() in (select owner_id from public.shops where id = packaging_items.shop_id));
+
+create policy "Shops can update their own packaging items"
+  on public.packaging_items for update
+  using (auth.uid() in (select owner_id from public.shops where id = packaging_items.shop_id));
+
+create policy "Shops can delete their own packaging items"
+  on public.packaging_items for delete
+  using (auth.uid() in (select owner_id from public.shops where id = packaging_items.shop_id));
+
+-- Policies for junction table (inherits access from menu_items)
+create policy "Shops can manage their menu item packaging"
+  on public.menu_item_packaging for all
+  using (
+    exists (
+      select 1 from public.menu_items
+      join public.shops on shops.id = menu_items.shop_id
+      where menu_items.id = menu_item_packaging.menu_item_id
+      and shops.owner_id = auth.uid()
+    )
+  );
+
+-- Allow public read access (for customer app to calculate fees)
+create policy "Public can view packaging items"
+  on public.packaging_items for select
+  using (true);
+  
+create policy "Public can view menu item packaging"
+  on public.menu_item_packaging for select
+  using (true);

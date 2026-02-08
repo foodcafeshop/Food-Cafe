@@ -91,7 +91,8 @@ export async function getFullMenuData(slug: string) {
             category_id,
             sort_order,
             menu_items (
-                id, name, description, price, images, dietary_type, tags, is_available, average_rating, rating_count
+                id, name, description, price, offer_price, images, dietary_type, tags, is_available, average_rating, rating_count,
+                menu_item_packaging ( quantity, packaging_items ( id, price, is_active ) )
             )
         `)
         .in('category_id', categoryIds)
@@ -108,6 +109,11 @@ export async function getFullMenuData(slug: string) {
         if (item.menu_items) {
             // Filter hidden items
             if (menu.hidden_items?.includes(item.menu_items.id)) return;
+
+            // Filter inactive packaging
+            if (item.menu_items.menu_item_packaging) {
+                item.menu_items.menu_item_packaging = item.menu_items.menu_item_packaging.filter((p: any) => p.packaging_items && p.packaging_items.is_active !== false);
+            }
 
             if (!itemsByCategoryId[item.category_id]) {
                 itemsByCategoryId[item.category_id] = [];
@@ -146,7 +152,7 @@ export async function getLandingPageData(slug: string) {
     // 2. Fetch all other data in parallel
     const [
         { data: isLive },
-        { data: categories },
+        { data: rawCategories },
         { data: featuredItems },
         { data: settings },
         { data: reviews }
@@ -154,10 +160,20 @@ export async function getLandingPageData(slug: string) {
         // Live Status
         supabase.rpc('get_shop_live_status', { slug_input: slug }),
 
-        // Categories with items (Optimized selection)
+        // Categories with items (Optimized selection via junction table)
         supabase
             .from('categories')
-            .select('id, name, image, menu_items(id, name, description, price, images, dietary_type, is_available, average_rating, rating_count)')
+            .select(`
+                id, 
+                name, 
+                image, 
+                category_items (
+                    menu_items (
+                        id, name, description, price, offer_price, images, dietary_type, is_available, average_rating, rating_count,
+                        menu_item_packaging ( quantity, packaging_items ( id, price, is_active ) )
+                    )
+                )
+            `)
             .eq('shop_id', shop.id)
             .order('name'),
 
@@ -172,7 +188,7 @@ export async function getLandingPageData(slug: string) {
         // Settings
         supabase
             .from('settings')
-            .select('currency, language, dark_mode')
+            .select('currency, language, dark_mode, enabled_service_types, packaging_charge_type, packaging_charge_amount, delivery_charge_type, delivery_charge_amount')
             .eq('shop_id', shop.id)
             .single(),
 
@@ -190,8 +206,24 @@ export async function getLandingPageData(slug: string) {
         shop.is_live = isLive;
     }
 
+    // Transform categories to include flattened items
+    const categories = rawCategories?.map((cat: any) => ({
+        ...cat,
+        menu_items: cat.category_items
+            .map((ci: any) => {
+                const item = ci.menu_items;
+                if (!item) return null;
+                // Filter inactive packaging
+                if (item.menu_item_packaging) {
+                    item.menu_item_packaging = item.menu_item_packaging.filter((p: any) => p.packaging_items && p.packaging_items.is_active !== false);
+                }
+                return item;
+            })
+            .filter((item: any) => item !== null && item.is_available !== false) || []
+    })) || [];
+
     return {
-        categories: categories || [],
+        categories,
         featuredItems: featuredItems || [],
         settings,
         shop,
@@ -356,7 +388,12 @@ export async function createOrder(order: any) {
                     customer_name: order.customer_name,
                     customer_phone: order.customer_phone,
                     customer_id: customerId,
-                    is_staff_order: false
+                    is_staff_order: false,
+                    service_type: order.service_type || 'dine_in',
+                    packaging_charge: order.packaging_charge || 0,
+                    delivery_fee: order.delivery_fee || 0,
+                    scheduled_for: order.scheduled_for || null,
+                    metadata: order.metadata || {}
                 })
                 .select()
                 .single();
@@ -562,6 +599,30 @@ export async function getTableOrders(tableId: string) {
 
     if (error) {
         console.error('Error fetching table orders:', error);
+        return [];
+    }
+    return data;
+}
+
+export async function getCustomerOrders(customerId: string) {
+    const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            menu_items (
+                dietary_type
+            )
+          )
+        `)
+        .eq('customer_id', customerId)
+        .eq('is_staff_order', false) // Exclude staff orders
+        .in('status', ['queued', 'preparing', 'ready', 'served', 'billed']) // Explicitly list active statuses (excluding cancelled/complete)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching customer orders:', error);
         return [];
     }
     return data;
@@ -1250,6 +1311,20 @@ export async function verifyTableOtp(tableId: string, otp: string) {
     }
     return data;
 }
+
+export async function verifyTakeawayOtp(shopId: string, otp: string) {
+    const { data, error } = await supabase.rpc('verify_takeaway_otp', {
+        input_shop_id: shopId,
+        input_otp: otp
+    });
+
+    if (error) {
+        console.error('Error verifying takeaway OTP:', error);
+        return false;
+    }
+    return data;
+}
+
 export async function validateOrderItemsAvailability(items: { id: string, name: string }[]): Promise<{ valid: boolean; unavailableItems: string[] }> {
     if (items.length === 0) return { valid: true, unavailableItems: [] };
 

@@ -11,13 +11,18 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function FinancialSettingsPage() {
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState<Partial<Settings>>({
         tax_rate: 0,
         service_charge: 0,
-        tax_included_in_price: false
+        tax_included_in_price: false,
+        packaging_charge_type: 'flat',
+        packaging_charge_amount: 0,
+        delivery_charge_type: 'flat',
+        delivery_charge_amount: 0
     });
     const [shopId, setShopId] = useState<string | null>(null);
 
@@ -106,6 +111,75 @@ export default function FinancialSettingsPage() {
                             />
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t mt-4">
+                        <div className="grid gap-2">
+                            <Label>Packaging Charge Type</Label>
+                            {/* @ts-ignore */}
+                            <Select
+                                value={settings.packaging_charge_type || 'flat'}
+                                onValueChange={(val: any) => setSettings({ ...settings, packaging_charge_type: val })}
+                            >
+                                {/* @ts-ignore */}
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="flat">Flat Amount (Per Order)</SelectItem>
+                                    <SelectItem value="item">Item Level (Dynamic)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[10px] text-muted-foreground">
+                                {settings.packaging_charge_type === 'item'
+                                    ? "Charges are calculated based on packaging inventory linked to each menu item."
+                                    : "A fixed packaging fee applied to every takeaway/delivery order."}
+                            </p>
+                        </div>
+                        {settings.packaging_charge_type !== 'item' && (
+                            <div className="grid gap-2">
+                                <Label>Packaging Charge Amount</Label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    step={0.01}
+                                    value={settings.packaging_charge_amount || 0}
+                                    onChange={(e) => setSettings({ ...settings, packaging_charge_amount: parseFloat(e.target.value) || 0 })}
+                                />
+                            </div>
+                        )}
+
+
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t mt-4">
+                        <div className="grid gap-2">
+                            <Label>Delivery Charge Type</Label>
+                            {/* @ts-ignore */}
+                            <Select
+                                value={settings.delivery_charge_type || 'flat'}
+                                onValueChange={(val: any) => setSettings({ ...settings, delivery_charge_type: val })}
+                            >
+                                {/* @ts-ignore */}
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="flat">Flat Amount (Per Order)</SelectItem>
+                                    <SelectItem value="percent">Percentage (%)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Delivery Charge Amount</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                value={settings.delivery_charge_amount || 0}
+                                onChange={(e) => setSettings({ ...settings, delivery_charge_amount: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -132,6 +206,6 @@ export default function FinancialSettingsPage() {
             <div className="flex justify-end">
                 <Button onClick={handleSave}>Save Financials</Button>
             </div>
-        </div>
+        </div >
     );
 }

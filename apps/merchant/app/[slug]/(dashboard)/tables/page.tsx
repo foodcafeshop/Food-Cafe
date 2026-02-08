@@ -3,8 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Users, Move, Printer, Plus, Trash2, Edit2, List, Grid, LayoutGrid, CheckSquare, Square, Receipt, FileUp, FileDown } from "lucide-react";
+import { QrCode, Users, Printer, Plus, Trash2, Edit2, List, LayoutGrid, CheckSquare, Receipt, FileUp, FileDown, ShoppingBag } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { cn, getCurrencySymbol, roundToThree } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -27,6 +28,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { settleTableBill, clearTable, getSettings, updateOrderStatus } from "@/lib/api";
 import { exportToCSV, parseCSV } from "@/lib/csv-utils";
 import { BillingDialog } from "@/components/features/staff/BillingDialog";
+import { ActiveTakeawaysPanel, ActiveTakeawaysPanelRef } from "@/components/features/orders/ActiveTakeawaysPanel";
+import { NewOrderDialog } from "@/components/features/orders/NewOrderDialog";
 
 type TableStatus = 'empty' | 'occupied' | 'billed';
 
@@ -45,6 +48,7 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 // ...
 
 export default function TableManagementPage() {
+    const router = useRouter();
     const { shopId, role } = useShopId();
     const [tables, setTables] = useState<Table[]>([]);
     // ... (keep existing state)
@@ -57,19 +61,26 @@ export default function TableManagementPage() {
     // Filter State
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<TableStatus | 'all'>('all');
+    const [activeTab, setActiveTab] = useState<'tables' | 'takeaways'>('tables');
 
     // QR & Selection
     const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
     const [qrTable, setQrTable] = useState<Table | null>(null); // Table to view QR for
 
+    // New Order State
+    const [isNewOrderDialogOpen, setIsNewOrderDialogOpen] = useState(false);
+
+
     // Billing State
     const [billingTable, setBillingTable] = useState<Table | null>(null);
+    const [billingOrder, setBillingOrder] = useState<any | null>(null);
     // Removed redundant billing state (tableOrders, billingLoading, paymentMethod) as they are handled inside BillingDialog
 
     // Dragging State
     const [draggedTableId, setDraggedTableId] = useState<string | null>(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const canvasRef = useRef<HTMLDivElement>(null);
+    const activeTakeawaysRef = useRef<ActiveTakeawaysPanelRef>(null);
 
     const [restaurantName, setRestaurantName] = useState('Food Cafe');
     const [shopSlug, setShopSlug] = useState<string>("");
@@ -459,10 +470,10 @@ export default function TableManagementPage() {
             <div className="flex flex-col gap-4 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h1 className="text-2xl font-bold">Table Management</h1>
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                         {role === 'admin' && (
                             <>
-                                <div className="relative">
+                                <div className="relative flex-1 sm:flex-none">
                                     <input
                                         type="file"
                                         accept=".csv"
@@ -478,10 +489,17 @@ export default function TableManagementPage() {
                                     <FileDown className="h-4 w-4" /> Export
                                 </Button>
                                 <Button className="gap-2 flex-1 sm:flex-none" onClick={handleAddTable}>
-                                    <Plus className="h-4 w-4" /> Add Table
+                                    <Plus className="h-4 w-4" /> Add
                                 </Button>
                             </>
                         )}
+
+                        <Button
+                            className="gap-2 flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => setIsNewOrderDialogOpen(true)}
+                        >
+                            <ShoppingBag className="h-4 w-4" /> New Order
+                        </Button>
 
                         {selectedTables.size > 0 ? (
                             <Button variant="outline" className="gap-2 flex-1 sm:flex-none" onClick={() => handlePrint(tables.filter(t => selectedTables.has(t.id)))}>
@@ -495,14 +513,15 @@ export default function TableManagementPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-muted/40 p-2 rounded-lg border">
-                    <div className="flex flex-col sm:flex-row items-center gap-2 flex-1 w-full">
-                        <div className="flex bg-background rounded-lg border p-1 w-full sm:w-auto justify-center">
+                <div className="flex items-center justify-between gap-2 bg-muted/40 p-2 rounded-lg border">
+                    <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+                        {/* View Toggle - Desktop only */}
+                        <div className="hidden lg:flex bg-background rounded-lg border p-1">
                             <Button
                                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setViewMode('list')}
-                                className="gap-2 h-8 flex-1 sm:flex-none"
+                                className="gap-2 h-8"
                             >
                                 <List className="h-4 w-4" /> List
                             </Button>
@@ -510,24 +529,24 @@ export default function TableManagementPage() {
                                 variant={viewMode === 'canvas' ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setViewMode('canvas')}
-                                className="gap-2 h-8 flex-1 sm:flex-none"
+                                className="gap-2 h-8"
                             >
                                 <LayoutGrid className="h-4 w-4" /> Canvas
                             </Button>
                         </div>
-                        <div className="hidden sm:block h-6 w-px bg-border mx-2" />
+                        <div className="hidden lg:block h-6 w-px bg-border mx-2" />
                         <Input
-                            placeholder="Search tables..."
+                            placeholder="Search..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="h-9 w-full sm:w-[200px] bg-background"
+                            className="h-9 flex-1 sm:w-[200px] bg-background"
                         />
                         <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
-                            <SelectTrigger className="h-9 w-full sm:w-[150px] bg-background">
-                                <SelectValue placeholder="Filter Status" />
+                            <SelectTrigger className="h-9 w-[100px] sm:w-[150px] bg-background">
+                                <SelectValue placeholder="All" />
                             </SelectTrigger>
                             <SelectContent className="z-[200]">
-                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="all">All</SelectItem>
                                 <SelectItem value="empty">Empty</SelectItem>
                                 <SelectItem value="occupied">Occupied</SelectItem>
                                 <SelectItem value="billed">Billed</SelectItem>
@@ -535,231 +554,304 @@ export default function TableManagementPage() {
                         </Select>
                     </div>
                     <div className="text-sm text-muted-foreground hidden sm:block">
-                        Showing {filteredTables.length} tables
+                        {filteredTables.length} tables
                     </div>
                 </div>
             </div>
 
-            {viewMode === 'canvas' ? (
+            {/* Mobile/Tablet Tabs */}
+            <div className="flex lg:hidden border-b mb-4">
                 <div
-                    ref={canvasRef}
-                    className="flex-1 bg-muted/30 rounded-xl border relative overflow-hidden min-h-[500px]"
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+                    className={cn(
+                        "flex-1 pb-2 border-b-2 transition-colors flex items-center justify-center gap-2 cursor-pointer",
+                        activeTab === 'tables' ? "border-primary" : "border-transparent"
+                    )}
+                    onClick={() => setActiveTab('tables')}
                 >
-                    {/* Grid Background */}
-                    <div className="absolute inset-0 pointer-events-none" style={{
-                        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
-                        backgroundSize: '20px 20px'
-                    }}></div>
-
-                    {loading ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Loading tables...</div>
-                    ) : (
-                        filteredTables.map((table) => (
-                            <div
-                                key={table.id}
+                    <span
+                        className={cn(
+                            "text-sm font-medium transition-colors",
+                            activeTab === 'tables' ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        Tables
+                    </span>
+                    {activeTab === 'tables' && (
+                        <div className="flex bg-background rounded border" onClick={(e) => e.stopPropagation()}>
+                            <button
                                 className={cn(
-                                    "absolute w-28 h-28 rounded-xl border-2 flex flex-col items-center justify-center cursor-move transition-shadow shadow-sm bg-background group select-none",
-                                    getStatusColor(table.status),
-                                    draggedTableId === table.id ? "shadow-xl z-50 scale-105" : "hover:shadow-md"
+                                    "p-1 transition-colors rounded-l",
+                                    viewMode === 'list' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
-                                style={{ left: table.x, top: table.y }}
-                                onMouseDown={(e) => handleMouseDown(e, table)}
+                                onClick={() => setViewMode('list')}
+                                title="List View"
                             >
-                                <span className="font-bold text-lg">{table.label}</span>
-                                <div className="flex items-center gap-1 text-xs mt-1 font-medium">
-                                    <Users className="h-3 w-3" />
-                                    <span>{table.seats}</span>
-                                </div>
-                                {table.otp && (
-                                    <div className="mt-1 px-1.5 py-0.5 bg-black/10 rounded text-[10px] font-mono font-bold">
-                                        OTP: {table.otp}
-                                    </div>
+                                <List className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                className={cn(
+                                    "p-1 transition-colors rounded-r",
+                                    viewMode === 'canvas' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
-
-                                {/* Hover Actions */}
-                                <div className="absolute -top-3 -right-3 hidden group-hover:flex gap-1">
-                                    <Button
-                                        size="icon"
-                                        variant="secondary"
-                                        className="h-7 w-7 rounded-full shadow-md"
-                                        onClick={(e) => { e.stopPropagation(); setQrTable(table); }}
-                                    >
-                                        <QrCode className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button
-                                        size="icon"
-                                        variant="secondary"
-                                        className="h-7 w-7 rounded-full shadow-md"
-                                        onClick={(e) => { e.stopPropagation(); handleEditTable(table); }}
-                                    >
-                                        <Edit2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                    {table.status === 'occupied' && (
-                                        <Button
-                                            size="icon"
-                                            variant="secondary"
-                                            className="h-7 w-7 rounded-full shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
-                                            onClick={(e) => { e.stopPropagation(); handleOpenBilling(table); }}
-                                            title="Settle Bill"
-                                        >
-                                            <Receipt className="h-3.5 w-3.5" />
-                                        </Button>
-                                    )}
-                                    {table.status === 'billed' && (
-                                        <Button
-                                            size="icon"
-                                            variant="secondary"
-                                            className="h-7 w-7 rounded-full shadow-md bg-green-600 text-white hover:bg-green-700"
-                                            onClick={(e) => { e.stopPropagation(); handleClearTable(table); }}
-                                            title="Mark as Empty"
-                                        >
-                                            <CheckSquare className="h-3.5 w-3.5" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        ))
+                                onClick={() => setViewMode('canvas')}
+                                title="Canvas View"
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
                     )}
                 </div>
-            ) : (
-                <>
-                    {/* Mobile Card View */}
-                    <div className="grid grid-cols-1 gap-4 md:hidden">
-                        {filteredTables.map(table => (
-                            <Card key={table.id} className="p-4 flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-lg">{table.label}</span>
-                                            <Badge variant="outline" className={cn(
-                                                table.status === 'empty' ? "text-green-600 border-green-600" :
-                                                    table.status === 'occupied' ? "text-blue-600 border-blue-600" :
-                                                        "text-red-600 border-red-600"
-                                            )}>
-                                                {table.status.toUpperCase()}
-                                            </Badge>
+                <button
+                    className={cn(
+                        "flex-1 pb-2 text-sm font-medium border-b-2 transition-colors",
+                        activeTab === 'takeaways' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={() => setActiveTab('takeaways')}
+                >
+                    Active Takeaways
+                </button>
+            </div>
+
+            <div className="flex-1 flex gap-6 overflow-hidden">
+                {/* Main Tables Area - Hidden on mobile/tablet if Takeaways active */}
+                <div className={cn("flex-1 flex flex-col min-w-0 transition-opacity", activeTab === 'takeaways' ? "hidden lg:flex" : "flex")}>
+                    {viewMode === 'canvas' ? (
+                        <div
+                            ref={canvasRef}
+                            className="flex-1 bg-muted/30 rounded-xl border relative overflow-hidden min-h-[500px]"
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                        >
+                            {/* Grid Background */}
+                            <div className="absolute inset-0 pointer-events-none" style={{
+                                backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                                backgroundSize: '20px 20px'
+                            }}></div>
+
+                            {loading ? (
+                                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Loading tables...</div>
+                            ) : (
+                                filteredTables.map((table) => (
+                                    <div
+                                        key={table.id}
+                                        className={cn(
+                                            "absolute w-28 h-28 rounded-xl border-2 flex flex-col items-center justify-center cursor-move transition-shadow shadow-sm bg-background group select-none",
+                                            getStatusColor(table.status),
+                                            draggedTableId === table.id ? "shadow-xl z-50 scale-105" : "hover:shadow-md"
+                                        )}
+                                        style={{ left: table.x, top: table.y }}
+                                        onMouseDown={(e) => handleMouseDown(e, table)}
+                                    >
+                                        <span className="font-bold text-lg">{table.label}</span>
+                                        <div className="flex items-center gap-1 text-xs mt-1 font-medium">
+                                            <Users className="h-3 w-3" />
+                                            <span>{table.seats}</span>
                                         </div>
-                                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1">
-                                                <Users className="h-3 w-3" /> {table.seats} Seats
+                                        {table.otp && (
+                                            <div className="mt-1 px-1.5 py-0.5 bg-black/10 rounded text-[10px] font-mono font-bold">
+                                                OTP: {table.otp}
                                             </div>
-                                            <div className="font-mono">OTP: {table.otp}</div>
+                                        )}
+
+                                        {/* Hover Actions */}
+                                        <div className="absolute -top-3 -right-3 hidden group-hover:flex gap-1">
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-7 w-7 rounded-full shadow-md"
+                                                onClick={(e) => { e.stopPropagation(); setQrTable(table); }}
+                                            >
+                                                <QrCode className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-7 w-7 rounded-full shadow-md"
+                                                onClick={(e) => { e.stopPropagation(); handleEditTable(table); }}
+                                            >
+                                                <Edit2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                            {table.status === 'occupied' && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="secondary"
+                                                    className="h-7 w-7 rounded-full shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenBilling(table); }}
+                                                    title="Settle Bill"
+                                                >
+                                                    <Receipt className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            {table.status === 'billed' && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="secondary"
+                                                    className="h-7 w-7 rounded-full shadow-md bg-green-600 text-white hover:bg-green-700"
+                                                    onClick={(e) => { e.stopPropagation(); handleClearTable(table); }}
+                                                    title="Mark as Empty"
+                                                >
+                                                    <CheckSquare className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
-                                    <Checkbox
-                                        checked={selectedTables.has(table.id)}
-                                        onCheckedChange={() => toggleSelection(table.id)}
-                                    />
-                                </div>
+                                ))
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex-1 overflow-y-auto min-h-0">
+                                {/* Mobile Card View */}
+                                <div className="grid grid-cols-1 gap-4 md:hidden pb-4">
+                                    {filteredTables.map(table => (
+                                        <Card key={table.id} className="p-4 flex flex-col gap-3">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-lg">{table.label}</span>
+                                                        <Badge variant="outline" className={cn(
+                                                            table.status === 'empty' ? "text-green-600 border-green-600" :
+                                                                table.status === 'occupied' ? "text-blue-600 border-blue-600" :
+                                                                    "text-red-600 border-red-600"
+                                                        )}>
+                                                            {table.status.toUpperCase()}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                                        <div className="flex items-center gap-1">
+                                                            <Users className="h-3 w-3" /> {table.seats} Seats
+                                                        </div>
+                                                        <div className="font-mono">OTP: {table.otp}</div>
+                                                    </div>
+                                                </div>
+                                                <Checkbox
+                                                    checked={selectedTables.has(table.id)}
+                                                    onCheckedChange={() => toggleSelection(table.id)}
+                                                />
+                                            </div>
 
-                                <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-                                    {table.status === 'occupied' && (
-                                        <Button size="sm" variant="outline" className="flex-1" onClick={() => handleOpenBilling(table)}>
-                                            <Receipt className="h-4 w-4 mr-2" /> Settle
-                                        </Button>
-                                    )}
-                                    {table.status === 'billed' && (
-                                        <Button size="sm" variant="outline" className="flex-1 text-green-600" onClick={() => handleClearTable(table)}>
-                                            <CheckSquare className="h-4 w-4 mr-2" /> Clear
-                                        </Button>
-                                    )}
-                                    <Button size="sm" variant="ghost" onClick={() => setQrTable(table)}>
-                                        <QrCode className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => handleEditTable(table)}>
-                                        <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    {role === 'admin' && (
-                                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block border rounded-lg overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted text-muted-foreground font-medium">
-                                <tr>
-                                    <th className="p-4 w-10">
-                                        <Checkbox
-                                            checked={selectedTables.size === filteredTables.length && filteredTables.length > 0}
-                                            onCheckedChange={toggleAll}
-                                        />
-                                    </th>
-                                    <th className="p-4">Label</th>
-                                    <th className="p-4">Seats</th>
-                                    <th className="p-4">OTP</th>
-                                    <th className="p-4">Status</th>
-                                    <th className="p-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {filteredTables.map((table) => (
-                                    <tr key={table.id} className="hover:bg-muted/50">
-                                        <td className="p-4">
-                                            <Checkbox
-                                                checked={selectedTables.has(table.id)}
-                                                onCheckedChange={() => toggleSelection(table.id)}
-                                            />
-                                        </td>
-                                        <td className="p-4 font-medium">{table.label}</td>
-                                        <td className="p-4">{table.seats}</td>
-                                        <td className="p-4 font-mono font-bold text-muted-foreground">{table.otp}</td>
-                                        <td className="p-4">
-                                            <Badge variant="outline" className={cn(
-                                                table.status === 'empty' ? "text-green-600 border-green-600" :
-                                                    table.status === 'occupied' ? "text-blue-600 border-blue-600" :
-                                                        "text-red-600 border-red-600"
-                                            )}>
-                                                {table.status.toUpperCase()}
-                                            </Badge>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                                                 {table.status === 'occupied' && (
-                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenBilling(table)} title="Settle Bill">
-                                                        <Receipt className="h-4 w-4" />
+                                                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleOpenBilling(table)}>
+                                                        <Receipt className="h-4 w-4 mr-2" /> Settle
                                                     </Button>
                                                 )}
                                                 {table.status === 'billed' && (
-                                                    <Button variant="ghost" size="icon" onClick={() => handleClearTable(table)} title="Mark as Empty" className="text-green-600">
-                                                        <CheckSquare className="h-4 w-4" />
+                                                    <Button size="sm" variant="outline" className="flex-1 text-green-600" onClick={() => handleClearTable(table)}>
+                                                        <CheckSquare className="h-4 w-4 mr-2" /> Clear
                                                     </Button>
                                                 )}
-                                                <Button variant="ghost" size="icon" onClick={() => setQrTable(table)}>
+                                                <Button size="sm" variant="ghost" onClick={() => setQrTable(table)}>
                                                     <QrCode className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditTable(table)}>
+                                                <Button size="sm" variant="ghost" onClick={() => handleEditTable(table)}>
                                                     <Edit2 className="h-4 w-4" />
                                                 </Button>
                                                 {role === 'admin' && (
-                                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
+                                                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 )}
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredTables.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                                            No tables found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )}
+                                        </Card>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block border rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-muted text-muted-foreground font-medium sticky top-0 z-10">
+                                            <tr>
+                                                <th className="p-4 w-10 bg-muted">
+                                                    <Checkbox
+                                                        checked={selectedTables.size === filteredTables.length && filteredTables.length > 0}
+                                                        onCheckedChange={toggleAll}
+                                                    />
+                                                </th>
+                                                <th className="p-4 bg-muted">Label</th>
+                                                <th className="p-4 bg-muted">Seats</th>
+                                                <th className="p-4 bg-muted">OTP</th>
+                                                <th className="p-4 bg-muted">Status</th>
+                                                <th className="p-4 text-right bg-muted">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {filteredTables.map((table) => (
+                                                <tr key={table.id} className="hover:bg-muted/50">
+                                                    <td className="p-4">
+                                                        <Checkbox
+                                                            checked={selectedTables.has(table.id)}
+                                                            onCheckedChange={() => toggleSelection(table.id)}
+                                                        />
+                                                    </td>
+                                                    <td className="p-4 font-medium">{table.label}</td>
+                                                    <td className="p-4">{table.seats}</td>
+                                                    <td className="p-4 font-mono font-bold text-muted-foreground">{table.otp}</td>
+                                                    <td className="p-4">
+                                                        <Badge variant="outline" className={cn(
+                                                            table.status === 'empty' ? "text-green-600 border-green-600" :
+                                                                table.status === 'occupied' ? "text-blue-600 border-blue-600" :
+                                                                    "text-red-600 border-red-600"
+                                                        )}>
+                                                            {table.status.toUpperCase()}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            {table.status === 'occupied' && (
+                                                                <Button variant="ghost" size="icon" onClick={() => handleOpenBilling(table)} title="Settle Bill">
+                                                                    <Receipt className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                            {table.status === 'billed' && (
+                                                                <Button variant="ghost" size="icon" onClick={() => handleClearTable(table)} title="Mark as Empty" className="text-green-600">
+                                                                    <CheckSquare className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                            <Button variant="ghost" size="icon" onClick={() => setQrTable(table)}>
+                                                                <QrCode className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleEditTable(table)}>
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </Button>
+                                                            {role === 'admin' && (
+                                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setCurrentTable(table); handleDeleteTable(); }}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredTables.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                                        No tables found.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Takeout Side Panel - Hidden on mobile/tablet if Tables active */}
+                <div className={cn("w-full lg:w-80 lg:border-l lg:pl-6 lg:flex flex-col gap-4 min-h-0 overflow-hidden", activeTab === 'tables' ? "hidden lg:flex" : "flex")}>
+                    {shopId && (
+                        <ActiveTakeawaysPanel
+                            ref={activeTakeawaysRef}
+                            shopId={shopId}
+                            onSettle={(order: any) => setBillingOrder(order)}
+                            hideHeader={activeTab === 'takeaways'}
+                            className="lg:!block [&>div:first-child]:lg:flex"
+                        />
+                    )}
+                </div>
+            </div>
 
             {/* Edit/Add Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -872,11 +964,25 @@ export default function TableManagementPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            {/* New Order Dialog */}
+            <NewOrderDialog
+                open={isNewOrderDialogOpen}
+                onOpenChange={setIsNewOrderDialogOpen}
+                tables={tables}
+                shopSlug={shopSlug}
+            />
+
             <BillingDialog
-                open={!!billingTable}
-                onOpenChange={(open) => !open && setBillingTable(null)}
+                open={!!billingTable || !!billingOrder}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setBillingTable(null);
+                        setBillingOrder(null);
+                    }
+                }}
                 tableId={billingTable?.id || null}
                 tableLabel={billingTable?.label}
+                orderId={billingOrder?.id || null}
                 shopId={shopId}
                 onSuccess={(tableId, status) => {
                     if (tableId && status) {
@@ -884,8 +990,13 @@ export default function TableManagementPage() {
                             t.id === tableId ? { ...t, status: status as TableStatus } : t
                         ));
                     }
+                    if (billingOrder) {
+                        // Trigger immediate refresh of the takeaways list
+                        activeTakeawaysRef.current?.refresh();
+                    }
                     fetchTables();
                     setBillingTable(null);
+                    setBillingOrder(null);
                 }}
             />
         </div>

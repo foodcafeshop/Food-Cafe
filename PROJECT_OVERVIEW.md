@@ -1,7 +1,7 @@
 # 🍔 Food Cafe - Premium Restaurant Management System (SRS)
 
 **Version:** 1.0 (Investor Ready)  
-**Last Updated:** Dec 2025
+**Last Updated:** Feb 2026
 
 **Food Cafe** is a state-of-the-art, multi-tenant Restaurant Management System (RMS) designed to revolutionize the dining experience. It unifies customer ordering, kitchen operations, and administrative management into a single, real-time ecosystem.
 
@@ -51,6 +51,10 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Mobile Experience**: A dedicated **Bottom Sheet Hub** providing a personalized "Good Morning/Evening" greeting, pulsing "Current Table" indicator, and quick-access cards for Menu and Cart.
     *   **Desktop Experience**: A sleek **Popover Profile Menu** replacing cluttered inline text.
     *   **Decluttered Navigation**: User-related actions moved to the "Account" tab on mobile, focusing the header on Shop Identity.
+*   **Multi-Service Ordering (New ✅)**:
+    *   **Flexible Service Types**: Customers can choose between **Dine-in**, **Takeaway**, or **Delivery** when placing orders.
+    *   **Takeaway OTP Verification**: For remote takeaway orders, customers must enter a shop-provided OTP to verify they are physically present at the shop. Table customers are automatically exempt.
+    *   **Auto-Rotating OTP**: The takeaway OTP automatically rotates after each successful order, preventing reuse.
 
 ### 👨‍🍳 2. Intelligent Kitchen Display System (KDS)
 *   **Real-Time Ticket Board**: Orders appear on the kitchen screen with a distinctive "Ping" sound the millisecond they are placed.
@@ -77,6 +81,13 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Smart Menu Browser**: Searchable, categorized menu with "Add to Cart" functionality.
         *   **Contextual Actions**: Ability to bill tables directly or clear them after payment.
         *   **Order Customization**: Staff can add specific notes (e.g., "Less Spicy", "No Ice") to individual items.
+        *   **New Order Dialog (New ✅)**: Quick-access modal to start Dine-in, Takeaway, or Delivery orders with table selection for dine-in.
+    *   **Active Takeaways Panel (New ✅)**:
+        *   **Dedicated Queue**: Real-time list of all active Takeaway and Delivery orders with status tracking.
+        *   **Time Urgency**: Visual indicators highlight orders waiting too long (>15 minutes turns red).
+        *   **One-Click Actions**: "Mark Served" and "Settle Bill" buttons for quick order completion.
+        *   **OTP Display**: Prominently displays the current Takeaway OTP in the panel header (large screens) or inline (mobile).
+        *   **Responsive Layout**: Shows as a side panel on large screens, tabbed view on mobile.
     *   **Quick Actions**: access Settle Bill, Clear Table, or Print QR directly from the canvas or mobile cards.
 *   **Financial & Billing Engine**:
     *   **Digital Billing**: Auto-calculates Subtotal, Tax (Configurable), and Service Charge.
@@ -113,7 +124,15 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Auto-Calculation**: System instantly highlights discrepancies (Variance) between theoretical usage and physical counts.
     *   **Bulk Correction**: One-click submission to adjust all stock levels to match physical reality, categorizing differences as "Correction".
 
-### 🏢 5. Shop Management & Data Sovereignty
+### 📦 5. Packaging Inventory System (New ✅)
+*   **Dynamic Cost Engine**:
+    *   **Inventory-Based**: Define packaging materials (Boxes, Bags, Cutlery) with specific costs in a central inventory.
+    *   **Recipe Linking**: Map materials to menu items (e.g., "1 Burger" = "1 Burger Box" + "1 Tissue").
+    *   **Auto-Calculation**: System automatically calculates precise packaging fees for Takeaway/Delivery orders based on cart contents.
+*   **Granular Control**: Use specific quantities (e.g., 2 containers for a large meal) for accurate cost tracking.
+*   **Global Fallback**: Option to set a default flat or percentage-based packaging charge if no specific materials are linked.
+
+### 🏢 6. Shop Management & Data Sovereignty
 *   **Staff Management**:
     *   **Role-Based Access Control (RBAC)**:
         *   **Shop Owner**: Complete control over shop, settings, financials, and deletion.
@@ -132,7 +151,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Full Data Export**: One-click "Export to ZIP" functionality generating portable CSVs for all shop data.
     *   **Cascade Shop Deletion**: "Danger Zone" feature allows complete removal of a shop and all associated data.
 
-### 🔒 6. Security & Infrastructure
+### 🔒 7. Security & Infrastructure
 *   **Row Level Security (RLS)**:
     *   Robust PostgreSQL policies ensure complete data isolation between tenants.
     *   Specific policies allow Public read access for menus/tables (for QR scanning) while restricting write access to authenticated users.
@@ -143,7 +162,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Database Indexing**: Optimized indexes on `shop_id`, `created_at`, `status`, and `is_featured` for blazing fast queries.
     *   **Parallel Fetching**: API endpoints optimized with `Promise.all` to reduce Time-to-First-Byte (TTFB).
 
-### 🏙️ 7. The D2C Marketplace (Consumer Landing Page)
+### 🏙️ 8. The D2C Marketplace (Consumer Landing Page)
 *   **Unified Discovery**:
     *   **Real-Time Search**: Instant search for restaurants by name or category tags using server-side filtering and API-level limits.
     *   **Smart Listings**: "Popular Restaurants" section with optimized grid layout (Top 9) for performance.
@@ -156,7 +175,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Integrated QR Scanner**: Built-in camera interface in the navbar allows users to scan table codes immediately without leaving the app.
     *   **Smart Redirection**: Validates QR content and deep-links directly to the shop's menu.
 
-### 💳 8. SaaS Monetization & Revenue Operations
+### 💳 9. SaaS Monetization & Revenue Operations
 *   **Provider-Agnostic Architecture**:
     *   **Adapter Pattern**: Designed to switch between **Razorpay**, Stripe, or PhonePe without code rewrites. Currently fully integrated with Razorpay for India.
     *   **Robust Webhooks**: Idempotent webhook handling ensures events (payments, cancellations) are never missed or processed twice.
@@ -172,7 +191,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
         *   **Advanced Logic**: Supports per-user limits, customer whitelisting, and "New User Only" rules.
     *   **Promo Codes**: Support for percentage vs flat off, usage limits, and expiration dates.
 
-### 🖨️ 9. Thermal Printer Integration
+### 🖨️ 10. Thermal Printer Integration
 *   **Universal Browser Support**:
     *   **Driverless Printing**: Works with any standard 80mm/58mm thermal printer recognized by the OS (USB/Bluetooth/Network).
     *   **Customizable Templates**: Dedicated layouts for **Kitchen Order Tickets (KOT)** (Large fonts, high contrast) and **Customer Bills** (Branded, detailed).
@@ -181,7 +200,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
     *   **Configurable Branding**: Option to show/hide Shop Logo, custom Header/Footer messages.
     *   **Historical Accuracy**: Reprints past bills with the exact tax/price breakdown from the moment of sale.
 
-### 🔔 10. Push Notifications
+### 🔔 11. Push Notifications
 *   **Edge-First Notification Architecture**:
     *   **Serverless Triggering**: Next.js API Routes trigger notifications directly via `web-push` libraries without needing heavy backend workers.
     *   **Standardized Protocol**: Uses VAPID (Voluntary Application Server Identification) for secure, browser-standard communication with FCM/APNs.
@@ -200,7 +219,7 @@ For restaurant owners, the chaos of peak hours, disconnected systems, and staffi
 
 ---
 
-### 👤 11. Customer Identity & Session Architecture
+### 👤 12. Customer Identity & Session Architecture
 *   **Shop-Bound Identity**:
     *   **Strict Isolation**: Customer profiles are tightly scoped to specific `shop_id`s. "John" at Shop A is legally distinct from "John" at Shop B.
     *   **Cross-Shop Protection**: Smart Guard logic in the frontend immediately detects if a user scans a QR code for a different shop while still logged in, forcibly clearing the old session to prevent data leaks.

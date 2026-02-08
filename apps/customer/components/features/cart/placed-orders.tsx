@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getTableOrders } from "@/lib/api";
+import { getTableOrders, getCustomerOrders } from "@/lib/api";
 import { useCartStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle2, ChefHat, Utensils, XCircle, Star } from "lucide-react";
+import { Clock, CheckCircle2, ChefHat, Utensils, XCircle, Star, ShoppingBag, Bike, UtensilsCrossed } from "lucide-react";
 import { VegIcon, NonVegIcon, VeganIcon, JainVegIcon, ContainsEggIcon } from "@/components/ui/icons";
 import { getCurrencySymbol } from "@/lib/utils";
 import { RatingDialog } from "../feedback/rating-dialog";
@@ -17,7 +17,7 @@ interface PlacedOrdersProps {
 }
 
 export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrdersProps) {
-    const { tableId } = useCartStore();
+    const { tableId, customerId } = useCartStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showRating, setShowRating] = useState(false);
@@ -26,22 +26,43 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
     const [shopId, setShopId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (tableId) {
+        if (tableId || customerId) {
             fetchOrders();
             // Optional: Poll for updates every 10 seconds
             const interval = setInterval(fetchOrders, 10000);
             return () => clearInterval(interval);
         } else {
-            // Clear orders when session ends (tableId becomes null)
+            // Clear orders when session/customer ends
             setOrders([]);
             setLoading(false);
         }
-    }, [tableId]);
+    }, [tableId, customerId]);
 
     const fetchOrders = async () => {
-        if (!tableId) return;
-        const data = await getTableOrders(tableId);
-        setOrders(data || []);
+        if (!tableId && !customerId) return;
+
+        setLoading(true);
+        let allOrders: any[] = [];
+
+        // 1. Fetch Table Orders (if at a table)
+        if (tableId) {
+            const tableOrders = await getTableOrders(tableId);
+            if (tableOrders) allOrders = [...allOrders, ...tableOrders];
+        }
+
+        // 2. Fetch Customer Orders (if logged in)
+        if (customerId) {
+            const customerOrders = await getCustomerOrders(customerId);
+            if (customerOrders) allOrders = [...allOrders, ...customerOrders];
+        }
+
+        // 3. Deduplicate by ID
+        const uniqueOrders = Array.from(new Map(allOrders.map(item => [item.id, item])).values());
+
+        // 4. Sort by Date (Newest First)
+        uniqueOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setOrders(uniqueOrders);
         setLoading(false);
     };
 
@@ -179,8 +200,29 @@ export function PlacedOrders({ currencySymbol = "$", onOrderClick }: PlacedOrder
                                         {getStatusIcon(order.status)}
                                         <span className="capitalize">{order.status}</span>
                                     </Badge>
-                                    <span className="text-xs text-gray-400">
-                                        #{order.order_number || order.id.slice(0, 8)} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                                        <span className="hidden sm:inline">#{order.order_number || order.id.slice(0, 8)}</span>
+                                        <span className="sm:hidden">#{order.order_number?.slice(-4) || order.id.slice(0, 4)}</span>
+                                        <span>•</span>
+                                        {order.service_type === 'takeaway' && (
+                                            <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                                <ShoppingBag className="w-3 h-3" />
+                                                <span className="hidden sm:inline font-medium">Takeaway</span>
+                                            </span>
+                                        )}
+                                        {order.service_type === 'delivery' && (
+                                            <span className="flex items-center gap-1 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
+                                                <Bike className="w-3 h-3" />
+                                                <span className="hidden sm:inline font-medium">Delivery</span>
+                                            </span>
+                                        )}
+                                        {(!order.service_type || order.service_type === 'dine_in') && (
+                                            <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">
+                                                <UtensilsCrossed className="w-3 h-3" />
+                                                <span className="hidden sm:inline font-medium">Dine In</span>
+                                            </span>
+                                        )}
+                                        <span className="hidden sm:inline">• {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </span>
                                 </div>
                                 <span className={`font-bold text-gray-800 ${order.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>

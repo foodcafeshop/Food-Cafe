@@ -111,7 +111,7 @@ export function ShopHeader({ shop, slug, showHomeLink = false, showMenuLink = fa
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 function UserMenu() {
-    const { customerName, logout, setWelcomeOpen, tableLabel } = useCartStore();
+    const { customerName, logout, setWelcomeOpen, tableLabel, serviceType } = useCartStore();
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -120,16 +120,31 @@ function UserMenu() {
         return "Good Evening";
     };
 
+    const LabelBadge = () => {
+        if (tableLabel) {
+            return (
+                <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-orange-100 whitespace-nowrap">
+                    <Utensils className="h-3 w-3" />
+                    <span>{tableLabel}</span>
+                </div>
+            );
+        }
+        if (serviceType === 'takeaway') {
+            return (
+                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-blue-100 whitespace-nowrap">
+                    <ShoppingBag className="h-3 w-3" />
+                    <span>Takeaway</span>
+                </div>
+            );
+        }
+        return null;
+    };
+
     if (customerName) {
         return (
             <div className="flex items-center gap-3 pl-2 md:border-l md:border-gray-200">
-                {/* Table Label Badge - Visible on all screens */}
-                {tableLabel && (
-                    <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-orange-100">
-                        <Utensils className="h-3 w-3" />
-                        <span>{tableLabel}</span>
-                    </div>
-                )}
+                {/* Status Badge - Visible on all screens */}
+                <LabelBadge />
 
                 {/* Desktop User Dropdown */}
                 <div className="hidden md:block">
@@ -158,7 +173,7 @@ function UserMenu() {
                                 </div>
                             </div>
                             <div className="p-2 space-y-1">
-                                {tableLabel && (
+                                {tableLabel ? (
                                     <div className="mb-2 p-2.5 bg-orange-50/50 rounded-xl flex items-center gap-3 border border-orange-100/50">
                                         <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center shadow-sm text-orange-600">
                                             <Utensils className="h-4 w-4" />
@@ -168,7 +183,17 @@ function UserMenu() {
                                             <div className="text-sm font-bold text-gray-900">{tableLabel}</div>
                                         </div>
                                     </div>
-                                )}
+                                ) : serviceType === 'takeaway' ? (
+                                    <div className="mb-2 p-2.5 bg-blue-50/50 rounded-xl flex items-center gap-3 border border-blue-100/50">
+                                        <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600">
+                                            <ShoppingBag className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-bold text-blue-600/70 uppercase tracking-wider">Order Type</div>
+                                            <div className="text-sm font-bold text-gray-900">Takeaway</div>
+                                        </div>
+                                    </div>
+                                ) : null}
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl h-10 px-3 font-medium"
@@ -187,12 +212,7 @@ function UserMenu() {
 
     return (
         <div className="flex items-center gap-2">
-            {tableLabel && (
-                <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-orange-100 whitespace-nowrap">
-                    <Utensils className="h-3 w-3" />
-                    <span>{tableLabel}</span>
-                </div>
-            )}
+            <LabelBadge />
             <Button
                 variant="ghost"
                 size="sm"

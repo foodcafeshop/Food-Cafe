@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { Category, Menu, MenuItem, Settings, InventoryItem, InventoryAdjustment, MenuItemIngredient, Order, Review, Shop, AdjustmentReason, Bill } from "./types";
+import { Category, Menu, MenuItem, Settings, InventoryItem, InventoryAdjustment, MenuItemIngredient, Order, Review, Shop, AdjustmentReason, Bill, PackagingItem } from "./types";
 import { roundToThree } from './utils';
 
 export async function getActiveMenu(shopId: string): Promise<Menu | null> {
@@ -565,6 +565,103 @@ export async function settleTableBill(tableId: string, paymentMethod: string, br
 
     if (!billData) throw new Error("Failed to generate unique bill number");
 
+
+    return billData;
+}
+
+export async function settleOrderBill(orderId: string, paymentMethod: string, breakdown?: any) {
+    // 1. Get the order
+    const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+            id, 
+            total_amount, 
+            shop_id,
+            status,
+            service_type,
+            order_items (
+                menu_item_id,
+                name,
+                price,
+                quantity
+            )
+        `)
+        .eq('id', orderId)
+        .single();
+
+    if (orderError) throw orderError;
+    if (!order) throw new Error("Order not found");
+
+    const shopId = order.shop_id;
+    const itemsSnapshot = order.order_items?.map((item: any) => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        id: item.menu_item_id
+    })) || [];
+
+    // 2. Generate Bill Number and Insert
+    const maxRetries = 5;
+    let attempt = 0;
+    let billData;
+
+    while (attempt < maxRetries) {
+        try {
+            const billNumber = generateBillNumber();
+
+            // Insert Bill
+            const { data: bill, error: billError } = await supabase
+                .from('bills')
+                .insert({
+                    shop_id: shopId,
+                    bill_number: billNumber,
+                    table_id: null, // No table for order-based billing
+                    total_amount: roundToThree(breakdown?.grandTotal || order.total_amount),
+                    payment_method: paymentMethod,
+                    items_snapshot: itemsSnapshot,
+                    breakdown: breakdown,
+                    order_ids: [orderId] // Add order_ids array as per schema
+                })
+                .select()
+                .single();
+
+            if (billError) {
+                if (billError.code === '23505') { // Unique violation
+                    console.warn(`Collision for bill number ${billNumber}, retrying...`);
+                    attempt++;
+                    continue;
+                }
+                throw billError;
+            }
+
+            // Update Order
+            // For takeaway/delivery orders, mark as 'complete'
+            // For dine-in orders, mark as 'billed'
+            const isTakeawayOrDelivery = ['takeaway', 'delivery'].includes(order.service_type);
+            const newStatus = isTakeawayOrDelivery ? 'complete' : 'billed';
+
+            const { error: updateError } = await supabase
+                .from('orders')
+                .update({
+                    status: newStatus,
+                    payment_status: 'paid',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', orderId);
+
+            if (updateError) {
+                console.error('Failed to update order status:', updateError);
+                throw updateError;
+            }
+
+            billData = bill;
+            break;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    if (!billData) throw new Error("Failed to generate unique bill number");
     return billData;
 }
 
@@ -1401,4 +1498,83 @@ export async function getShopBySlug(slug: string) {
         return null;
     }
     return data;
+}
+// Packaging Inventory API
+export async function getPackagingItems(shopId: string) {
+    const { data, error } = await supabase
+        .from('packaging_items')
+        .select('*')
+        .eq('shop_id', shopId)
+        .order('name');
+
+    if (error) {
+        console.error('Error fetching packaging items:', error);
+        return [];
+    }
+    return data;
+}
+
+export async function createPackagingItem(item: Partial<PackagingItem>) {
+    const { data, error } = await supabase
+        .from('packaging_items')
+        .insert(item)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updatePackagingItem(id: string, updates: Partial<PackagingItem>) {
+    const { data, error } = await supabase
+        .from('packaging_items')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deletePackagingItem(id: string) {
+    const { error } = await supabase
+        .from('packaging_items')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+}
+
+// Menu Item Packaging Links
+export async function getMenuItemPackaging(menuItemId: string) {
+    const { data, error } = await supabase
+        .from('menu_item_packaging')
+        .select(`
+            *,
+            packaging_items (*)
+        `)
+        .eq('menu_item_id', menuItemId);
+
+    if (error) {
+        console.error('Error fetching menu item packaging:', error);
+        return [];
+    }
+    return data;
+}
+
+export async function updateMenuItemPackaging(menuItemId: string, packagingLinks: { packaging_item_id: string, quantity: number }[]) {
+    // Transaction-like approach: Delete all then insert new (simplest for junction tables)
+
+    // 1. Delete existing
+    await supabase.from('menu_item_packaging').delete().eq('menu_item_id', menuItemId);
+
+    // 2. Insert new
+    if (packagingLinks.length > 0) {
+        const toInsert = packagingLinks.map(link => ({
+            menu_item_id: menuItemId,
+            packaging_item_id: link.packaging_item_id,
+            quantity: link.quantity
+        }));
+
+        const { error } = await supabase.from('menu_item_packaging').insert(toInsert);
+        if (error) throw error;
+    }
 }

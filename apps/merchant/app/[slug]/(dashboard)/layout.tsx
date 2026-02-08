@@ -237,6 +237,12 @@ export default function AdminLayout({
                                     Recipes
                                 </Button>
                             </Link>
+                            <Link href={`/${slug}/settings/packaging`} onClick={() => setOpen(false)}>
+                                <Button variant={pathname === `/${slug}/settings/packaging` ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                                    <Package className="h-4 w-4" />
+                                    Packaging Inventory
+                                </Button>
+                            </Link>
                         </div>
 
                         <div className="space-y-2">

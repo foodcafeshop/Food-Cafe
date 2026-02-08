@@ -14,11 +14,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, ChefHat, ArrowLeft, XCircle } from "lucide-react";
+import { Filter, Clock, CheckCircle2, ChefHat, ArrowLeft, XCircle, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getActiveOrders, updateOrderStatus } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type OrderStatus = 'queued' | 'preparing' | 'ready' | 'served' | 'cancelled';
 
@@ -27,6 +29,8 @@ import { useShopId } from "@/lib/hooks/use-shop-id";
 export default function KDSPage() {
     const { shopId } = useShopId();
     const [orders, setOrders] = useState<any[]>([]);
+    const [serviceTypeFilter, setServiceTypeFilter] = useState<string>('all');
+    const [search, setSearch] = useState("");
     const prevOrdersCount = useRef(0);
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
@@ -113,16 +117,55 @@ export default function KDSPage() {
         return null;
     };
 
+    const filteredOrders = orders.filter(o => {
+        const matchesService = serviceTypeFilter === 'all' || (o.service_type || 'dine_in') === serviceTypeFilter;
+        const matchesSearch = !search ||
+            o.id.toLowerCase().includes(search.toLowerCase()) ||
+            o.order_number?.toLowerCase().includes(search.toLowerCase()) ||
+            o.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
+            o.tables?.label?.toLowerCase().includes(search.toLowerCase());
+
+        return matchesService && matchesSearch;
+    });
+
     return (
         <div className="p-6 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     <ChefHat className="h-8 w-8 text-primary" />
                     Kitchen Display System
                 </h1>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>Live Updates</span>
+
+                <div className="flex items-center gap-4">
+                    <div className="relative w-[200px]">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search..."
+                            className="pl-8 h-9"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
+                        <SelectTrigger className="w-[180px]">
+                            <div className="flex items-center gap-2">
+                                <Filter className="h-4 w-4" />
+                                <SelectValue placeholder="All Service Types" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Service Types</SelectItem>
+                            <SelectItem value="dine_in">Dine In</SelectItem>
+                            <SelectItem value="takeaway">Takeaway</SelectItem>
+                            <SelectItem value="delivery">Delivery</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full">
+                        <Clock className="h-4 w-4" />
+                        <span className="animate-pulse text-green-600 font-bold">•</span>
+                        <span>Live</span>
+                    </div>
                 </div>
             </div>
 
@@ -132,12 +175,12 @@ export default function KDSPage() {
                         <div className={cn("flex items-center justify-between mb-4 p-2 rounded-lg font-bold", col.color)}>
                             <span>{col.label}</span>
                             <Badge variant="secondary" className="bg-background/50">
-                                {orders.filter(o => o.status === col.id).length}
+                                {filteredOrders.filter(o => o.status === col.id).length}
                             </Badge>
                         </div>
 
                         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                            {orders
+                            {filteredOrders
                                 .filter((order) => order.status === col.id)
                                 .map((order) => (
                                     <OrderCard
@@ -205,29 +248,55 @@ function OrderCard({ order, onNext, onPrev, onCancel }: { order: any; onNext: ()
         return () => clearInterval(interval);
     }, [order.created_at]);
 
+    const getServiceTypeBadge = (type: string | null) => {
+        const t = type || 'dine_in';
+        switch (t) {
+            case 'dine_in': return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Dine In</Badge>;
+            case 'takeaway': return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Takeaway</Badge>;
+            case 'delivery': return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Delivery</Badge>;
+            default: return null;
+        }
+    };
+
     return (
         <Card className="border-none shadow-sm group relative">
             <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 onClick={onCancel}
                 title="Cancel Order"
             >
                 <XCircle className="h-4 w-4" />
             </Button>
 
-            <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0">
-                <div className="flex flex-col gap-1">
+            <CardHeader className="p-4 pb-2 flex flex-col items-start gap-2">
+                <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline">Table {order.tables?.label || order.table_id}</Badge>
-                        <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
-                        {order.is_staff_order && <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 h-5">{order.staff_name || 'Staff'}</Badge>}
+                        {getServiceTypeBadge(order.service_type)}
+                        <span className="text-xs text-muted-foreground">#{order.order_number || order.id.slice(0, 4)}</span>
                     </div>
+                    <span className={cn("text-xs font-medium mr-6", timeElapsed > 15 ? "text-destructive" : "text-muted-foreground")}>
+                        {timeElapsed > 60 ? `${Math.floor(timeElapsed / 60)}h ${timeElapsed % 60}m` : `${timeElapsed}m`} ago
+                    </span>
                 </div>
-                <span className={cn("text-xs font-medium mr-6", timeElapsed > 15 ? "text-destructive" : "text-muted-foreground")}>
-                    {timeElapsed > 60 ? `${Math.floor(timeElapsed / 60)}h ${timeElapsed % 60}m` : `${timeElapsed}m`} ago
-                </span>
+
+                {/* Table Info only for Dine In */}
+                {(order.service_type === 'dine_in' || !order.service_type) && (
+                    <Badge variant="secondary" className="text-xs">
+                        Table {order.tables?.label || order.table_id || 'N/A'}
+                    </Badge>
+                )}
+
+                {/* Customer Info for Takeaway/Delivery */}
+                {(order.service_type === 'takeaway' || order.service_type === 'delivery') && (
+                    <div className="text-xs bg-muted/40 p-1.5 rounded w-full">
+                        <span className="font-bold">{order.customer_name || 'Guest'}</span>
+                        <span className="block text-muted-foreground">{order.customer_phone}</span>
+                    </div>
+                )}
+
+                {order.is_staff_order && <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 h-5">{order.staff_name || 'Staff'}</Badge>}
             </CardHeader>
             <CardContent className="p-4 pt-2 space-y-2">
                 {order.order_items?.map((item: any, idx: number) => (

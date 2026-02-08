@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCartStore } from "@/lib/store";
-import { ChefHat } from "lucide-react";
+import { ChefHat, ShoppingBag, UtensilsCrossed, Bike } from "lucide-react";
+import { ServiceType } from "@/lib/types";
 import Image from "next/image";
 
 import { usePathname, useSearchParams } from "next/navigation";
@@ -30,12 +31,15 @@ export function WelcomeDialog() {
         logout,
         sessionId,
         setSessionId,
-        setCustomerId
+        setCustomerId,
+        serviceType,
+        setServiceType
     } = useCartStore();
 
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
-    const [otp, setOtp] = useState("");
+    const [otp, setOtp] = useState(""); // For table OTP
+    const [takeawayOtp, setTakeawayOtp] = useState(""); // For takeaway OTP
     const [error, setError] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [otpEnabled, setOtpEnabled] = useState<boolean | null>(null);
@@ -44,6 +48,8 @@ export function WelcomeDialog() {
     const [currentShopId, setCurrentShopId] = useState("");
     const [manualTableLabel, setManualTableLabel] = useState("");
     const [isPhoneMandatory, setIsPhoneMandatory] = useState(false);
+    const [enabledServiceTypes, setEnabledServiceTypes] = useState<ServiceType[]>(['dine_in']);
+    const [selectedOrderType, setSelectedOrderType] = useState<ServiceType>('dine_in');
 
 
 
@@ -56,6 +62,11 @@ export function WelcomeDialog() {
             // 1. Resolve Table Label from URL
             const tableLabel = searchParams?.get('table');
             const tableIdParam = searchParams?.get('tableId');
+
+            // Auto-detect order type based on URL parameters
+            if (tableIdParam || tableLabel) {
+                setSelectedOrderType('dine_in');
+            }
 
             if (tableIdParam) {
                 setTableId(tableIdParam);
@@ -77,6 +88,12 @@ export function WelcomeDialog() {
                 const settings = await getSettings(shop.id);
                 setOtpEnabled(settings?.enable_otp ?? false);
                 setIsPhoneMandatory(settings?.is_customer_phone_mandatory ?? false);
+                setEnabledServiceTypes(settings?.enabled_service_types ?? ['dine_in']);
+
+                // Auto-select first enabled service type if not coming from table URL
+                if (!tableIdParam && !tableLabel && settings?.enabled_service_types?.length) {
+                    setSelectedOrderType(settings.enabled_service_types[0]);
+                }
 
                 // 3. Resolve Label if needed (if we have label but no ID)
                 if (tableLabel && !tableIdParam) {
@@ -205,6 +222,44 @@ export function WelcomeDialog() {
             return;
         }
 
+        // Handle Takeaway Orders (skip table logic entirely)
+        if (selectedOrderType === 'takeaway') {
+            // Verify takeaway OTP for remote orders (not at a table)
+            // OTP is always required for takeaway now, regardless of rotation setting
+            if (!tableId) {
+                if (!takeawayOtp.trim()) {
+                    setError('Please enter the Takeaway OTP to proceed');
+                    return;
+                }
+
+                setIsVerifying(true);
+                const { verifyTakeawayOtp } = await import('@/lib/api');
+                const otpValid = await verifyTakeawayOtp(currentShopId, takeawayOtp.trim());
+                setIsVerifying(false);
+
+                if (!otpValid) {
+                    setError('Invalid Takeaway OTP. Please check with staff.');
+                    return;
+                }
+            }
+
+            // Upsert Customer
+            try {
+                const cId = await upsertCustomer(currentShopId, name.trim(), phone?.trim());
+                if (cId) setCustomerId(cId);
+            } catch (err) {
+                console.error("Failed to bind customer:", err);
+                // Continue anyway
+            }
+
+            // Set customer info and service type
+            setCustomerName(name.trim());
+            if (phone.trim()) setCustomerPhone(phone.trim());
+            setServiceType('takeaway');
+            setWelcomeOpen(false);
+            return;
+        }
+
         // Resolve Table ID if manual
         let targetTableId = tableId;
 
@@ -282,12 +337,11 @@ export function WelcomeDialog() {
             }
 
             console.log('Table join request sent');
-        }
 
-        if (name.trim()) {
+            // Set customer info and service type
             setCustomerName(name.trim());
             if (phone.trim()) setCustomerPhone(phone.trim());
-
+            setServiceType('dine_in');
             setWelcomeOpen(false);
         }
     };
@@ -335,7 +389,7 @@ export function WelcomeDialog() {
                         )}
                     </div>
                     <div>
-                        <DialogTitle className="text-2xl font-bold">
+                        <DialogTitle className="text-2xl font-bold text-center">
                             {welcomeMode === 'checkout' ? 'Details Required' : `Welcome to ${shopName || 'Food Cafe'}!`}
                         </DialogTitle>
                         <DialogDescription className="text-base mt-2">
@@ -347,19 +401,105 @@ export function WelcomeDialog() {
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
-                        <Input
-                            id="otp"
-                            placeholder="Enter 4-digit code"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                            className="h-11"
-                            maxLength={6}
-                        />
-                        <p className="text-xs text-gray-500">Please ask the staff for the table code.</p>
-                    </div>
+                    {/* Order Type Selection - Only show if multiple service types enabled and no table in URL */}
+                    {!tableId && enabledServiceTypes.length > 1 && (
+                        <div className="space-y-2">
+                            <Label>Order Type <span className="text-red-500">*</span></Label>
+                            <div className={`grid gap-2 ${enabledServiceTypes.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                                {enabledServiceTypes.includes('dine_in') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedOrderType('dine_in')}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${selectedOrderType === 'dine_in'
+                                            ? 'border-orange-600 bg-orange-50 text-orange-600'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <UtensilsCrossed className="h-6 w-6" />
+                                        <span className="text-sm font-medium">Dine In</span>
+                                    </button>
+                                )}
+                                {enabledServiceTypes.includes('takeaway') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedOrderType('takeaway')}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${selectedOrderType === 'takeaway'
+                                            ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <ShoppingBag className="h-6 w-6" />
+                                        <span className="text-sm font-medium">Takeaway</span>
+                                    </button>
+                                )}
+                                {enabledServiceTypes.includes('delivery') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedOrderType('delivery')}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${selectedOrderType === 'delivery'
+                                            ? 'border-purple-600 bg-purple-50 text-purple-600'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <Bike className="h-6 w-6" />
+                                        <span className="text-sm font-medium">Delivery</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Table Details - Only for Dine In */}
+                    {selectedOrderType === 'dine_in' && (
+                        <div className="flex gap-4">
+                            {/* Manual Table Entry if no tableId from URL */}
+                            {!tableId && (
+                                <div className="space-y-2 flex-1">
+                                    <Label htmlFor="tableLabel">Table Name <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        id="tableLabel"
+                                        placeholder="e.g. Table 1"
+                                        value={manualTableLabel}
+                                        onChange={(e) => setManualTableLabel(e.target.value)}
+                                        required
+                                        className="h-11"
+                                        maxLength={10}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Table OTP */}
+                            <div className={`space-y-2 ${!tableId ? 'flex-1' : 'w-full'}`}>
+                                <Label htmlFor="otp">Table OTP <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="otp"
+                                    placeholder="4-digit code"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    required
+                                    className="h-11"
+                                    maxLength={6}
+                                />
+                                <p className="text-xs text-gray-500 line-clamp-1">Ask staff for code.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Takeaway OTP - Only for remote takeaway orders */}
+                    {selectedOrderType === 'takeaway' && !tableId && (
+                        <div className="space-y-2">
+                            <Label htmlFor="takeaway-otp">Takeaway OTP <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="takeaway-otp"
+                                value={takeawayOtp}
+                                onChange={(e) => setTakeawayOtp(e.target.value)}
+                                placeholder="Enter 4-digit code"
+                                maxLength={4}
+                                className="h-11 font-mono text-lg tracking-wider text-center"
+                            />
+                            <p className="text-xs text-gray-500">Ask staff for the current takeaway OTP</p>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="name">Your Name <span className="text-red-500">*</span></Label>
                         <Input
@@ -391,21 +531,7 @@ export function WelcomeDialog() {
                     )}
 
 
-                    {/* Manual Table Entry if no tableId from URL */}
-                    {!tableId && (
-                        <div className="space-y-2">
-                            <Label htmlFor="tableLabel">Table Number <span className="text-red-500">*</span></Label>
-                            <Input
-                                id="tableLabel"
-                                placeholder="e.g. T1"
-                                value={manualTableLabel}
-                                onChange={(e) => setManualTableLabel(e.target.value)}
-                                required
-                                className="h-11"
-                                maxLength={10}
-                            />
-                        </div>
-                    )}
+
 
 
 

@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn, getCurrencySymbol } from "@/lib/utils";
 import { toast } from "sonner";
 import { ReceiptPrintView } from "@/components/features/orders/receipt-print-view";
+import { BillingDialog } from "@/components/features/staff/BillingDialog";
 import { supabase } from "@/lib/supabase";
-import { Printer } from "lucide-react";
+import { Printer, Receipt } from "lucide-react";
 
 import { useShopId } from "@/lib/hooks/use-shop-id";
 
@@ -24,9 +25,11 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [serviceTypeFilter, setServiceTypeFilter] = useState("all"); // Added
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editItems, setEditItems] = useState<any[]>([]);
+    const [billingOrder, setBillingOrder] = useState<any>(null);
 
     // Print State
     const [shopDetails, setShopDetails] = useState<any>(null);
@@ -87,7 +90,10 @@ export default function OrdersPage() {
             order.order_number?.toLowerCase().includes(search.toLowerCase()) ||
             order.table_id?.toString().includes(search);
         const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        // Service Type Filter
+        const matchesService = serviceTypeFilter === 'all' || (order.service_type || 'dine_in') === serviceTypeFilter;
+
+        return matchesSearch && matchesStatus && matchesService;
     });
 
     const getStatusColor = (status: string) => {
@@ -102,6 +108,13 @@ export default function OrdersPage() {
         }
     };
 
+    const getServiceBadge = (type: string | null) => {
+        const t = type || 'dine_in';
+        if (t === 'takeaway') return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 h-5 px-1.5 text-[10px]">Takeaway</Badge>
+        if (t === 'delivery') return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 h-5 px-1.5 text-[10px]">Delivery</Badge>
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1.5 text-[10px]">Dine In</Badge>
+    };
+
     const currency = settings?.currency || '$';
 
     return (
@@ -111,8 +124,8 @@ export default function OrdersPage() {
                 <Button variant="outline" onClick={loadData}>Refresh</Button>
             </div>
 
-            <div className="flex gap-4 items-center bg-muted/40 p-4 rounded-lg border">
-                <div className="relative flex-1 max-w-sm">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-muted/40 p-4 rounded-lg border">
+                <div className="relative flex-1 max-w-sm w-full">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search Order ID or Table..."
@@ -121,21 +134,35 @@ export default function OrdersPage() {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px] bg-background">
-                        <Filter className="w-4 h-4 mr-2" />
-                        <SelectValue placeholder="Filter Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="queued">Queued</SelectItem>
-                        <SelectItem value="preparing">Preparing</SelectItem>
-                        <SelectItem value="ready">Ready</SelectItem>
-                        <SelectItem value="served">Served</SelectItem>
-                        <SelectItem value="billed">Billed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
+                        <SelectTrigger className="w-[150px] bg-background">
+                            <SelectValue placeholder="Service Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="dine_in">Dine In</SelectItem>
+                            <SelectItem value="takeaway">Takeaway</SelectItem>
+                            <SelectItem value="delivery">Delivery</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[150px] bg-background">
+                            <Filter className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder="Filter Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="queued">Queued</SelectItem>
+                            <SelectItem value="preparing">Preparing</SelectItem>
+                            <SelectItem value="ready">Ready</SelectItem>
+                            <SelectItem value="served">Served</SelectItem>
+                            <SelectItem value="billed">Billed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="grid gap-4">
@@ -147,15 +174,21 @@ export default function OrdersPage() {
                     filteredOrders.map((order) => (
                         <Card key={order.id} className="flex flex-col md:flex-row items-start md:items-center p-4 gap-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1 space-y-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-mono text-sm text-muted-foreground">#{order.order_number || order.id.slice(0, 8)}</span>
-                                    <Badge variant="outline" className="bg-background">Table {order.tables?.label || order.table_id || 'N/A'}</Badge>
+                                    {getServiceBadge(order.service_type)}
+                                    {(order.service_type === 'dine_in' || !order.service_type) && (
+                                        <Badge variant="outline" className="bg-background">Table {order.tables?.label || order.table_id || 'N/A'}</Badge>
+                                    )}
                                     <Badge variant="secondary" className={cn("capitalize", getStatusColor(order.status))}>
                                         {order.status}
                                     </Badge>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {new Date(order.created_at).toLocaleString()} • {order.staff_name || order.customer_name || 'Guest'}
+                                    {(order.service_type === 'takeaway' || order.service_type === 'delivery') && order.customer_phone && (
+                                        <span className="ml-1 text-xs">({order.customer_phone})</span>
+                                    )}
                                 </div>
                                 <div className="text-sm font-medium mt-1">
                                     {order.order_items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
@@ -166,6 +199,18 @@ export default function OrdersPage() {
                                     <div className="font-bold text-lg">{currency}{order.total_amount.toFixed(2)}</div>
                                     <div className="text-xs text-muted-foreground capitalize">{order.payment_status}</div>
                                 </div>
+                                {order.status !== 'billed' && order.status !== 'complete' && order.status !== 'cancelled' && order.service_type !== 'dine_in' && (
+                                    <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 h-8"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setBillingOrder(order);
+                                        }}
+                                    >
+                                        Settle
+                                    </Button>
+                                )}
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
                                     <Eye className="h-4 w-4" />
                                 </Button>
@@ -185,12 +230,20 @@ export default function OrdersPage() {
                             <div>
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <div className="font-bold text-lg">Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</div>
+                                        <div className="font-bold text-lg flex items-center gap-2">
+                                            Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}
+                                            {getServiceBadge(selectedOrder.service_type)}
+                                        </div>
                                         <div className="text-sm text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleString()}</div>
                                         <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                                             <span>Ordered by <span className="font-medium text-foreground">{selectedOrder.staff_name || selectedOrder.customer_name || 'Guest'}</span></span>
                                             {selectedOrder.is_staff_order && <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 text-[10px] h-5 px-1.5">Staff</Badge>}
                                         </div>
+                                        {(selectedOrder.service_type === 'takeaway' || selectedOrder.service_type === 'delivery') && (
+                                            <div className="text-sm text-muted-foreground mt-0.5">
+                                                Phone: <span className="font-mono">{selectedOrder.customer_phone}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
                                         {!isEditing && (
@@ -203,6 +256,11 @@ export default function OrdersPage() {
                                         {!isEditing && selectedOrder.status !== 'billed' && selectedOrder.status !== 'cancelled' && (
                                             <Button size="sm" variant="outline" onClick={() => { setEditItems(JSON.parse(JSON.stringify(selectedOrder.order_items))); setIsEditing(true); }}>
                                                 <Edit2 className="h-4 w-4 mr-2" /> Edit
+                                            </Button>
+                                        )}
+                                        {!isEditing && selectedOrder.status !== 'billed' && selectedOrder.status !== 'cancelled' && (
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => setBillingOrder(selectedOrder)}>
+                                                <Receipt className="h-4 w-4 mr-2" /> Settle
                                             </Button>
                                         )}
                                         <Badge className={cn("capitalize", getStatusColor(selectedOrder.status))}>
@@ -308,14 +366,30 @@ export default function OrdersPage() {
                 </DialogContent>
             </Dialog>
             {/* Hidden Print Component - Only renders when printMode is active */}
-            {printOrder && printMode && (
-                <ReceiptPrintView
-                    order={printOrder}
-                    settings={settings}
-                    mode={printMode}
-                    shopDetails={shopDetails}
-                />
-            )}
-        </div>
+            {
+                printOrder && printMode && (
+                    <ReceiptPrintView
+                        order={printOrder}
+                        settings={settings}
+                        mode={printMode}
+                        shopDetails={shopDetails}
+                    />
+                )
+            }
+
+            <BillingDialog
+                open={!!billingOrder}
+                onOpenChange={(open) => !open && setBillingOrder(null)}
+                tableId={billingOrder?.table_id || null}
+                orderId={billingOrder?.table_id ? null : billingOrder?.id}
+                shopId={shopId}
+                tableLabel={billingOrder?.tables?.label || (billingOrder?.service_type === 'takeaway' ? 'Takeaway' : billingOrder?.service_type === 'delivery' ? 'Delivery' : 'Order')}
+                onSuccess={(id, status) => {
+                    setBillingOrder(null);
+                    setSelectedOrder(null);
+                    loadData();
+                }}
+            />
+        </div >
     );
 }

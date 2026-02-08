@@ -26,6 +26,10 @@ const generateImageUrl = (term: string): string => {
     return `https://tse2.mm.bing.net/th?q=${keyword}&w=300&h=300&c=7&rs=1&p=0&dpr=3&pid=1.7&mkt=en-IN&adlt=moderate`;
 };
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PackagingItem, MenuItemPackaging } from "@/lib/types";
+import { getPackagingItems, getMenuItemPackaging, updateMenuItemPackaging } from "@/lib/api";
+
 export default function MenuManagementPage() {
     const { shopId } = useShopId();
     const [items, setItems] = useState<MenuItem[]>([]);
@@ -35,10 +39,17 @@ export default function MenuManagementPage() {
     const [currentItem, setCurrentItem] = useState<Partial<MenuItem>>({});
     const [currencySymbol, setCurrencySymbol] = useState("$");
 
+    // Packaging State
+    const [packagingItems, setPackagingItems] = useState<PackagingItem[]>([]);
+    const [itemPackaging, setItemPackaging] = useState<MenuItemPackaging[]>([]);
+    const [activeTab, setActiveTab] = useState("details");
+
     useEffect(() => {
         if (shopId) {
             fetchItems();
             fetchSettings();
+            // Fetch packaging inventory
+            getPackagingItems(shopId).then(setPackagingItems);
         }
     }, [shopId]);
 
@@ -46,7 +57,7 @@ export default function MenuManagementPage() {
         if (!shopId) return;
         const settings = await getSettings(shopId);
         if (settings?.currency) {
-            setCurrencySymbol(getCurrencySymbol(settings.currency)); // Used getCurrencySymbol here
+            setCurrencySymbol(getCurrencySymbol(settings.currency));
         }
     };
 
@@ -84,9 +95,13 @@ export default function MenuManagementPage() {
         }
     };
 
-    const handleEdit = (item: MenuItem) => {
+    const handleEdit = async (item: MenuItem) => {
         setCurrentItem(item);
+        // Fetch packaging specifically for this item
+        const packaging = await getMenuItemPackaging(item.id);
+        setItemPackaging(packaging);
         setIsDialogOpen(true);
+        setActiveTab("details");
     };
 
     const handleAddNew = () => {
@@ -95,13 +110,15 @@ export default function MenuManagementPage() {
             description: '',
             price: 0,
             offer_price: 0,
-            images: [], // Will be auto-generated on save if empty
+            images: [],
             dietary_type: 'veg',
             is_available: true,
             is_popular: false,
             tags: [],
         });
+        setItemPackaging([]);
         setIsDialogOpen(true);
+        setActiveTab("details");
     };
 
     const handleSave = async () => {
@@ -119,16 +136,25 @@ export default function MenuManagementPage() {
             images: images,
         };
 
-        const { data, error } = await supabase
-            .from('menu_items')
-            .upsert(itemData)
-            .select()
-            .single();
+        try {
+            // 1. Save Menu Item
+            const { data, error } = await supabase
+                .from('menu_items')
+                .upsert(itemData)
+                .select()
+                .single();
 
-        if (error) {
-            console.error('Error saving item:', error);
-            toast.error('Failed to save item');
-        } else {
+            if (error) throw error;
+
+            // 2. Save Packaging Links
+            if (data.id) {
+                const links = itemPackaging.map(p => ({
+                    packaging_item_id: p.packaging_item_id,
+                    quantity: p.quantity
+                }));
+                await updateMenuItemPackaging(data.id, links);
+            }
+
             setItems(prev => {
                 const exists = prev.find(i => i.id === data.id);
                 if (exists) {
@@ -138,6 +164,9 @@ export default function MenuManagementPage() {
             });
             setIsDialogOpen(false);
             toast.success('Item saved successfully');
+        } catch (e) {
+            console.error('Error saving item:', e);
+            toast.error('Failed to save item');
         }
     };
 
@@ -238,6 +267,30 @@ export default function MenuManagementPage() {
             toast.error("Failed to process CSV file");
         }
     };
+
+    // Helper to toggle packaging item selection
+    const togglePackagingItem = (pkgId: string) => {
+        setItemPackaging(prev => {
+            const exists = prev.find(p => p.packaging_item_id === pkgId);
+            if (exists) {
+                // Remove
+                return prev.filter(p => p.packaging_item_id !== pkgId);
+            } else {
+                // Add default 1
+                return [...prev, { menu_item_id: currentItem.id || '', packaging_item_id: pkgId, quantity: 1, packaging_items: packagingItems.find(p => p.id === pkgId) }];
+            }
+        });
+    };
+
+    const updatePackagingQuantity = (pkgId: string, qty: number) => {
+        if (qty < 1) return;
+        setItemPackaging(prev => prev.map(p => p.packaging_item_id === pkgId ? { ...p, quantity: qty } : p));
+    };
+
+    const totalPackagingCost = itemPackaging.reduce((sum, p) => {
+        const item = packagingItems.find(i => i.id === p.packaging_item_id);
+        return sum + ((item?.price || 0) * p.quantity);
+    }, 0);
 
     return (
         <div className="p-6 space-y-6">
@@ -347,85 +400,143 @@ export default function MenuManagementPage() {
                     <DialogHeader>
                         <DialogTitle>{currentItem.id ? 'Edit Item' : 'Add New Item'}</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="name" className="text-right">Name</Label>
-                            <Input id="name" value={currentItem.name} onChange={e => setCurrentItem({ ...currentItem, name: e.target.value })} className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="desc" className="text-right">Description</Label>
-                            <Input id="desc" value={currentItem.description || ''} onChange={e => setCurrentItem({ ...currentItem, description: e.target.value })} className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">Price</Label>
-                            <div className="col-span-3 flex gap-4">
-                                <div className="flex-1">
+
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="details">Details</TabsTrigger>
+                            <TabsTrigger value="packaging">Packaging</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="details" className="pt-4">
+                            <div className="grid gap-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="name" className="text-right">Name</Label>
+                                    <Input id="name" value={currentItem.name} onChange={e => setCurrentItem({ ...currentItem, name: e.target.value })} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="desc" className="text-right">Description</Label>
+                                    <Input id="desc" value={currentItem.description || ''} onChange={e => setCurrentItem({ ...currentItem, description: e.target.value })} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="price" className="text-right">Price</Label>
+                                    <div className="col-span-3 flex gap-4">
+                                        <div className="flex-1">
+                                            <Input
+                                                type="number"
+                                                placeholder="Selling Price"
+                                                value={currentItem.price}
+                                                onChange={e => setCurrentItem({ ...currentItem, price: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <Input
+                                                type="number"
+                                                placeholder="Offer Price (Optional)"
+                                                value={currentItem.offer_price || ''}
+                                                onChange={e => setCurrentItem({ ...currentItem, offer_price: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="dietary" className="text-right">Type</Label>
+                                    <div className="col-span-3">
+                                        <Select
+                                            value={currentItem.dietary_type}
+                                            onValueChange={(val: DietaryType) => setCurrentItem({ ...currentItem, dietary_type: val })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="veg">Vegetarian</SelectItem>
+                                                <SelectItem value="non_veg">Non-Vegetarian</SelectItem>
+                                                <SelectItem value="vegan">Vegan</SelectItem>
+                                                <SelectItem value="jain_veg">Jain</SelectItem>
+                                                <SelectItem value="contains_egg">Contains Egg</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="image" className="text-right">Image URL</Label>
                                     <Input
-                                        type="number"
-                                        placeholder="Selling Price"
-                                        value={currentItem.price}
-                                        onChange={e => setCurrentItem({ ...currentItem, price: parseFloat(e.target.value) })}
+                                        id="image"
+                                        value={currentItem.images?.[0] || ''}
+                                        onChange={e => setCurrentItem({ ...currentItem, images: [e.target.value] })}
+                                        className="col-span-3"
                                     />
                                 </div>
-                                <div className="flex-1">
-                                    <Input
-                                        type="number"
-                                        placeholder="Offer Price (Optional)"
-                                        value={currentItem.offer_price || ''}
-                                        onChange={e => setCurrentItem({ ...currentItem, offer_price: parseFloat(e.target.value) })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="dietary" className="text-right">Type</Label>
-                            <div className="col-span-3">
-                                <Select
-                                    value={currentItem.dietary_type}
-                                    onValueChange={(val: DietaryType) => setCurrentItem({ ...currentItem, dietary_type: val })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="veg">Vegetarian</SelectItem>
-                                        <SelectItem value="non_veg">Non-Vegetarian</SelectItem>
-                                        <SelectItem value="vegan">Vegan</SelectItem>
-                                        <SelectItem value="jain_veg">Jain</SelectItem>
-                                        <SelectItem value="contains_egg">Contains Egg</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="image" className="text-right">Image URL</Label>
-                            <Input
-                                id="image"
-                                value={currentItem.images?.[0] || ''}
-                                onChange={e => setCurrentItem({ ...currentItem, images: [e.target.value] })}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right">Options</Label>
-                            <div className="col-span-3 flex gap-6">
-                                <div className="flex items-center gap-2">
-                                    <Switch
-                                        checked={currentItem.is_popular}
-                                        onCheckedChange={checked => setCurrentItem({ ...currentItem, is_popular: checked })}
-                                    />
-                                    <Label>Popular Item</Label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Switch
-                                        checked={currentItem.is_available}
-                                        onCheckedChange={checked => setCurrentItem({ ...currentItem, is_available: checked })}
-                                    />
-                                    <Label>Available</Label>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Options</Label>
+                                    <div className="col-span-3 flex gap-6">
+                                        <div className="flex items-center gap-2">
+                                            <Switch
+                                                checked={currentItem.is_popular}
+                                                onCheckedChange={checked => setCurrentItem({ ...currentItem, is_popular: checked })}
+                                            />
+                                            <Label>Popular Item</Label>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Switch
+                                                checked={currentItem.is_available}
+                                                onCheckedChange={checked => setCurrentItem({ ...currentItem, is_available: checked })}
+                                            />
+                                            <Label>Available</Label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </TabsContent>
+
+                        <TabsContent value="packaging" className="pt-4 max-h-[400px] overflow-y-auto">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-2 bg-muted/20 rounded-lg">
+                                    <span className="text-sm font-medium">Extra Packaging Cost:</span>
+                                    <span className="text-lg font-bold text-primary">{currencySymbol}{totalPackagingCost.toFixed(2)}</span>
+                                </div>
+
+                                {packagingItems.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                                        <p>No packaging materials defined.</p>
+                                        <p className="text-sm">Go to Settings &gt; Packaging Inventory to add items.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-2">
+                                        {packagingItems.map(pkg => {
+                                            const isSelected = itemPackaging.find(p => p.packaging_item_id === pkg.id);
+                                            return (
+                                                <div key={pkg.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
+                                                    <Switch
+                                                        checked={!!isSelected}
+                                                        onCheckedChange={() => togglePackagingItem(pkg.id)}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="font-medium">{pkg.name}</div>
+                                                        <div className="text-xs text-muted-foreground">{currencySymbol}{pkg.price.toFixed(2)} / unit</div>
+                                                    </div>
+
+                                                    {isSelected && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-muted-foreground">Qty:</span>
+                                                            <Input
+                                                                type="number"
+                                                                value={isSelected.quantity}
+                                                                min={1}
+                                                                onChange={(e) => updatePackagingQuantity(pkg.id, parseInt(e.target.value) || 1)}
+                                                                className="w-16 h-8 text-center"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+
                     <DialogFooter>
                         <Button onClick={handleSave}>Save Changes</Button>
                     </DialogFooter>

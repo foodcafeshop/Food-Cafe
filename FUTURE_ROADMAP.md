@@ -62,32 +62,45 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Auto-Deduction**: Smart trigger deducts stock when order moves to 'preparing' and reverts on cancel/queue.
 *   **EOD Reconciliation (Live ✅)**: UI to compare actual vs system stock and correct variances.
 
-*   **🔮 Future**: Supplier management and purchase orders.
+### 📦 10. Packaging Inventory System (Live ✅)
+*   **Material Registry**: Central database of packaging items (Boxes, Bags) with cost prices.
+*   **Recipe Linking**: Map packaging items to menu items with specific quantities.
+*   **Dynamic Cart Charges**: Auto-calculate packaging fees in customer cart based on selected items.
+*   **Smart Fallback**: Apply global flat/percentage fee if no specific items are linked.
 
-### 💳 10. Billing & Payment Support (Live ✅)
+*   **🔮 Future**: Supplier management and purchase orders.
+*   **Per-Item Packaging Cost**:
+    *   **Configuration**: Ability to link specific packaging materials (e.g., "Small Box", "Pizza Box") to each menu item or variant.
+    *   **Cost Calculation**: Auto-calculate total packaging cost for an order = Sum(Item Qty * Linked Packaging Cost).
+    *   **Dynamic Pricing**: Option to either absorb this cost or pass it to the customer as a "Packaging Charge".
+*   **Packaging Inventory**:
+    *   **Stock decrement**: Deduct packaging material stock automatically when orders are placed.
+    *   **Low Stock Alerts**: Notify when packaging materials (boxes, bags, cutlery) are running low.
+
+### 💳 11. Billing & Payment Support (Live ✅)
 *   **Payment Integration**: Support for payment processing.
 *   **Action Restrictions**: Restrict actions based on billing/payment status.
 
 
-### 🍽️ 11. Advanced Restaurant Landing Page Features
+### 🍽️ 12. Advanced Restaurant Landing Page Features
 *   **Table Reservations**: Booking engine for future dates and times (currently unsupported by schema).
 *   **Events & Blog**: Dynamic content management for "What's On" or news updates.
 *   **Advanced Promos**: "Enter code" style discount banners and conditional offers.
 *   **Gallery Management (Live ✅)**: Admin UI to upload/manage gallery images (limit: 16).
 *   **Smart Search (Live ✅)**: Offline-capable, tag-based search for instant menu filtering.
 
-### 🏗️ 12. Architecture Split (Live ✅)
+### 🏗️ 13. Architecture Split (Live ✅)
 *   **Monorepo Structure**: Split codebase into `apps/admin`, `apps/merchant` and `apps/customer`.
 *   **Performance**: Independent builds and deployments for smaller bundles.
 *   **Security**: Strict separation of admin logic from customer-facing code.
 
-### 🖨️ 13. Thermal Printer Integration (Live ✅)
+### 🖨️ 14. Thermal Printer Integration (Live ✅)
 *   **Kitchen Tickets**: Automatic printing of order tickets to kitchen printers when orders are placed. (🚧 Manual trigger only)
 *   **Customer Receipts**: Print itemized bills with QR code for payment. (🚧 QR code Pending)
 *   **Bluetooth & Network**: Support for Bluetooth-connected and network printers. (🚧 Browser Print only)
 *   **Template Customization**: Configurable receipt layouts with shop branding.
 
-### 🏙️ 14. Enhanced Customer Landing Page (Live ✅)
+### 🏙️ 15. Enhanced Customer Landing Page (Live ✅)
 *   **Shop Search**: Real-time search for restaurants by name and category tags.
 *   **Smart Limits**: API-level pagination and limits (e.g., Top 9) for performance.
 *   **Mobile Optimized**: Responsive design with sticky glassmorphism navbar and mobile-specific adjustments.
@@ -100,14 +113,14 @@ Brief overview of planned features for the **Food Cafe** RMS.
     *   **Strict Geofencing**: Restrict manual selection to service areas only.
     *   **City-Scoped Discovery**: Global search results filtered strictly by the selected city context.
 
-### 📱 15. Mandatory Customer Contact Info (Live ✅)
+### 📱 16. Mandatory Customer Contact Info (Live ✅)
 *   **Merchant Config**: Toggle option for merchants to make customer mobile number mandatory.
 *   **Scope**:
     *   **Self-Ordering**: Customers must enter phone number before placing an order.
     *   **Staff-Placed**: Staff must enter customer phone number when taking an order on their behalf.
 *   **Verification**: clear validation and potential OTP requirement (optional).
 
-### 🔔 16. Push Notifications (Live ✅)
+### 🔔 17. Push Notifications (Live ✅)
 *   **Order Status Updates**: "Your order is being prepared", "Your food is ready for pickup".
 *   **Staff Alerts**: Notify waiters when orders are ready for serving or new orders arrive.
 *   **PWA Native**: Leverage service workers for browser-based notifications.
@@ -119,58 +132,62 @@ Brief overview of planned features for the **Food Cafe** RMS.
         *   **Staff Alerts**: New order assignments (Staff only).
 *   **Future**: Marketing Alerts and Flash Deals.
 
-### 💬 17. Messaging Integrations
+### 💬 18. Messaging Integrations
 *   **WhatsApp Business API**: Send order confirmations, digital receipts, and promotional messages.
 *   **Telegram Bot**: Order status updates and customer support via Telegram.
 *   **SMS Fallback**: Transactional SMS for customers without internet access.
 
-### 📱 18. Social Sharing
+### 📱 19. Social Sharing
 *   **Dish Sharing**: "Share this dish" to Instagram Stories, WhatsApp Status, or Facebook.
 *   **Order Celebrations**: Shareable cards for birthdays, anniversaries, or group celebrations.
 *   **Referral Program**: Share referral links with friends for rewards.
 
-### 📅 19. Table Reservations
+### 📅 20. Table Reservations
 *   **Booking Engine**: Customers can reserve tables for specific dates and times.
 *   **Time Slot Management**: Configure available slots, table capacity, and blackout dates.
 *   **Confirmation & Reminders**: Automated confirmation emails/SMS with calendar integration.
 *   **Walk-in Queue**: Waitlist management for peak hours with estimated wait times.
 
-### 🛵 20. Takeaway & Delivery Mode
+### 🛵 21. Takeaway & Delivery Mode (Live ✅)
+*   **Order Type Selection**: Dine-in, Takeaway, or Delivery at checkout.
+*   **Dynamic Fees**: Auto-calculation of Packaging and Delivery charges.
+*   **Customer Info**: Mandatory Name/Phone collection for non-dine-in orders.
+*   **Future**: Pickup Scheduling & 3rd Party Integration.
 *   **Order Type Selection**: Dine-in, Takeaway, or Delivery at checkout.
 *   **Pickup Scheduling**: Customers can schedule pickups for later.
 *   **Delivery Partner Integration**: Connect with Swiggy, Zomato, or custom delivery fleet.
 *   **Packaging Instructions**: Special notes for takeaway packaging.
 
-### 💸 21. Split Bill
+### 💸 22. Split Bill
 *   **Equal Split**: Divide total bill equally among N guests.
 *   **Pay for What You Ordered**: Each guest pays only for their items (tracked via collaborative cart).
 *   **Custom Split**: Manually assign portions to different payment methods.
 *   **Group Payment Links**: Generate individual payment links for each guest.
 
-### ⏱️ 22. Wait Time Estimation
+### ⏱️ 23. Wait Time Estimation
 *   **AI-Predicted Wait Times**: Estimate based on current kitchen load and order complexity.
 *   **Live Queue Display**: Show customers their position in the queue.
 *   **Kitchen Capacity Alerts**: Notify staff when kitchen is overloaded.
 
-### 🌐 23. Multi-Language Support
+### 🌐 24. Multi-Language Support
 *   **Merchant App Localization**: Full translation support for the admin dashboard (Hindi, Tamil, Telugu, Kannada, Marathi, Bengali, etc.).
 *   **Customer App Localization**: Translated menus, order tracking, and UI for customers in their preferred language.
 *   **Dynamic Language Selection**: Shop owners set available languages; customers choose their preference.
 *   **Regional Focus**: Priority support for major Indian languages to serve the domestic market.
 
-### 🎁 24. Loyalty & Rewards Program (Shop level, merchant can set)
+### 🎁 25. Loyalty & Rewards Program (Shop level, merchant can set)
 *   **Points System**: Earn points on every order, redeem for discounts or free items.
 *   **Tiered Memberships**: Bronze, Silver, Gold levels with increasing benefits.
 *   **Birthday Rewards**: Automatic discounts or freebies on customer birthdays.
 *   **Repeat Customer Tracking**: Identify and reward frequent diners.
 
-### 📊 25. Advanced Analytics & Insights
+### 📊 26. Advanced Analytics & Insights
 *   **Customer Analytics**: Repeat visit frequency, average spend, favorite items per customer.
 *   **Menu Performance**: Profit margin analysis, slow-selling item alerts, pricing optimization suggestions.
 *   **Staff Performance**: Orders served, tips collected, efficiency during peak hours.
 *   **Demand Forecasting**: AI predictions for busy days to optimize staffing and inventory.
 
-### ⚡ 26. API Caching Strategy
+### ⚡ 27. API Caching Strategy
 *   **Audit**: Identify list of API calls that can be cached (e.g., Menu, Shop Settings, Static Content).
 *   **Strategy**: Implement caching layers:
     *   **Browser Cache**: Service Worker / LocalStorage for offline-first experience.
@@ -179,7 +196,7 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Implementation**: Apply caching logic cautiously to different apps (Customer vs Merchant) to prevent stale data issues.
 
 ---
-### 👤 27. Customer Identity & Global Architecture (Live ✅)
+### 👤 28. Customer Identity & Global Architecture (Live ✅)
 *   **Guest Profiles**: "Ghost User" system allowing frictionless, name-only access for temporary customers (`is_guest=true`).
 *   **Smart Session Guard**: Automatic cross-shop logout protection to prevent data leaks when scanning different QR codes.
 *   **Federated Schema**: `global_user_id` and `is_guest` columns ready for future Global App integration.
@@ -223,7 +240,11 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   **Audit Trail**: Track who applied discounts and why.
 *   **Future**: Percentage discounts and Manager Approval PINs.
 
-### 🍽️ 35. Service Types & Order Modes
+### 🍽️ 35. Service Types & Order Modes (Live ✅)
+*   **Dine-in**: Standard flow with table selection and service charge logic.
+*   **Takeaway**: Optimized flow skipping table headers; collects customer name/phone directly.
+*   **Packaging Charges**: Auto-apply packaging fees based on service type (Dynamic Inventory System).
+*   **Kitchen Routing**: Distinct ticket headers (DINE-IN vs TAKEAWAY) for kitchen staff awareness.
 *   **Dine-in**: Standard flow with table selection and service charge logic.
 *   **Takeaway**: Optimized flow skipping table headers; collects customer name/phone directly.
 *   **Packaging Charges**: Auto-apply packaging fees based on service type.
@@ -270,6 +291,9 @@ Brief overview of planned features for the **Food Cafe** RMS.
 *   [ ] "Integrate firebase auth with supabase"
 *   [ ] "Add variants to menu items"
 *   [x] "Discount option in bill"
-*   [ ] "Service type: dine-in, takeaway"
+*   [x] "Service type: dine-in, takeaway"
+*   [x] "Show order type (icon/text) in cart"
+*   [x] "Show recent orders in cart"
+*   [ ] "Packaging inventory & cost calculation per item"
 *   [ ] "Linking orders to waiters"
 
