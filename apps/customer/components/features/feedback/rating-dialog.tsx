@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Star, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { submitReview, getReviewByBill } from "@/lib/api";
+import { submitReview, getReview } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
@@ -13,12 +13,13 @@ import { useCartStore } from "@/lib/store";
 interface RatingDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    billId: string;
+    billId?: string;
+    orderId?: string;
     shopId: string;
     items: any[];
 }
 
-export function RatingDialog({ isOpen, onClose, billId, shopId, items }: RatingDialogProps) {
+export function RatingDialog({ isOpen, onClose, billId, orderId, shopId, items }: RatingDialogProps) {
     const [step, setStep] = useState<'general' | 'items'>('general');
     const [generalRating, setGeneralRating] = useState(0);
     const [generalComment, setGeneralComment] = useState("");
@@ -28,14 +29,14 @@ export function RatingDialog({ isOpen, onClose, billId, shopId, items }: RatingD
     const { customerName, customerId } = useCartStore();
 
     useEffect(() => {
-        if (isOpen && billId && customerId) {
+        if (isOpen && (billId || orderId) && customerId) {
             loadExistingReview();
         }
-    }, [isOpen, billId, customerId]);
+    }, [isOpen, billId, orderId, customerId]);
 
     const loadExistingReview = async () => {
         setLoadingExisting(true);
-        const existingReview = await getReviewByBill(billId, customerId!);
+        const existingReview = await getReview({ billId, orderId, customerId: customerId! });
         if (existingReview) {
             setGeneralRating(existingReview.rating);
             setGeneralComment(existingReview.comment || "");
@@ -72,6 +73,7 @@ export function RatingDialog({ isOpen, onClose, billId, shopId, items }: RatingD
             await submitReview({
                 shop_id: shopId,
                 bill_id: billId,
+                order_id: orderId,
                 customer_id: customerId || null,
                 rating: generalRating,
                 comment: generalComment,

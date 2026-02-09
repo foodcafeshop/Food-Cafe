@@ -408,13 +408,14 @@ $$ language plpgsql security definer;
 create table if not exists public.reviews (
   id uuid primary key default uuid_generate_v4(),
   shop_id uuid references public.shops(id) on delete cascade,
-  bill_id uuid references public.bills(id) on delete cascade, -- Required: Linked to Bill
+  bill_id uuid references public.bills(id) on delete cascade,
+  order_id uuid references public.orders(id) on delete set null,
   customer_id uuid references public.customers(id) on delete set null,
   rating integer not null check (rating >= 1 and rating <= 5),
   comment text,
   customer_name text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(bill_id, customer_id)
+  constraint reviews_link_check check (bill_id IS NOT NULL OR order_id IS NOT NULL)
 );
 
 create table if not exists public.review_items (
@@ -462,6 +463,9 @@ create index if not exists idx_customers_shop_id on public.customers(shop_id);
 create index if not exists idx_customers_phone on public.customers(phone);
 create index if not exists idx_reviews_shop_id on public.reviews(shop_id);
 create index if not exists idx_reviews_bill_id on public.reviews(bill_id);
+create index if not exists idx_reviews_order_id on public.reviews(order_id);
+create unique index if not exists idx_reviews_bill_customer on public.reviews (bill_id, customer_id) where bill_id is not null;
+create unique index if not exists idx_reviews_order_customer on public.reviews (order_id, customer_id) where order_id is not null;
 create index if not exists idx_review_items_review_id on public.review_items(review_id);
 create index if not exists idx_review_items_menu_item_id on public.review_items(menu_item_id);
 

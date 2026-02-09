@@ -1164,17 +1164,31 @@ export async function getDashboardStats(
 
 // Reviews
 export async function submitReview(review: any) {
-    // 1. Upsert Parent Review
+    // 1. Prepare Review Data
+    const reviewData: any = {
+        shop_id: review.shop_id,
+        customer_id: review.customer_id,
+        rating: review.rating,
+        comment: review.comment,
+        customer_name: review.customer_name
+    };
+
+    if (review.bill_id) reviewData.bill_id = review.bill_id;
+    if (review.order_id) reviewData.order_id = review.order_id;
+
+    // Determine conflict target
+    let onConflict = 'bill_id, customer_id'; // Default (backward compat if schema not updated yet? No, if schema updated, partial index handles it)
+    if (review.order_id && !review.bill_id) {
+        onConflict = 'order_id, customer_id';
+    }
+
+    // 2. Upsert Parent Review
     const { data: parentReview, error: parentError } = await supabase
         .from('reviews')
-        .upsert({
-            shop_id: review.shop_id,
-            bill_id: review.bill_id, // Link to bill
-            customer_id: review.customer_id,
-            rating: review.rating,
-            comment: review.comment,
-            customer_name: review.customer_name
-        }, { onConflict: 'bill_id, customer_id' })
+        .upsert(
+            reviewData,
+            { onConflict: onConflict }
+        )
         .select()
         .single();
 
@@ -1202,8 +1216,8 @@ export async function submitReview(review: any) {
     return parentReview;
 }
 
-export async function getReviewByBill(billId: string, customerId: string) {
-    const { data, error } = await supabase
+export async function getReview(params: { billId?: string; orderId?: string; customerId: string }) {
+    let query = supabase
         .from('reviews')
         .select(`
             *,
@@ -1213,9 +1227,17 @@ export async function getReviewByBill(billId: string, customerId: string) {
                 comment
             )
         `)
-        .eq('bill_id', billId)
-        .eq('customer_id', customerId)
-        .single();
+        .eq('customer_id', params.customerId);
+
+    if (params.billId) {
+        query = query.eq('bill_id', params.billId);
+    } else if (params.orderId) {
+        query = query.eq('order_id', params.orderId);
+    } else {
+        return null;
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
         if (error.code === 'PGRST116') return null; // No rows found
@@ -1223,6 +1245,10 @@ export async function getReviewByBill(billId: string, customerId: string) {
         return null;
     }
     return data;
+}
+
+export async function getReviewByBill(billId: string, customerId: string) {
+    return getReview({ billId, customerId });
 }
 
 export async function getReviews(limit = 50) {
